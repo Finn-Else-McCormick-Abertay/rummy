@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3 uid="uid://chtiqc5ff2ojj"]
+
+[ext_resource type="Script" path="res://src/interface/CardDisplay.cs" id="1_lftpe"]
+[ext_resource type="Texture2D" uid="uid://cmbmxittg7a35" path="res://assets/textures/PlayingCards 256x356.png" id="1_m77ts"]
+[ext_resource type="Texture2D" uid="uid://c8nol381b52th" path="res://assets/textures/Card Template 256x356.png" id="2_ix1xr"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rk4kq"]
+resource_local_to_scene = true
+atlas = ExtResource("1_m77ts")
+region = Rect2(0, 0, 256, 356)
+
+[node name="CardDisplay" type="AspectRatioContainer"]
+anchors_preset = -1
+anchor_right = 0.405
+anchor_bottom = 1.0
+offset_right = 0.439972
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+ratio = 0.719
+script = ExtResource("1_lftpe")
+Rank = 1
+
+[node name="Back" type="TextureRect" parent="."]
+visible = false
+layout_mode = 2
+texture = ExtResource("2_ix1xr")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Front" type="TextureRect" parent="."]
+layout_mode = 2
+texture = SubResource("AtlasTexture_rk4kq")
+expand_mode = 1
+stretch_mode = 5

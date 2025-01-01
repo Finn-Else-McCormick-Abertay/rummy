@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://cef2570xhab3f"]
+
+[ext_resource type="Script" path="res://src/interface/PlayerHand.cs" id="1_7oa3w"]
+[ext_resource type="Theme" uid="uid://1wfrf22h0u32" path="res://assets/card_theme.tres" id="1_whccm"]
+
+[node name="PlayerHand" type="MarginContainer"]
+layout_direction = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_whccm")
+script = ExtResource("1_7oa3w")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
