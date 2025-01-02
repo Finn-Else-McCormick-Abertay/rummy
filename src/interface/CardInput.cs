@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.VisualBasic;
+using Rummy.Game;
 using Rummy.Interface;
 using System;
 
@@ -14,11 +15,19 @@ public partial class CardInput : MarginContainer
 
     private bool shouldDrag = false, isDragging = false, clickDragging = false;
     private Vector2 dragOffset, dragBeginPosition;
-    private Control dragPlaceholder;
 
     private bool isDislocated = false;
 
     private readonly Vector2 SelectedOffset = new(0f, -30f);
+
+    private partial class Placeholder : Control {
+        public Placeholder() {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        }
+        public CardInput Card;
+    }
+    private Placeholder dragPlaceholder;
+
 
     public override void _Ready() {
         AddThemeConstantOverride("margin_left", 0); AddThemeConstantOverride("margin_right", 0);
@@ -35,8 +44,8 @@ public partial class CardInput : MarginContainer
     }
 
     public override void _EnterTree() {
-        dragPlaceholder = new Control {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        dragPlaceholder = new() {
+            Card = this
         };
     }
     public override void _ExitTree() {
@@ -58,7 +67,6 @@ public partial class CardInput : MarginContainer
                 Dislocate();
                 dragOffset = GlobalPosition - GetGlobalMousePosition();
                 dragBeginPosition = GetGlobalMousePosition();
-                GD.Print("Click Drag Begin");
             }
         }
     }
@@ -89,6 +97,29 @@ public partial class CardInput : MarginContainer
 
         if (isDragging) {
             GlobalPosition = GetGlobalMousePosition() + dragOffset;
+
+            var container = dragPlaceholder.GetParent();
+            var placeholderIndex = dragPlaceholder.GetIndex();
+            if (placeholderIndex > 0) {
+                var leftNeighbour = (Control)container.GetChild(placeholderIndex - 1);
+                if (GlobalPosition.X < leftNeighbour.GlobalPosition.X + leftNeighbour.Size.X / 2) {
+                    container.MoveChild(dragPlaceholder, placeholderIndex - 1);
+                    if (leftNeighbour is Placeholder placeholder) {
+                        var card = placeholder.Card;
+                        card.CallDeferred("SnapToPlaceholder");
+                    }
+                }
+            }
+            if (placeholderIndex < container.GetChildCount() - 1) {
+                var rightNeighbour = (Control)container.GetChild(placeholderIndex + 1);
+                if (GlobalPosition.X > rightNeighbour.GlobalPosition.X - rightNeighbour.Size.X / 2) {
+                    container.MoveChild(dragPlaceholder, placeholderIndex + 1);
+                    if (rightNeighbour is Placeholder placeholder) {
+                        var card = placeholder.Card;
+                        card.CallDeferred("SnapToPlaceholder");
+                    }
+                }
+            }
         }
     }
 
@@ -107,7 +138,6 @@ public partial class CardInput : MarginContainer
     }
 
     void Dislocate() {
-        GD.Print("Dislocate ", isDislocated ? "Failure" : "Success");
         if (isDislocated) { return; }
         isDislocated = true;
 
@@ -126,7 +156,6 @@ public partial class CardInput : MarginContainer
     }
 
     void Undislocate() {
-        GD.Print("Undislocate ", !isDislocated ? "Failure" : "Success");
         if (!isDislocated) { return; }
         isDislocated = false;
 
@@ -140,5 +169,9 @@ public partial class CardInput : MarginContainer
         parent.MoveChild(this, index);
 
         if (hasFocus) { Display.GrabFocus(); }
+    }
+
+    private void SnapToPlaceholder() {
+        GlobalPosition = dragPlaceholder.GlobalPosition + SelectedOffset;
     }
 }
