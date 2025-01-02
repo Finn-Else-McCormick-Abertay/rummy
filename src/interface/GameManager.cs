@@ -7,22 +7,29 @@ namespace Rummy.Interface;
 
 public partial class GameManager : Node
 {
-    private Game.Game game;
+    private Round round;
+    private List<Player> players;
 
     [Export]
     public PlayerHand PlayerHand { get; set; }
 
     public GameManager() {
-        var players = new List<Game.Player> {
-            new()
+        var userPlayer = new UserPlayer();
+        (userPlayer.Hand as CardPile).OnCardAdded += (card) => {
+            if (PlayerHand == null) { return; }
+            PlayerHand.Add(card);
         };
 
-        game = new Game.Game(players);
+        players = new List<Player> {
+            userPlayer
+        };
     }
 
     public override void _Ready() {
-        foreach (Card card in game.Players[0].Hand) {
-            PlayerHand.Add(card);
-        }
+        round = new Round(players);
+        round.ProgressTurn();
+    }
+
+    public override void _Process(double delta) {
     }
 }

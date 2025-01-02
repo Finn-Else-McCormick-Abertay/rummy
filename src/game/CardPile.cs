@@ -1,0 +1,132 @@
+
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
+
+namespace Rummy.Game;
+
+public interface ICountable {
+	public int Count { get; }
+	public bool Empty { get; }
+}
+
+public delegate void OnCardAdded(Card card);
+
+public abstract class CardPile : ICountable
+{
+    public event OnCardAdded OnCardAdded;
+	public event NotifyCollectionChangedEventHandler OnChanged {
+		add => _cards.CollectionChanged += value; remove => _cards.CollectionChanged -= value;
+	}
+
+	protected ObservableCollection<Card> _cards = new();
+	protected IList<Card> Cards { get => _cards; }
+
+	public int Count { get => _cards.Count; }
+	public bool Empty { get => Count == 0; }
+
+	protected void AddToFront(Card card) {
+		_cards.Insert(0, card);
+        OnCardAdded?.Invoke(card);
+	}
+	protected void AddToBack(Card card) {
+		_cards.Add(card);
+        OnCardAdded?.Invoke(card);
+	}
+
+    protected void ReorderBy(Func<Card, int> keySelector) {
+        _cards = new ObservableCollection<Card>(_cards.OrderBy(keySelector).ToList());
+    }
+
+    public void Append(CardPile pile) {
+		foreach (Card card in pile._cards) { _cards.Add(card); }
+    }
+    public void Clear() {
+        _cards.Clear();
+    }
+}
+
+public interface IReadableCardPile {
+	public ReadOnlyCollection<Card> Cards { get; }
+}
+
+public interface IAccessibleCardPile {
+	public IList<Card> Cards { get; }
+}
+
+public delegate void OnCardDrawn(Card card);
+public delegate void OnEmptied();
+
+public interface IDrawable {
+    public Card? Draw();
+
+    public abstract event OnCardDrawn OnCardDrawn;
+    public abstract event OnEmptied OnEmptied;
+}
+
+public interface IDrawableMulti : IDrawable {
+    public List<Card> Draw(int count);
+}
+
+public class Deck : CardPile, IDrawable
+{
+    public event OnCardDrawn OnCardDrawn;
+    public event OnEmptied OnEmptied;
+
+	public Card? Draw() {
+        if (Empty) { return null; }
+		var card = Cards[0];
+		Cards.RemoveAt(0);
+        OnCardDrawn?.Invoke(card);
+        if (Empty) { OnEmptied?.Invoke(); }
+		return card;
+	}
+
+	public void AddPack() {
+		foreach (Suit suit in Enum.GetValues(typeof(Suit)).Cast<Suit>()) {
+			foreach (Rank rank in Enum.GetValues(typeof(Rank)).Cast<Rank>()) {
+				AddToBack(new Card(rank, suit));
+			}
+		}
+	}
+    
+	public void Shuffle(Random random) {
+        ReorderBy(x => random.Next());
+	}
+	public void Shuffle() { Shuffle(Random.Shared); }
+
+    public void Flip() { _cards.Reverse(); }
+}
+
+public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
+{
+    public event OnCardDrawn OnCardDrawn;
+    public event OnEmptied OnEmptied;
+
+    public Card? Draw() {
+        if (Empty) { return null; }
+		var card = _cards[0];
+		_cards.RemoveAt(0);
+        OnCardDrawn?.Invoke(card);
+        if (Empty) { OnEmptied?.Invoke(); }
+		return card;
+	}
+
+	public List<Card> Draw(int count) {
+        if (Count < count) { count = Count; }
+		var drawnCards = new List<Card>();
+		for (int i = 0; i < count; ++i) {
+			var card = Draw();
+			if (card != null) { drawnCards.Add((Card)card); }
+		}
+		return drawnCards;
+	}
+
+	public void Discard(Card card) {
+		AddToFront(card);
+	}
+	
+	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }
+}
