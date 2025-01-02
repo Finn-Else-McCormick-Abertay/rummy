@@ -17,19 +17,20 @@ offset_right = 0.439972
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
 ratio = 0.719
 script = ExtResource("1_lftpe")
 Rank = 1
 
 [node name="Back" type="TextureRect" parent="."]
 visible = false
+use_parent_material = true
 layout_mode = 2
 texture = ExtResource("2_ix1xr")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="Front" type="TextureRect" parent="."]
+use_parent_material = true
 layout_mode = 2
 texture = SubResource("AtlasTexture_rk4kq")
 expand_mode = 1

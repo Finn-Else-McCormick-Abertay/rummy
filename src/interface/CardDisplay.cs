@@ -10,30 +10,32 @@ public partial class CardDisplay : Control
     private Rank _rank;
     [Export] public Rank Rank {
         get => _rank;
-        set { _rank = value; if (IsNodeReady()) { UpdateTexture(); } }
+        set { _rank = value; UpdateTexture(); }
     }
     private Suit _suit;
     [Export] public Suit Suit {
         get => _suit;
-        set { _suit = value; if (IsNodeReady()) { UpdateTexture(); } } 
+        set { _suit = value; UpdateTexture(); } 
     }
 
     private bool _faceDown = false;
     [Export] public bool FaceDown {
         get => _faceDown;
-        set { _faceDown = value; if (IsNodeReady()) { UpdateFacing(); } }
+        set { _faceDown = value; UpdateFacing(); }
     }
 
     private TextureRect frontTextureRect, backTextureRect;
 
     public override void _Ready() {
-        frontTextureRect = GetNode<TextureRect>("Front");
-        backTextureRect = GetNode<TextureRect>("Back");
         UpdateTexture();
         UpdateFacing();
     }
 
     private void UpdateTexture() {
+        if (!IsNodeReady()) { return; }
+
+        frontTextureRect ??= GetNode<TextureRect>("Front");
+
         var atlasTexture = (AtlasTexture)frontTextureRect.Texture;
         atlasTexture.Region = atlasTexture.Region with {
             Size = Size with {
@@ -51,6 +53,11 @@ public partial class CardDisplay : Control
     }
 
     private void UpdateFacing() {
+        if (!IsNodeReady()) { return; }
+
+        frontTextureRect ??= GetNode<TextureRect>("Front");
+        backTextureRect ??= GetNode<TextureRect>("Back");
+
         frontTextureRect.Visible = !FaceDown;
         backTextureRect.Visible = FaceDown;
     }
