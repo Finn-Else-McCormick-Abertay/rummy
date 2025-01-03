@@ -1,31 +1,40 @@
-[gd_scene load_steps=5 format=3 uid="uid://chtiqc5ff2ojj"]
+[gd_scene load_steps=6 format=3 uid="uid://chtiqc5ff2ojj"]
 
 [ext_resource type="Script" path="res://src/interface/CardDisplay.cs" id="1_lftpe"]
-[ext_resource type="Texture2D" uid="uid://cmbmxittg7a35" path="res://assets/textures/PlayingCards 256x356.png" id="1_m77ts"]
-[ext_resource type="Texture2D" uid="uid://c8nol381b52th" path="res://assets/textures/Card Template 256x356.png" id="2_ix1xr"]
+[ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="2_1iw2q"]
+[ext_resource type="Texture2D" uid="uid://dmtkl13c56p5i" path="res://assets/textures/Card Back.png" id="2_4fb5p"]
+[ext_resource type="Texture2D" uid="uid://bhykfv3q6b5im" path="res://assets/textures/PlayingCards Edited.png" id="3_bew4a"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_rk4kq"]
 resource_local_to_scene = true
-atlas = ExtResource("1_m77ts")
+atlas = ExtResource("3_bew4a")
 region = Rect2(0, 0, 256, 356)
 
 [node name="CardDisplay" type="AspectRatioContainer"]
 anchors_preset = -1
-anchor_right = 0.405
-anchor_bottom = 1.0
-offset_right = 0.439972
+anchor_right = 0.087
+anchor_bottom = 0.216
+offset_right = -0.224007
+offset_bottom = 0.0319977
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
+mouse_filter = 0
+theme = ExtResource("2_1iw2q")
 ratio = 0.719
+stretch_mode = 0
 script = ExtResource("1_lftpe")
 Rank = 1
+
+[node name="Shadow" type="PanelContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
 
 [node name="Back" type="TextureRect" parent="."]
 visible = false
 use_parent_material = true
 layout_mode = 2
-texture = ExtResource("2_ix1xr")
+texture = ExtResource("2_4fb5p")
 expand_mode = 1
 stretch_mode = 5
 

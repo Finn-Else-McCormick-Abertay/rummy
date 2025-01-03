@@ -8,8 +8,10 @@ class UserPlayer : Player
 {
     public override string Name { get => "User"; }
 
-    public override void TakeTurn(Round round) {
-        Hand.Add((Card)round.Deck.Draw());
-        round.DiscardPile.Discard(hand.Cards[0]);
+    public delegate void TurnBeginAction(Player player, Round round);
+    public event TurnBeginAction TurnBegin;
+
+    public override void BeginTurn(Round round) {
+        TurnBegin?.Invoke(this, round);
     }
 }

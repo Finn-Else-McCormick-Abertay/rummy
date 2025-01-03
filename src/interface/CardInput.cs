@@ -11,9 +11,6 @@ public partial class CardInput : MarginContainer
     public CardDisplay Display { get; private set; }
     
     private partial class Placeholder : Control {
-        public Placeholder() {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        }
         public CardInput Card;
     }
     private Placeholder placeholder;
@@ -56,11 +53,15 @@ public partial class CardInput : MarginContainer
         parent.RemoveChild(this); parent.GetTree().Root.AddChild(this); Owner = parent.GetTree().Root;
         parent.AddChild(placeholder); placeholder.Owner = parent; parent.MoveChild(placeholder, index);
         GlobalPosition = globalPos; if (hasFocus) { Display.GrabFocus(); }
+
+        placeholder.Resized += OnPlaceholderResized;
     }
 
     void Undislocate() {
         if (!Dislocated) { return; }
         _dislocated = false;
+
+        placeholder.Resized -= OnPlaceholderResized;
 
         bool hasFocus = Display.HasFocus();
         var parent = placeholder.GetParent(); var index = placeholder.GetIndex();
@@ -69,14 +70,19 @@ public partial class CardInput : MarginContainer
         if (hasFocus) { Display.GrabFocus(); }
     }
 
+    private void OnPlaceholderResized() {
+        if (!Dislocated) { return; }
+
+        Size = Size with { X = placeholder.Size.X };
+        if (Selected) { SnapToPlaceholder(); }
+    }
+
     private bool shouldDrag = false, isDragging = false, clickDragging = false;
     private Vector2 dragBeginPosition, dragGrabOffset;
 
     public override void _Ready() {
         AddThemeConstantOverride("margin_left", 0); AddThemeConstantOverride("margin_right", 0);
         AddThemeConstantOverride("margin_top", 0); AddThemeConstantOverride("margin_bottom", 0);
-
-        SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
         Display = (CardDisplay)CardDisplayScene.Instantiate();
         AddChild(Display);
@@ -87,10 +93,13 @@ public partial class CardInput : MarginContainer
     }
 
     public override void _EnterTree() {
+        SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
         placeholder = new() {
-            Card = this
+            SizeFlagsHorizontal = SizeFlagsHorizontal,
         };
     }
+
     public override void _ExitTree() {
         placeholder.QueueFree();
     }

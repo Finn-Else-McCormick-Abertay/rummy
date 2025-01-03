@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cef2570xhab3f"]
+[gd_scene load_steps=4 format=3 uid="uid://cef2570xhab3f"]
 
 [ext_resource type="Script" path="res://src/interface/PlayerHand.cs" id="1_7oa3w"]
 [ext_resource type="Theme" uid="uid://1wfrf22h0u32" path="res://assets/card_theme.tres" id="1_whccm"]
+[ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="3_3itb4"]
 
 [node name="PlayerHand" type="MarginContainer"]
 layout_direction = 1
@@ -16,3 +17,33 @@ script = ExtResource("1_7oa3w")
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
 alignment = 1
+
+[node name="CardDisplay" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay2" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay3" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay4" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay5" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay6" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay7" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay8" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay9" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2
+
+[node name="CardDisplay10" parent="HBoxContainer" instance=ExtResource("3_3itb4")]
+layout_mode = 2

@@ -1,16 +1,116 @@
-[gd_scene load_steps=3 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=5 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
+[ext_resource type="PackedScene" uid="uid://i64idti40js4" path="res://scenes/enemy_hand.tscn" id="2_rfff7"]
+[ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("PlayerHand")]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "EnemyHand", "DiscardButton", "MeldButton")]
 script = ExtResource("1_aylxn")
-PlayerHand = NodePath("../PlayerHand")
+Deck = NodePath("../Deck")
+DiscardPile = NodePath("../DiscardPile")
+PlayerHand = NodePath("../VBoxContainer/PlayerHand")
+EnemyHand = NodePath("../EnemyHand")
+DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
+MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
 
-[node name="PlayerHand" parent="." instance=ExtResource("1_2umm0")]
-anchors_preset = 12
-anchor_top = 1.0
-offset_top = -308.0
+[node name="EnemyHand" parent="." instance=ExtResource("2_rfff7")]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.386
+anchor_bottom = 0.257
+offset_left = 206.0
+offset_top = 139.0
+offset_right = -178.672
+offset_bottom = 38.464
+grow_vertical = 1
+NumCardsInEditor = 3
+
+[node name="Deck" parent="." instance=ExtResource("2_rj55i")]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.525
+offset_left = 401.0
+offset_top = 97.0
+offset_right = -443.0
+offset_bottom = -32.2
+mouse_force_pass_scroll_events = true
+
+[node name="DiscardPile" parent="." instance=ExtResource("2_rj55i")]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.525
+offset_left = 610.0
+offset_top = 97.0
+offset_right = -234.0
+offset_bottom = -32.2
+mouse_force_pass_scroll_events = true
+FaceDown = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.535
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 0.319977
+offset_bottom = -2.0
+grow_horizontal = 2
 grow_vertical = 0
+
+[node name="PlayerHand" parent="VBoxContainer" instance=ExtResource("1_2umm0")]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Padding2" type="Control" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.05
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+alignment = 1
+
+[node name="Padding4" type="Control" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Discard" type="Button" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Discard
+"
+
+[node name="Padding3" type="Control" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+
+[node name="Meld" type="Button" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Meld"
+
+[node name="Padding5" type="Control" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Padding" type="Control" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1

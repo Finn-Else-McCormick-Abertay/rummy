@@ -2,6 +2,7 @@ using Godot;
 using Rummy.Game;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 
 namespace Rummy.Interface;
 
@@ -13,6 +14,10 @@ public partial class PlayerHand : Control
 
     public override void _Ready() {
         cardContainer = GetNode<HBoxContainer>("HBoxContainer");
+        foreach (Node node in cardContainer.GetChildren()) {
+            cardContainer.RemoveChild(node);
+            node.QueueFree();
+        }
         foreach ((Card card, CardInput input) in cards) {
             cardContainer.AddChild(input);
             input.Owner = cardContainer;
@@ -29,6 +34,40 @@ public partial class PlayerHand : Control
             input.Owner = cardContainer;
             input.Display.Rank = card.Rank;
             input.Display.Suit = card.Suit;
+        }
+    }
+    public void Remove(Card card) {
+        bool predicate((Card, CardInput) pair) => pair.Item1 == card;
+
+        if (!cards.Exists(predicate)) { return; }
+        var pair = cards.Find(predicate);
+        var input = pair.Item2;
+
+        cards.Remove(pair);
+        input.QueueFree();
+    }
+
+    public void HookTo(CardPile hand) {
+        hand.OnChanged += (obj, args) => {
+            GD.Print("OnChanged ", Enum.GetName(typeof(NotifyCollectionChangedAction), args.Action));
+            if (args.Action == NotifyCollectionChangedAction.Remove || args.Action == NotifyCollectionChangedAction.Replace) {
+                foreach (var item in args.OldItems) { Remove((Card)item); }
+            }
+            if (args.Action == NotifyCollectionChangedAction.Add || args.Action == NotifyCollectionChangedAction.Replace) {
+                foreach (var item in args.NewItems) { Add((Card)item); }
+            }
+        };
+    }
+
+    public List<Card> SelectedSequence {
+        get {
+            var sequence = new List<Card>();
+            foreach ((Card card, CardInput input) in cards) {
+                if (input.Selected) {
+                    sequence.Add(card);
+                }
+            }
+            return sequence;
         }
     }
 }

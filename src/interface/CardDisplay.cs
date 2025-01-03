@@ -18,6 +18,8 @@ public partial class CardDisplay : Control
         set { _suit = value; UpdateTexture(); } 
     }
 
+    public Card Card { get => new(Rank, Suit); set { Rank = value.Rank; Suit = value.Suit; } }
+
     private bool _faceDown = false;
     [Export] public bool FaceDown {
         get => _faceDown;

@@ -47,5 +47,5 @@ public abstract class Player
 
 	public List<IMeld> Melds { get; set; } = new();
 
-    public abstract void TakeTurn(Round game);
+    public abstract void BeginTurn(Round game);
 }

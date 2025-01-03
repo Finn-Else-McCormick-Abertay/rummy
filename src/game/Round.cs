@@ -8,14 +8,15 @@ namespace Rummy.Game;
 
 public class Round
 {
-	public bool Finished { get; private set; } = false;
-	public Player Winner { get; private set; }
-
 	private readonly List<Player> _players;
 	public ReadOnlyCollection<Player> Players { get => _players.AsReadOnly(); }
 
 	public int Turn { get; private set; } = 0;
+	public bool MidTurn { get; private set; } = false;
 	public Player CurrentPlayer { get => Players[Turn % Players.Count]; }
+	
+	public bool Finished { get; private set; } = false;
+	public Player Winner { get; private set; }
 
 	public Deck Deck { get; init; } = new();
 	public DiscardPile DiscardPile { get; init; } = new();
@@ -32,7 +33,10 @@ public class Round
 	public bool Meld(IMeld meld) {
 		if (meld.Valid) {
 			CurrentPlayer.Melds.Add(meld);
-			(meld as CardPile).OnCardAdded += (card) => { turnData.LayOffCount++; };
+			(meld as CardPile).OnCardAdded += (card) => {
+				turnData.LayOffCount++;
+				turnData.LayOffs.Add(card);
+			};
 			turnData.MeldCount++;
 			turnData.Melds.Add(meld);
 			return true;
@@ -41,11 +45,14 @@ public class Round
 	}
 
 	private class TurnData {
-		public int DrawCountDeck = 0, DrawCountDiscard = 0, MeldCount = 0, LayOffCount = 0, DiscardCount = 0;
+		public int DrawCountDeck = 0, DrawCountDiscard = 0, MeldCount = 0, PriorMelds = 0, LayOffCount = 0, DiscardCount = 0;
 		public Card BottomCard, TopCard;
 		public List<IMeld> Melds = new();
+		public List<Card> LayOffs = new();
 	}
 	private TurnData turnData = new();
+
+	public bool HasDrawn { get => turnData.DrawCountDeck > 0 || turnData.DrawCountDiscard > 0; }
 
 	public Round(List<Player> players, int numPacks = 1) {
 		_players = players;
@@ -91,28 +98,14 @@ public class Round
 		DiscardPile.Discard((Card)Deck.Draw());
 	}
 
-	public void ProgressTurn() {
-		turnData = new TurnData(); var priorMelds = CurrentPlayer.Melds.Count;
-		CurrentPlayer.TakeTurn(this);
+	public void BeginTurn() {
+        turnData = new TurnData { PriorMelds = CurrentPlayer.Melds.Count };
+		MidTurn = true;
+		CurrentPlayer.BeginTurn(this);
+	}
 
-		// Checks
-		if (turnData.DrawCountDeck > 0 && turnData.DrawCountDiscard > 0) { GD.PushError(CurrentPlayer.Name, " drew from both deck and discard pile."); }
-		else if (turnData.DrawCountDeck > 1) { GD.PushError(CurrentPlayer.Name, " drew from deck ", turnData.DrawCountDeck, " times."); }
-		if (turnData.DrawCountDiscard > 0 && turnData.TopCard == DiscardPile.Cards[0] && !!CurrentPlayer.Hand.Empty) { GD.PushError(CurrentPlayer.Name, " discarded top picked up card while not going out"); }
-		if (turnData.DrawCountDiscard > 1 && turnData.MeldCount == 0) { GD.PushError(CurrentPlayer.Name," picked up ", turnData.DrawCountDiscard, " cards but did not meld."); }
-		if (turnData.DrawCountDiscard > 1) {
-			bool usedBottomCard = false;
-			turnData.Melds.ForEach((meld) => { usedBottomCard |= meld.Cards.Contains(turnData.BottomCard); });
-			if (!usedBottomCard) { GD.PushError(CurrentPlayer.Name, " picked up ", turnData.DrawCountDiscard, " cards but did not use bottomost card."); }
-		}
-
-		if (turnData.LayOffCount > 0 && CurrentPlayer.Melds.Count == 0) { GD.PushError(CurrentPlayer.Name, " layed off before melding."); }
-
-		if (turnData.DiscardCount > 1) { GD.PushError(CurrentPlayer.Name, " discarded ", turnData.DiscardCount, " times in one round"); }
-		else if (turnData.DiscardCount == 0 && !CurrentPlayer.Hand.Empty) { GD.PushError(CurrentPlayer.Name, " ended turn without discarding"); }
-
-		if (turnData.MeldCount > 1 && !CurrentPlayer.Hand.Empty) { GD.PushError(CurrentPlayer.Name, " multiple melds without rummying"); }
-		else if (turnData.MeldCount > 1 && priorMelds != 0) { GD.PushError(CurrentPlayer.Name, "attempted rummy with a meld already down"); }
+	public bool EndTurn() {
+		if (!IsTurnValid()) { return false; } 
 
 		// Game End
 		if (CurrentPlayer.Hand.Empty) {
@@ -123,8 +116,70 @@ public class Round
 				if (player == Winner) { continue; }
 				roundScore += player.Hand.Score();
 			}
+			// Rummied, score doubled
+			if (turnData.MeldCount > 1) { roundScore *= 2; }
 			Winner.Score += roundScore;
 		}
-		Turn++;
-	}	
+		Turn++; MidTurn = false;
+		return true;
+	}
+
+	private bool IsTurnValid() {
+		// Drew from deck and discard
+		if (turnData.DrawCountDeck > 0 && turnData.DrawCountDiscard > 0) {
+			GD.PushWarning(CurrentPlayer.Name, " drew from both deck and discard pile.");
+			return false;
+		}
+		// Drew multiple from deck
+		if (turnData.DrawCountDeck > 1) {
+			GD.PushWarning(CurrentPlayer.Name, " drew from deck ", turnData.DrawCountDeck, " times.");
+			return false;
+		}
+		// Discarded top card from discard pickup while not going out
+		if (turnData.DrawCountDiscard > 0 && turnData.TopCard == DiscardPile.Cards[0] && !!CurrentPlayer.Hand.Empty) {
+			GD.PushWarning(CurrentPlayer.Name, " discarded top picked up card while not going out");
+			return false;
+		}
+
+		// Drew multiple...
+		if (turnData.DrawCountDiscard > 1) {
+			bool usedBottomCard = turnData.LayOffs.Contains(turnData.BottomCard);
+			turnData.Melds.ForEach((meld) => { usedBottomCard |= meld.Cards.Contains(turnData.BottomCard); });
+			// ...but did not use bottomost card
+			if (!usedBottomCard) {
+				GD.PushWarning(CurrentPlayer.Name, " drew ", turnData.DrawCountDiscard, " cards but did not use bottomost card.");
+				return false;
+			}
+		}
+
+		// Laid off before having melded
+		if (turnData.LayOffCount > 0 && CurrentPlayer.Melds.Count == 0) {
+			GD.PushWarning(CurrentPlayer.Name, " layed off before melding.");
+			return false;
+		}
+
+		// Discarded more than once
+		if (turnData.DiscardCount > 1) {
+			GD.PushWarning(CurrentPlayer.Name, " discarded ", turnData.DiscardCount, " times in one round");
+			return false;
+		}
+		// Ended turn without discarding or going out
+		if (turnData.DiscardCount == 0 && !CurrentPlayer.Hand.Empty) {
+			GD.PushWarning(CurrentPlayer.Name, " ended turn without discarding");
+			return false;
+		}
+
+		// Melded more than once but did not go out, to constitute a rummy
+		if (turnData.MeldCount > 1 && !CurrentPlayer.Hand.Empty) {
+			GD.PushWarning(CurrentPlayer.Name, " attempted multiple melds without rummying");
+			return false;
+		}
+		// Rummied (melded multiple) but had already melded
+		if (turnData.MeldCount > 1 && turnData.PriorMelds != 0) {
+			GD.PushWarning(CurrentPlayer.Name, " attempted rummy with a meld already down");
+			return false;
+		}
+
+		return true;
+	}
 }
