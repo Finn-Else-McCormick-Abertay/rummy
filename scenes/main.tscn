@@ -17,7 +17,7 @@ grow_vertical = 2
 script = ExtResource("1_aylxn")
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
-PlayerHand = NodePath("../VBoxContainer/PlayerHand")
+PlayerHand = NodePath("../VBoxContainer/HBoxContainer2/PlayerHand")
 EnemyHand = NodePath("../EnemyHand")
 DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
 MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
@@ -29,19 +29,18 @@ anchor_right = 0.386
 anchor_bottom = 0.257
 offset_left = 206.0
 offset_top = 139.0
-offset_right = -178.672
-offset_bottom = 38.464
+offset_right = -138.672
+offset_bottom = 12.464
 grow_vertical = 1
-NumCardsInEditor = 3
 
 [node name="Deck" parent="." instance=ExtResource("2_rj55i")]
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 0.525
-offset_left = 401.0
-offset_top = 97.0
-offset_right = -443.0
+offset_left = 425.0
+offset_top = 109.0
+offset_right = -605.0
 offset_bottom = -32.2
 mouse_force_pass_scroll_events = true
 
@@ -56,21 +55,39 @@ offset_right = -234.0
 offset_bottom = -32.2
 mouse_force_pass_scroll_events = true
 FaceDown = false
+CardSeparation = 28
+HighlightOffset = Vector2(-33, 0)
+HighlightBelowOffset = Vector2(-10, 0)
+NumCardsInEditor = 5
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
-anchor_top = 0.535
+anchor_top = 0.766
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 0.319977
+offset_top = -149.368
 offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="PlayerHand" parent="VBoxContainer" instance=ExtResource("1_2umm0")]
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.0
+
+[node name="PlayerHand" parent="VBoxContainer/HBoxContainer2" instance=ExtResource("1_2umm0")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Control2" type="Control" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.0
 
 [node name="Padding2" type="Control" parent="VBoxContainer"]
 layout_mode = 2

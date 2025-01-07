@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Rummy.Util;
 using Godot;
 
 namespace Rummy.Game;
@@ -13,7 +14,7 @@ public class Round
 
 	public int Turn { get; private set; } = 0;
 	public bool MidTurn { get; private set; } = false;
-	public Player CurrentPlayer { get => Players[Turn % Players.Count]; }
+	public Player CurrentPlayer => Players[Turn % Players.Count];
 	
 	public bool Finished { get; private set; } = false;
 	public Player Winner { get; private set; }
@@ -30,29 +31,33 @@ public class Round
 			return melds.AsReadOnly();
 		}
 	}
-	public bool Meld(IMeld meld) {
+	public Result Meld(IMeld meld) {
 		if (meld.Valid) {
 			CurrentPlayer.Melds.Add(meld);
+			Player meldPlayer = CurrentPlayer;
 			(meld as CardPile).OnCardAdded += (card) => {
-				turnData.LayOffCount++;
-				turnData.LayOffs.Add(card);
+				if (!turnData.LayOffs.ContainsKey(meldPlayer)) { turnData.LayOffs.Add(meldPlayer, new()); }
+				var index = meldPlayer.Melds.FindIndex(x => x == meld);
+				if (!turnData.LayOffs[meldPlayer].ContainsKey(index)) { turnData.LayOffs[meldPlayer].Add(index, new()); }
+				turnData.LayOffs[meldPlayer][index].Add(card);
 			};
-			turnData.MeldCount++;
 			turnData.Melds.Add(meld);
-			return true;
+			return Result.Ok();
 		}
-		return false;
+		return Result.Err($"{meld} is not a valid meld.");
 	}
 
 	private class TurnData {
-		public int DrawCountDeck = 0, DrawCountDiscard = 0, MeldCount = 0, PriorMelds = 0, LayOffCount = 0, DiscardCount = 0;
-		public Card BottomCard, TopCard;
+		public int PriorMelds = 0;
+		public List<Card> DrawnCardsDeck = new(), DrawnCardsDiscardPile = new();
+		public List<Card> Discards = new();
 		public List<IMeld> Melds = new();
-		public List<Card> LayOffs = new();
+		public Dictionary<Player, Dictionary<int, List<Card>>> LayOffs = new();
+		public List<Card> LaidOffCards => LayOffs.SelectMany(kvp => kvp.Value.SelectMany(kvp => kvp.Value)).ToList();
 	}
 	private TurnData turnData = new();
 
-	public bool HasDrawn { get => turnData.DrawCountDeck > 0 || turnData.DrawCountDiscard > 0; }
+	public bool HasDrawn { get => turnData.DrawnCardsDeck.Count > 0 || turnData.DrawnCardsDiscardPile.Count > 0; }
 
 	public Round(List<Player> players, int numPacks = 1) {
 		_players = players;
@@ -61,23 +66,19 @@ public class Round
 			player.Melds.Clear();
 		}
 		
-		DiscardPile.OnCardAdded += (card) => { turnData.DiscardCount++; };
-		Deck.OnCardDrawn += (card) => {
-			turnData.DrawCountDeck++;
-			turnData.BottomCard = card; turnData.TopCard = card;
-		};
-		DiscardPile.OnCardDrawn += (card) => {
-			if (turnData.DrawCountDiscard == 0) { turnData.TopCard = card; }
-			turnData.DrawCountDiscard++;
-			turnData.BottomCard = card;
-		};
+		DiscardPile.OnCardAdded += (card) => { turnData.Discards.Add(card); };
+		Deck.OnCardDrawn += (card) => { turnData.DrawnCardsDeck.Add(card); };
+		DiscardPile.OnCardDrawn += (card) => { turnData.DrawnCardsDiscardPile.Add(card); };
 
 		Deck.OnEmptied += () => {
 			Deck.Append(DiscardPile);
 			Deck.Flip();
 			DiscardPile.Clear();
-			DiscardPile.Discard((Card)Deck.Draw());
-			turnData.DrawCountDeck--;
+			var starterCard = Deck.Draw();
+			DiscardPile.Discard(starterCard);
+			// Remove those from the turn data since they weren't real, they were just starting the discard pile
+			turnData.Discards.Remove(starterCard);
+			turnData.DrawnCardsDeck.Remove(starterCard);
 		};
 
 		for (int i = 0; i < numPacks; ++i) { Deck.AddPack(); }
@@ -90,12 +91,12 @@ public class Round
 		
 		for (int i = 0; i < handSize; ++i) {
 			foreach (Player player in Players) {
-				player.Hand.Add((Card)Deck.Draw());
+				player.Hand.Add(Deck.Draw());
 			}
 		}
 
 		// Put one card into discard pile
-		DiscardPile.Discard((Card)Deck.Draw());
+		DiscardPile.Discard(Deck.Draw());
 	}
 
 	public void BeginTurn() {
@@ -104,8 +105,9 @@ public class Round
 		CurrentPlayer.BeginTurn(this);
 	}
 
-	public bool EndTurn() {
-		if (!IsTurnValid()) { return false; } 
+	public Result EndTurn() {
+		var valid = IsTurnValid();
+		if (!valid) { return valid; }
 
 		// Game End
 		if (CurrentPlayer.Hand.Empty) {
@@ -117,69 +119,99 @@ public class Round
 				roundScore += player.Hand.Score();
 			}
 			// Rummied, score doubled
-			if (turnData.MeldCount > 1) { roundScore *= 2; }
+			if (turnData.Melds.Count > 1) { roundScore *= 2; }
 			Winner.Score += roundScore;
 		}
 		Turn++; MidTurn = false;
-		return true;
+		return Result.Ok();
 	}
 
-	private bool IsTurnValid() {
+	public void ResetTurn() {
+		// Undo draws
+		turnData.DrawnCardsDeck.ForEach(card => {
+			Deck.InternalUndoDraw(card);
+			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
+		});
+		turnData.DrawnCardsDeck.Clear();
+		turnData.DrawnCardsDiscardPile.ForEach(card => {
+			DiscardPile.InternalUndoDraw(card);
+			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
+		});
+		turnData.DrawnCardsDiscardPile.Clear();
+
+		// Undo discards
+		turnData.Discards.ForEach(card => {
+			DiscardPile.InternalUndoDiscard(card);
+			CurrentPlayer.Hand.Add(card);
+		});
+		turnData.Discards.Clear();
+
+		// Undo layoffs
+		turnData.LayOffs.Keys.ToList().ForEach(player => {
+			turnData.LayOffs[player].Keys.ToList().ForEach(index => {
+				turnData.LayOffs[player][index].ForEach(card => {
+					player.Melds.ElementAt(index).InternalUndoLayOff(card);
+					CurrentPlayer.Hand.Add(card);
+				});
+			});
+		});
+		turnData.LayOffs.Clear();
+
+		// Undo melds
+		turnData.Melds.ForEach(meld => {
+			meld.Cards.ToList().ForEach(card => {
+				CurrentPlayer.Hand.Add(card);
+			});
+			CurrentPlayer.Melds.Remove(meld);
+		});
+	}
+
+	private Result IsTurnValid() {
 		// Drew from deck and discard
-		if (turnData.DrawCountDeck > 0 && turnData.DrawCountDiscard > 0) {
-			GD.PushWarning(CurrentPlayer.Name, " drew from both deck and discard pile.");
-			return false;
+		if (turnData.DrawnCardsDeck.Count > 0 && turnData.DrawnCardsDiscardPile.Count > 0) {
+			return Result.Err($"{CurrentPlayer.Name} drew from both deck and discard pile.");
 		}
 		// Drew multiple from deck
-		if (turnData.DrawCountDeck > 1) {
-			GD.PushWarning(CurrentPlayer.Name, " drew from deck ", turnData.DrawCountDeck, " times.");
-			return false;
-		}
-		// Discarded top card from discard pickup while not going out
-		if (turnData.DrawCountDiscard > 0 && turnData.TopCard == DiscardPile.Cards[0] && !!CurrentPlayer.Hand.Empty) {
-			GD.PushWarning(CurrentPlayer.Name, " discarded top picked up card while not going out");
-			return false;
+		if (turnData.DrawnCardsDeck.Count > 1) {
+			return Result.Err($"{CurrentPlayer.Name} drew from {turnData.DrawnCardsDeck.Count} cards from deck.");
 		}
 
-		// Drew multiple...
-		if (turnData.DrawCountDiscard > 1) {
-			bool usedBottomCard = turnData.LayOffs.Contains(turnData.BottomCard);
-			turnData.Melds.ForEach((meld) => { usedBottomCard |= meld.Cards.Contains(turnData.BottomCard); });
-			// ...but did not use bottomost card
-			if (!usedBottomCard) {
-				GD.PushWarning(CurrentPlayer.Name, " drew ", turnData.DrawCountDiscard, " cards but did not use bottomost card.");
-				return false;
-			}
+		// Discarded top card from discard pickup while not going out
+		if (turnData.DrawnCardsDiscardPile.Count > 0 && turnData.Discards.Last() == DiscardPile.Cards.First() && !CurrentPlayer.Hand.Empty) {
+			return Result.Err($"{CurrentPlayer.Name} discarded top card pick up from discard pile while not going out.");
+		}
+
+		// Drew multiple but did not use bottomost card
+		if (turnData.DrawnCardsDiscardPile.Count > 1 &&
+			!turnData.Melds.Any(meld => meld.Cards.Contains(turnData.Discards.First())) &&
+			!turnData.LaidOffCards.Contains(turnData.Discards.First())) {
+			
+			return Result.Err($"{CurrentPlayer.Name} drew {turnData.DrawnCardsDiscardPile.Count} cards but did not use bottomost card ({turnData.Discards.First()}).");
 		}
 
 		// Laid off before having melded
-		if (turnData.LayOffCount > 0 && CurrentPlayer.Melds.Count == 0) {
-			GD.PushWarning(CurrentPlayer.Name, " layed off before melding.");
-			return false;
+		if (turnData.LayOffs.Count > 0 && CurrentPlayer.Melds.Count == 0) {
+			return Result.Err($"{CurrentPlayer.Name} layed off before having melded.");
 		}
 
 		// Discarded more than once
-		if (turnData.DiscardCount > 1) {
-			GD.PushWarning(CurrentPlayer.Name, " discarded ", turnData.DiscardCount, " times in one round");
-			return false;
+		if (turnData.Discards.Count > 1) {
+			return Result.Err($"{CurrentPlayer.Name} discarded more than once.");
 		}
 		// Ended turn without discarding or going out
-		if (turnData.DiscardCount == 0 && !CurrentPlayer.Hand.Empty) {
-			GD.PushWarning(CurrentPlayer.Name, " ended turn without discarding");
-			return false;
+		if (turnData.Discards.Count == 0 && !CurrentPlayer.Hand.Empty) {
+			return Result.Err($"{CurrentPlayer.Name} ended turn without discarding.");
 		}
 
 		// Melded more than once but did not go out, to constitute a rummy
-		if (turnData.MeldCount > 1 && !CurrentPlayer.Hand.Empty) {
-			GD.PushWarning(CurrentPlayer.Name, " attempted multiple melds without rummying");
-			return false;
+		if (turnData.Melds.Count > 1 && !CurrentPlayer.Hand.Empty) {
+			return Result.Err($"{CurrentPlayer.Name} melded {turnData.Melds.Count} times in one turn without going out.");
 		}
 		// Rummied (melded multiple) but had already melded
-		if (turnData.MeldCount > 1 && turnData.PriorMelds != 0) {
-			GD.PushWarning(CurrentPlayer.Name, " attempted rummy with a meld already down");
-			return false;
+		if (turnData.Melds.Count > 1 && turnData.PriorMelds != 0) {
+			return Result.Err($"{CurrentPlayer.Name} attempted to rummy with a meld already down.");
 		}
 
-		return true;
+		return Result.Ok();
 	}
 }

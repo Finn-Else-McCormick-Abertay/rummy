@@ -1,8 +1,7 @@
 using Godot;
 using Rummy.Game;
-using System;
+using Rummy.Util;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 
 namespace Rummy.Interface;
@@ -25,7 +24,7 @@ public partial class GameManager : Node
         PlayerHand.HookTo(userPlayer.Hand as CardPile);
         userPlayer.TurnBegin += PlayerTurnBegin;
 
-        Deck.NotifyDrew += (_) => { userPlayer.Hand.Add((Card)round.Deck.Draw()); };
+        Deck.NotifyDrew += (_) => { userPlayer.Hand.Add(round.Deck.Draw()); };
         DiscardPile.NotifyDrew += (count) => { foreach (Card card in round.DiscardPile.Draw(count)) { userPlayer.Hand.Add(card); } };
         
         DiscardButton.Pressed += () => {
@@ -35,6 +34,17 @@ public partial class GameManager : Node
             round.EndTurn();
             DiscardButton.Disabled = true;
             MeldButton.Disabled = true;
+        };
+
+        MeldButton.Pressed += () => {
+            var sequence = PlayerHand.SelectedSequence;
+            Set set = new(sequence); Run run = new(sequence);
+            
+            var melded = Result.Ok();
+            if (set.Valid) { melded = round.Meld(set); }
+            else if (run.Valid) { melded = round.Meld(set); }
+
+            if (melded) { foreach (Card card in sequence) { userPlayer.Hand.Pop(card); } }
         };
 
         DiscardButton.Disabled = true;
@@ -50,6 +60,12 @@ public partial class GameManager : Node
         DiscardPile.CardPile = round.DiscardPile;
 
         EnemyHand.CardPile = players[1].Hand as CardPile;
+
+        (players[1] as UserPlayer).TurnBegin += (player, round) => {
+            player.Hand.Add(round.Deck.Draw());
+            round.DiscardPile.Discard((Card)player.Hand.PopAt(0));
+            round.EndTurn();
+        };
     }
 
     public override void _Process(double delta) {

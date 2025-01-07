@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using Rummy.Util;
 
 namespace Rummy.Game;
 
@@ -21,7 +22,7 @@ public abstract class CardPile : ICountable
 		add => _cards.CollectionChanged += value; remove => _cards.CollectionChanged -= value;
 	}
 
-	protected ObservableCollection<Card> _cards = new();
+	protected SortableObservableCollection<Card> _cards = new(new List<Card>());
 	protected IList<Card> Cards { get => _cards; }
 
 	public int Count { get => _cards.Count; }
@@ -35,10 +36,6 @@ public abstract class CardPile : ICountable
 		_cards.Add(card);
         OnCardAdded?.Invoke(card);
 	}
-
-    protected void ReorderBy(Func<Card, int> keySelector) {
-        _cards = new ObservableCollection<Card>(_cards.OrderBy(keySelector).ToList());
-    }
 
     public void Append(CardPile pile) {
 		foreach (Card card in pile._cards) { _cards.Add(card); }
@@ -60,7 +57,8 @@ public delegate void OnCardDrawn(Card card);
 public delegate void OnEmptied();
 
 public interface IDrawable {
-    public Card? Draw();
+    public Card Draw();
+	public void InternalUndoDraw(Card card);
 
     public abstract event OnCardDrawn OnCardDrawn;
     public abstract event OnEmptied OnEmptied;
@@ -75,13 +73,16 @@ public class Deck : CardPile, IDrawable
     public event OnCardDrawn OnCardDrawn;
     public event OnEmptied OnEmptied;
 
-	public Card? Draw() {
-        if (Empty) { return null; }
+	public Card Draw() {
 		var card = Cards[0];
 		Cards.RemoveAt(0);
         OnCardDrawn?.Invoke(card);
         if (Empty) { OnEmptied?.Invoke(); }
 		return card;
+	}
+
+	public void InternalUndoDraw(Card card) {
+		_cards.Insert(0, card);
 	}
 
 	public void AddPack() {
@@ -93,11 +94,13 @@ public class Deck : CardPile, IDrawable
 	}
     
 	public void Shuffle(Random random) {
-        ReorderBy(x => random.Next());
+        _cards.Sort(x => random.Next());
 	}
 	public void Shuffle() { Shuffle(Random.Shared); }
 
-    public void Flip() { _cards.Reverse(); }
+    public void Flip() {
+		_cards.Replace(_cards.Reverse());
+	}
 }
 
 public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
@@ -105,8 +108,7 @@ public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
     public event OnCardDrawn OnCardDrawn;
     public event OnEmptied OnEmptied;
 
-    public Card? Draw() {
-        if (Empty) { return null; }
+    public Card Draw() {
 		var card = _cards[0];
 		_cards.RemoveAt(0);
         OnCardDrawn?.Invoke(card);
@@ -117,15 +119,20 @@ public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
 	public List<Card> Draw(int count) {
         if (Count < count) { count = Count; }
 		var drawnCards = new List<Card>();
-		for (int i = 0; i < count; ++i) {
-			var card = Draw();
-			if (card != null) { drawnCards.Add((Card)card); }
-		}
+		for (int i = 0; i < count; ++i) { drawnCards.Add(Draw()); }
 		return drawnCards;
+	}
+	
+	public void InternalUndoDraw(Card card) {
+		_cards.Insert(0, card);
 	}
 
 	public void Discard(Card card) {
 		AddToFront(card);
+	}
+
+	public void InternalUndoDiscard(Card card) {
+		_cards.Remove(card);
 	}
 	
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }

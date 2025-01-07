@@ -85,6 +85,7 @@ public partial class CardInput : MarginContainer
         AddThemeConstantOverride("margin_top", 0); AddThemeConstantOverride("margin_bottom", 0);
 
         Display = (CardDisplay)CardDisplayScene.Instantiate();
+        Display.StretchMode = AspectRatioContainer.StretchModeEnum.Fit;
         AddChild(Display);
         Display.Owner = this;
         Display.FocusMode = FocusModeEnum.All;

@@ -1,4 +1,6 @@
 
+using System;
+
 namespace Rummy.Game;
 
 public enum Rank {
@@ -7,4 +9,8 @@ public enum Rank {
 }
 public enum Suit { Clubs, Hearts, Spades, Diamonds }
 
-public readonly record struct Card(Rank Rank, Suit Suit);
+public readonly record struct Card(Rank Rank, Suit Suit) {
+	public override string ToString() {
+		return $"{Enum.GetName(Rank)} of {Enum.GetName(Suit)}";
+	}
+}

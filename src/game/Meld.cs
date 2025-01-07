@@ -1,4 +1,5 @@
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -11,15 +12,16 @@ public interface IMeld : IReadableCardPile
 
     public bool CanLayOff(Card card);
     public void LayOff(Card card);
+    public void InternalUndoLayOff(Card card);
 }
 
-public class Run : CardPile, IMeld
+public class Run : CardPile, IMeld, IEquatable<Run>
 {
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }
 
     public Run(List<Card> cards) {
-        _cards = new ObservableCollection<Card>(cards);
-        ReorderBy(card => (int)card.Rank);
+        _cards.Replace(cards);
+        _cards.Sort(card => (int)card.Rank);
     }
 
     public bool CanLayOff(Card card) {
@@ -32,6 +34,9 @@ public class Run : CardPile, IMeld
     public void LayOff(Card card) {
         if (card.Rank < _cards[0].Rank) { AddToFront(card); }
         else { AddToBack(card); }
+    }
+    public void InternalUndoLayOff(Card card) {
+        _cards.Remove(card);
     }
 
     public bool Valid {
@@ -47,15 +52,23 @@ public class Run : CardPile, IMeld
             return true;
         }
     }
+
+    public override string ToString() {
+        return $"Run {Cards}";
+    }
+
+    public bool Equals(Run other) {
+        return other.Cards.All(card => Cards.Contains(card));
+    }
 }
 
-public class Set : CardPile, IMeld
+public class Set : CardPile, IMeld, IEquatable<Set>
 {
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }
     
     public Set(List<Card> cards) {
-        _cards = new ObservableCollection<Card>(cards);
-        ReorderBy(card => (int)card.Suit);
+        _cards.Replace(cards);
+        _cards.Sort(card => (int)card.Suit);
     }
     
     public bool CanLayOff(Card card) {
@@ -63,6 +76,9 @@ public class Set : CardPile, IMeld
         cardsTemp.Add(card);
         var setTemp = new Set(cardsTemp);
         return setTemp.Valid;
+    }
+    public void InternalUndoLayOff(Card card) {
+        _cards.Remove(card);
     }
     
     public void LayOff(Card card) {
@@ -75,5 +91,13 @@ public class Set : CardPile, IMeld
             if (!_cards.All(card => card.Rank == _cards[0].Rank)) { return false; }
             return true;
         }
+    }
+    
+    public override string ToString() {
+        return $"Set {Cards}";
+    }
+
+    public bool Equals(Set other) {
+        return other.Cards.All(card => Cards.Contains(card));
     }
 }

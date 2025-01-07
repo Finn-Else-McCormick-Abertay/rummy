@@ -1,11 +1,12 @@
 using Godot;
 using Rummy.Game;
 using System;
+using System.Security.AccessControl;
 
 namespace Rummy.Interface;
 
 [Tool]
-public partial class CardDisplay : Control
+public partial class CardDisplay : AspectRatioContainer
 {
     private Rank _rank;
     [Export] public Rank Rank {
@@ -27,6 +28,11 @@ public partial class CardDisplay : Control
     }
 
     private TextureRect frontTextureRect, backTextureRect;
+
+    public override Variant _PropertyGetRevert(StringName property) {
+        if (property == "Rank") { return Variant.From(Rank.Ace); }
+        return base._PropertyCanRevert(property);
+    }
 
     public override void _Ready() {
         UpdateTexture();

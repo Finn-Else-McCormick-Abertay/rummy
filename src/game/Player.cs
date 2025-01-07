@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Rummy.Game;
 
@@ -11,6 +12,9 @@ public abstract class Player
 
     public interface IHand : ICountable {
         public void Add(Card card);
+        public void Add(List<Card> cards);
+        public Card? Pop(Card card);
+        public Card? PopAt(int index);
         public void Reset();
         public int Score();
     }
@@ -19,11 +23,18 @@ public abstract class Player
     {
         public new IList<Card> Cards { get => base.Cards; }
 
-        public HandInternal() {
-        }
-
         public void Add(Card card) {
             AddToBack(card);
+        }
+        public void Add(List<Card> cards) {
+            foreach (Card card in cards) { Add(card); }
+        }
+        
+        public Card? Pop(Card card) { return Cards.Remove(card) ? card : null; }
+
+        public Card? PopAt(int index) {
+            if (index < 0 || index >= Cards.Count) { return null; }
+            return Pop(Cards.ElementAt(index));
         }
         
         public void Reset() {

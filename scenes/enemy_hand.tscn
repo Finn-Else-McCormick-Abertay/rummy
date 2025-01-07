@@ -2,19 +2,16 @@
 
 [ext_resource type="Script" path="res://src/interface/CardPileDisplay.cs" id="1_0amrq"]
 
-[node name="EnemyHand" type="HBoxContainer"]
+[node name="EnemyHand" type="Container"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
-alignment = 1
 script = ExtResource("1_0amrq")
+Horizontal = true
 FaceDown = true
 CardSize = 50.0
+HighlightOffset = Vector2(30, 0)
 NumCardsInEditor = 7
-
-[node name="Container" type="HBoxContainer" parent="."]
-layout_mode = 2
-theme_override_constants/separation = 10
