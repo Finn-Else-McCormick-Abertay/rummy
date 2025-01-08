@@ -104,7 +104,7 @@ public partial class CardPileDisplay : Container
         cardDisplay.CustomMinimumSize = new Vector2( CardSize, 0f );
 
         AddChild(cardDisplay); if (!Engine.IsEditorHint()) { cardDisplay.Owner = this; }
-        MoveChild(cardDisplay, GetChildCount() - index - 1);
+        MoveChild(cardDisplay, index);
 
         if (!Engine.IsEditorHint()) {
             cardDisplay.MouseEntered += () => { OnCardMouseOver(cardDisplay, true); };
@@ -127,6 +127,7 @@ public partial class CardPileDisplay : Container
         if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
             var cards = (CardPile is IReadableCardPile) ? (CardPile as IReadableCardPile).Cards : (CardPile as IAccessibleCardPile).Cards.ToList().AsReadOnly();
             foreach (Card card in cards) { AddCardDisplay(card); }
+            GD.Print($"(Disp) {string.Join(", ", cards)}");
         }
         else {
             for (int i = 0; i < CardPile.Count; ++i) { AddCardDisplay(new Card()); }
@@ -185,7 +186,8 @@ public partial class CardPileDisplay : Container
     }
 
     private void OnCardPileChanged(object sender, NotifyCollectionChangedEventArgs args) {
-        if (args.Action == NotifyCollectionChangedAction.Add) {
+        RebuildDisplays();
+        /*if (args.Action == NotifyCollectionChangedAction.Add) {
             int index = args.NewStartingIndex;
             foreach (object item in args.NewItems) {
                 AddCardDisplay((Card)item, index);
@@ -195,7 +197,7 @@ public partial class CardPileDisplay : Container
         else if (args.Action == NotifyCollectionChangedAction.Replace) {
             int index = args.OldStartingIndex;
             foreach (object item in args.NewItems) {
-                (GetChild(index) as CardDisplay).Card = (Card)item;
+                (GetChild(GetChildCount() - index - 1) as CardDisplay).Card = (Card)item;
                 index++;
             }
         }
@@ -203,7 +205,7 @@ public partial class CardPileDisplay : Container
             int oldIndex = args.OldStartingIndex;
             int newIndex = args.NewStartingIndex;
             foreach (object item in args.OldItems) {
-                MoveChild(GetChild(oldIndex), newIndex);
+                MoveChild(GetChild(GetChildCount() - oldIndex - 1), GetChildCount() - newIndex - 1);
                 oldIndex++;
                 newIndex++;
             }
@@ -213,6 +215,6 @@ public partial class CardPileDisplay : Container
         }
         else if (args.Action == NotifyCollectionChangedAction.Reset) {
             RebuildDisplays();
-        }
+        }*/
     }
 }

@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3 uid="uid://6jr1lsvpf85"]
+
+[ext_resource type="Script" path="res://src/interface/FailureMessage.cs" id="1_rwuom"]
+
+[node name="FailureMessage" type="PanelContainer" node_paths=PackedStringArray("label", "buttonRoot", "button")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rwuom")
+label = NodePath("MarginContainer/HBoxContainer/Label")
+buttonRoot = NodePath("MarginContainer/HBoxContainer/AspectRatioContainer")
+button = NodePath("MarginContainer/HBoxContainer/AspectRatioContainer/Button")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MESSAGE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+ratio = 1.5882
+
+[node name="Button" type="Button" parent="MarginContainer/HBoxContainer/AspectRatioContainer"]
+layout_mode = 2
+text = "Reset Turn"

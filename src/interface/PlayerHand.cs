@@ -49,7 +49,7 @@ public partial class PlayerHand : Control
 
     public void HookTo(CardPile hand) {
         hand.OnChanged += (obj, args) => {
-            GD.Print("OnChanged ", Enum.GetName(typeof(NotifyCollectionChangedAction), args.Action));
+            //GD.Print("OnChanged ", Enum.GetName(typeof(NotifyCollectionChangedAction), args.Action));
             if (args.Action == NotifyCollectionChangedAction.Remove || args.Action == NotifyCollectionChangedAction.Replace) {
                 foreach (var item in args.OldItems) { Remove((Card)item); }
             }

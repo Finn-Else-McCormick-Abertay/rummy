@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=6 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
 [ext_resource type="PackedScene" uid="uid://i64idti40js4" path="res://scenes/enemy_hand.tscn" id="2_rfff7"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
+[ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -13,7 +14,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "EnemyHand", "DiscardButton", "MeldButton")]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "EnemyHand", "DiscardButton", "MeldButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
@@ -21,6 +22,7 @@ PlayerHand = NodePath("../VBoxContainer/HBoxContainer2/PlayerHand")
 EnemyHand = NodePath("../EnemyHand")
 DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
 MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
+FailureMessage = NodePath("../FailureMessage")
 
 [node name="EnemyHand" parent="." instance=ExtResource("2_rfff7")]
 layout_mode = 1
@@ -43,6 +45,7 @@ offset_top = 109.0
 offset_right = -605.0
 offset_bottom = -32.2
 mouse_force_pass_scroll_events = true
+NumCardsInEditor = 52
 
 [node name="DiscardPile" parent="." instance=ExtResource("2_rj55i")]
 layout_mode = 1
@@ -131,3 +134,15 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
+
+[node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -178.0
+offset_top = 20.0
+offset_right = 178.0
+offset_bottom = 97.0
+grow_vertical = 1

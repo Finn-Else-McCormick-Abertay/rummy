@@ -1,6 +1,8 @@
 using Godot;
 using Rummy.Game;
 using Rummy.Util;
+using static Rummy.Util.Result;
+using static Rummy.Util.Option;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,6 +13,8 @@ public partial class GameManager : Node
     private Round round;
     private List<Player> players;
 
+    private bool stateInvalid = false;
+
     private readonly UserPlayer userPlayer = new();
 
     [Export] private CardPileDisplay Deck { get; set; }
@@ -19,32 +23,62 @@ public partial class GameManager : Node
     [Export] private CardPileDisplay EnemyHand { get; set; }
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
+    [Export] private FailureMessage FailureMessage { get; set; }
 
     public override void _Ready() {
         PlayerHand.HookTo(userPlayer.Hand as CardPile);
         userPlayer.TurnBegin += PlayerTurnBegin;
 
-        Deck.NotifyDrew += (_) => { userPlayer.Hand.Add(round.Deck.Draw()); };
-        DiscardPile.NotifyDrew += (count) => { foreach (Card card in round.DiscardPile.Draw(count)) { userPlayer.Hand.Add(card); } };
+        Deck.NotifyDrew += _ => round.Deck.Draw().Inspect(card => userPlayer.Hand.Add(card));
+        DiscardPile.NotifyDrew += count => round.DiscardPile.Draw(count).ForEach(card => userPlayer.Hand.Add(card));
         
         DiscardButton.Pressed += () => {
             var selected = PlayerHand.SelectedSequence.First();
             (userPlayer.Hand as IAccessibleCardPile).Cards.Remove(selected);
             round.DiscardPile.Discard(selected);
-            round.EndTurn();
-            DiscardButton.Disabled = true;
-            MeldButton.Disabled = true;
+            round.EndTurn().Match(
+                _ => {
+                    DiscardButton.Disabled = true;
+                    MeldButton.Disabled = true;
+                    FailureMessage.Hide();
+                },
+                err => {
+                    FailureMessage.Message = err;
+                    FailureMessage.UseButton = true;
+                    FailureMessage.Show();
+                    stateInvalid = true;
+                    DiscardButton.Disabled = true;
+                    MeldButton.Disabled = true;
+                }
+            );
         };
 
         MeldButton.Pressed += () => {
             var sequence = PlayerHand.SelectedSequence;
             Set set = new(sequence); Run run = new(sequence);
             
-            var melded = Result.Ok();
+            Result<Unit, string> melded = Err("Is not valid meld");
             if (set.Valid) { melded = round.Meld(set); }
             else if (run.Valid) { melded = round.Meld(set); }
 
-            if (melded) { foreach (Card card in sequence) { userPlayer.Hand.Pop(card); } }
+            melded.Match(
+                _ => sequence.ForEach(card => userPlayer.Hand.Pop(card)),
+                err => {
+                    FailureMessage.Message = err;
+                    FailureMessage.UseButton = false;
+                    FailureMessage.Show();
+                    GetTree().CreateTimer(5.0).Timeout += () => {
+                        FailureMessage.Hide();
+                    };
+
+                }
+            );
+        };
+
+        FailureMessage.Button.Pressed += () => {
+            round.ResetTurn();
+            stateInvalid = false;
+            FailureMessage.Hide();
         };
 
         DiscardButton.Disabled = true;
@@ -62,13 +96,15 @@ public partial class GameManager : Node
         EnemyHand.CardPile = players[1].Hand as CardPile;
 
         (players[1] as UserPlayer).TurnBegin += (player, round) => {
-            player.Hand.Add(round.Deck.Draw());
-            round.DiscardPile.Discard((Card)player.Hand.PopAt(0));
+            round.Deck.Draw().Inspect(card => player.Hand.Add(card));
+            player.Hand.PopAt(0).Inspect(card => round.DiscardPile.Discard(card));
             round.EndTurn();
         };
     }
 
     public override void _Process(double delta) {
+        if (stateInvalid) { return; }
+
         if (!round.Finished && !round.MidTurn) {
             round.BeginTurn();
         }
@@ -82,6 +118,8 @@ public partial class GameManager : Node
                 MeldButton.Disabled = !(new Run(selected).Valid || new Set(selected).Valid);
             }
             else {
+                Deck.AllowDraw = true;
+                DiscardPile.AllowDraw = true;
                 DiscardButton.Disabled = true;
                 MeldButton.Disabled = true;
             }

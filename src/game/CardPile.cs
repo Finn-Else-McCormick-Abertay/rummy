@@ -5,6 +5,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using Rummy.Util;
+using static Rummy.Util.Option;
+using static Rummy.Util.Result;
 
 namespace Rummy.Game;
 
@@ -57,7 +59,7 @@ public delegate void OnCardDrawn(Card card);
 public delegate void OnEmptied();
 
 public interface IDrawable {
-    public Card Draw();
+    public Option<Card> Draw();
 	public void InternalUndoDraw(Card card);
 
     public abstract event OnCardDrawn OnCardDrawn;
@@ -73,12 +75,13 @@ public class Deck : CardPile, IDrawable
     public event OnCardDrawn OnCardDrawn;
     public event OnEmptied OnEmptied;
 
-	public Card Draw() {
+	public Option<Card> Draw() {
+		if (Empty) { return None; }
 		var card = Cards[0];
 		Cards.RemoveAt(0);
         OnCardDrawn?.Invoke(card);
         if (Empty) { OnEmptied?.Invoke(); }
-		return card;
+		return Some(card);
 	}
 
 	public void InternalUndoDraw(Card card) {
@@ -108,18 +111,18 @@ public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
     public event OnCardDrawn OnCardDrawn;
     public event OnEmptied OnEmptied;
 
-    public Card Draw() {
+    public Option<Card> Draw() {
+		if (Empty) { return None; }
 		var card = _cards[0];
 		_cards.RemoveAt(0);
         OnCardDrawn?.Invoke(card);
         if (Empty) { OnEmptied?.Invoke(); }
-		return card;
+		return Some(card);
 	}
 
 	public List<Card> Draw(int count) {
-        if (Count < count) { count = Count; }
 		var drawnCards = new List<Card>();
-		for (int i = 0; i < count; ++i) { drawnCards.Add(Draw()); }
+		for (int i = 0; i < count; ++i) { Draw().Inspect(card => drawnCards.Add(card)); }
 		return drawnCards;
 	}
 	
@@ -131,8 +134,8 @@ public class DiscardPile : CardPile, IReadableCardPile, IDrawableMulti
 		AddToFront(card);
 	}
 
-	public void InternalUndoDiscard(Card card) {
-		_cards.Remove(card);
+	public Result<Unit,Unit> InternalUndoDiscard(Card card) {
+		return _cards.Remove(card) ? Ok() : Err(Unit.unit);
 	}
 	
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }

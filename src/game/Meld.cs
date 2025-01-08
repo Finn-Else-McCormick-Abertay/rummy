@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Godot;
 
 namespace Rummy.Game;
 
@@ -42,7 +43,7 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     public bool Valid {
         get {
             if (Count < 3) { return false; }
-            if (!_cards.All(card => card.Suit == _cards[0].Suit)) { return false; }
+            if (!_cards.All(card => card.Suit == _cards.First().Suit)) { return false; }
             var prevRank = _cards[0].Rank;
             for (int i = 1; i < _cards.Count; ++i) {
                 var rank = _cards[i].Rank;
@@ -54,7 +55,7 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     }
 
     public override string ToString() {
-        return $"Run {Cards}";
+        return $"Run [{string.Join(", ", Cards)}]";
     }
 
     public bool Equals(Run other) {
@@ -94,7 +95,7 @@ public class Set : CardPile, IMeld, IEquatable<Set>
     }
     
     public override string ToString() {
-        return $"Set {Cards}";
+        return $"Set [{string.Join(", ", Cards)}]";
     }
 
     public bool Equals(Set other) {
