@@ -33,7 +33,7 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     }
 
     public void LayOff(Card card) {
-        if (card.Rank < _cards[0].Rank) { AddToFront(card); }
+        if (card.Rank < _cards.First().Rank) { AddToFront(card); }
         else { AddToBack(card); }
     }
     public void InternalUndoLayOff(Card card) {
@@ -44,11 +44,9 @@ public class Run : CardPile, IMeld, IEquatable<Run>
         get {
             if (Count < 3) { return false; }
             if (!_cards.All(card => card.Suit == _cards.First().Suit)) { return false; }
-            var prevRank = _cards[0].Rank;
-            for (int i = 1; i < _cards.Count; ++i) {
+            for (int i = 0; i < _cards.Count; ++i) {
                 var rank = _cards[i].Rank;
-                if (rank != prevRank + 1) { return false; }
-                prevRank = rank;
+                if (rank != _cards.First().Rank + i) { return false; }
             }
             return true;
         }

@@ -17,16 +17,16 @@ public partial class GameManager : Node
 
     private readonly UserPlayer userPlayer = new();
 
-    [Export] private CardPileDisplay Deck { get; set; }
-    [Export] private CardPileDisplay DiscardPile { get; set; }
+    [Export] private DrawableCardPileContainer Deck { get; set; }
+    [Export] private DrawableCardPileContainer DiscardPile { get; set; }
     [Export] private PlayerHand PlayerHand { get; set; }
-    [Export] private CardPileDisplay EnemyHand { get; set; }
+    [Export] private CardPileContainer EnemyHand { get; set; }
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
     [Export] private FailureMessage FailureMessage { get; set; }
 
     public override void _Ready() {
-        PlayerHand.HookTo(userPlayer.Hand as CardPile);
+        PlayerHand.CardPile = userPlayer.Hand as CardPile;
         userPlayer.TurnBegin += PlayerTurnBegin;
 
         Deck.NotifyDrew += _ => round.Deck.Draw().Inspect(card => userPlayer.Hand.Add(card));
@@ -55,11 +55,11 @@ public partial class GameManager : Node
 
         MeldButton.Pressed += () => {
             var sequence = PlayerHand.SelectedSequence;
-            Set set = new(sequence); Run run = new(sequence);
+            var set = new Set(sequence);
+            var run = new Run(sequence);
             
-            Result<Unit, string> melded = Err("Is not valid meld");
-            if (set.Valid) { melded = round.Meld(set); }
-            else if (run.Valid) { melded = round.Meld(set); }
+            Result<Unit, string> melded = Err("Invalid meld");
+            if (set.Valid) { melded = round.Meld(set); } else if (run.Valid) { melded = round.Meld(run); }
 
             melded.Match(
                 _ => sequence.ForEach(card => userPlayer.Hand.Pop(card)),
@@ -70,7 +70,6 @@ public partial class GameManager : Node
                     GetTree().CreateTimer(5.0).Timeout += () => {
                         FailureMessage.Hide();
                     };
-
                 }
             );
         };
@@ -100,6 +99,14 @@ public partial class GameManager : Node
             player.Hand.PopAt(0).Inspect(card => round.DiscardPile.Discard(card));
             round.EndTurn();
         };
+
+        var melds = new List<IMeld> {
+            new Run(new List<Card> { new(Rank.Two, Suit.Hearts), new(Rank.Three, Suit.Hearts), new(Rank.Four, Suit.Hearts) }),
+            new Run(new List<Card> { new(Rank.Five, Suit.Hearts), new(Rank.Seven, Suit.Hearts), new(Rank.Ace, Suit.Hearts) }),
+            new Run(new List<Card> { new(Rank.Six, Suit.Hearts), new(Rank.Seven, Suit.Hearts), new(Rank.Eight, Suit.Hearts), new(Rank.Nine, Suit.Hearts) }),
+            new Run(new List<Card> { new(Rank.Ten, Suit.Clubs), new(Rank.Jack, Suit.Clubs), new(Rank.King, Suit.Clubs), new(Rank.Queen, Suit.Clubs) }),
+        };
+        melds.ForEach(meld => GD.Print($"{meld} ", meld.Valid ? "is valid." : "is not valid"));
     }
 
     public override void _Process(double delta) {

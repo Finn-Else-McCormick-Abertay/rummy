@@ -18,7 +18,7 @@ grow_vertical = 2
 script = ExtResource("1_aylxn")
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
-PlayerHand = NodePath("../VBoxContainer/HBoxContainer2/PlayerHand")
+PlayerHand = NodePath("../VBoxContainer/PlayerHand")
 EnemyHand = NodePath("../EnemyHand")
 DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
 MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
@@ -41,11 +41,10 @@ anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 0.525
 offset_left = 425.0
-offset_top = 109.0
+offset_top = 1.0
 offset_right = -605.0
-offset_bottom = -32.2
+offset_bottom = 9.80002
 mouse_force_pass_scroll_events = true
-NumCardsInEditor = 52
 
 [node name="DiscardPile" parent="." instance=ExtResource("2_rj55i")]
 layout_mode = 1
@@ -53,14 +52,15 @@ anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 0.525
 offset_left = 610.0
-offset_top = 97.0
+offset_top = 79.0
 offset_right = -234.0
-offset_bottom = -32.2
+offset_bottom = -57.2
 mouse_force_pass_scroll_events = true
-FaceDown = false
-CardSeparation = 28
 HighlightOffset = Vector2(-33, 0)
 HighlightBelowOffset = Vector2(-10, 0)
+FaceDown = false
+CardSeparation = 23
+CardSizingReaction = 1
 NumCardsInEditor = 5
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -74,23 +74,10 @@ offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+[node name="PlayerHand" parent="VBoxContainer" instance=ExtResource("1_2umm0")]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-
-[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer2"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.0
-
-[node name="PlayerHand" parent="VBoxContainer/HBoxContainer2" instance=ExtResource("1_2umm0")]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Control2" type="Control" parent="VBoxContainer/HBoxContainer2"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.0
 
 [node name="Padding2" type="Control" parent="VBoxContainer"]
 layout_mode = 2

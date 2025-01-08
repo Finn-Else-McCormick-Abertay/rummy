@@ -25,6 +25,7 @@ public abstract class Player
     protected class HandInternal : CardPile, IHand, IAccessibleCardPile
     {
         public new IList<Card> Cards { get => base.Cards; }
+	    public SortableObservableCollection<Card> CardsRaw { get => _cards; }
 
         public void Add(Card card) {
             AddToBack(card);

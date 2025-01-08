@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://i64idti40js4"]
 
-[ext_resource type="Script" path="res://src/interface/CardPileDisplay.cs" id="1_0amrq"]
+[ext_resource type="Script" path="res://src/interface/CardPileContainer.cs" id="1_60wra"]
 
 [node name="EnemyHand" type="Container"]
 anchors_preset = 15
@@ -9,9 +9,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
-script = ExtResource("1_0amrq")
-Horizontal = true
+script = ExtResource("1_60wra")
 FaceDown = true
 CardSize = 50.0
-HighlightOffset = Vector2(30, 0)
 NumCardsInEditor = 7

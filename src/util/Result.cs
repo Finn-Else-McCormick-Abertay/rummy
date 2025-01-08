@@ -60,4 +60,7 @@ public readonly struct Result<T, E> {
         if (!IsOk) { inspectErr(Error); };
         return this;
     }
+
+    public bool IsOkAnd(Func<T, bool> predicate) => IsOk ? predicate(Value) : false;
+    public bool IsErrAnd(Func<E, bool> predicate) => IsErr ? predicate(Error) : false;
 }

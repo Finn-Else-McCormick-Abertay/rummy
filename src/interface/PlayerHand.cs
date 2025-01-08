@@ -1,73 +1,165 @@
 using Godot;
 using Rummy.Game;
+using Rummy.Util;
+using static Rummy.Util.Option;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace Rummy.Interface;
 
-public partial class PlayerHand : Control
+[Tool]
+public partial class PlayerHand : CardPileContainer
 {
-    private readonly List<(Card, CardInput)> cards = new();
-
-    private HBoxContainer cardContainer;
-
-    public override void _Ready() {
-        cardContainer = GetNode<HBoxContainer>("HBoxContainer");
-        foreach (Node node in cardContainer.GetChildren()) {
-            cardContainer.RemoveChild(node);
-            node.QueueFree();
-        }
-        foreach ((Card card, CardInput input) in cards) {
-            cardContainer.AddChild(input);
-            input.Owner = cardContainer;
-            input.Display.Rank = card.Rank;
-            input.Display.Suit = card.Suit;
-        }
+    public PlayerHand() : base() {
+        preserveOrderOnRebuild = true;
     }
 
-    public void Add(Card card) {
-        var input = new CardInput();
-        cards.Add((card, input));
-        if (IsNodeReady()) {
-            cardContainer.AddChild(input);
-            input.Owner = cardContainer;
-            input.Display.Rank = card.Rank;
-            input.Display.Suit = card.Suit;
-        }
-    }
-    public void Remove(Card card) {
-        bool predicate((Card, CardInput) pair) => pair.Item1 == card;
+    private Option<Card> _hovered = None;
+    private Option<Card> HoveredCard { get => _hovered; set { _hovered = value; QueueSort(); } }
+    private Option<CardDisplay> HoveredCardDisplay => HoveredCard.AndThen(FindCard);
 
-        if (!cards.Exists(predicate)) { return; }
-        var pair = cards.Find(predicate);
-        var input = pair.Item2;
+    private bool ShouldDrag { get; set; }
+    private Vector2 DragOffset { get; set; }
 
-        cards.Remove(pair);
-        input.QueueFree();
-    }
+    private Option<Card> _dragging = None;
+    private Option<Card> DraggingCard { get => _dragging; set { _dragging = value; QueueSort(); } }
+    private Option<CardDisplay> DraggingCardDisplay => DraggingCard.AndThen(FindCard);
 
-    public void HookTo(CardPile hand) {
-        hand.OnChanged += (obj, args) => {
-            //GD.Print("OnChanged ", Enum.GetName(typeof(NotifyCollectionChangedAction), args.Action));
-            if (args.Action == NotifyCollectionChangedAction.Remove || args.Action == NotifyCollectionChangedAction.Replace) {
-                foreach (var item in args.OldItems) { Remove((Card)item); }
-            }
-            if (args.Action == NotifyCollectionChangedAction.Add || args.Action == NotifyCollectionChangedAction.Replace) {
-                foreach (var item in args.NewItems) { Add((Card)item); }
-            }
-        };
-    }
+    private Vector2 _hoveredOffset = new (0f, 5f);
+    [Export] public Vector2 HoveredOffset { get => _hoveredOffset; set { _hoveredOffset = value; QueueSort(); } }
 
+    private Vector2 _selectedOffset = new (0f, 30f);
+    [Export] public Vector2 SelectedOffset { get => _selectedOffset; set { _selectedOffset = value; QueueSort(); } }
+    
+    private List<Card> _selectedCards = new();
     public List<Card> SelectedSequence {
         get {
             var sequence = new List<Card>();
-            foreach ((Card card, CardInput input) in cards) {
-                if (input.Selected) {
-                    sequence.Add(card);
-                }
-            }
+            _selectedCards.ForEach(card => sequence.Add(card));
             return sequence;
+        }
+    }
+    private void Select(Card card) { _selectedCards.Add(card); QueueSort(); } 
+    private void Deselect(Card card) { _selectedCards.Remove(card); QueueSort(); }
+    
+    private Option<CardDisplay> FindCard(Card card) {
+        var display = GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+        return display is not null ? Some(display) : None;
+    }
+
+    protected override bool PreChildSorted(CardDisplay display) {
+        if (DraggingCard.IsSomeAnd(draggingCard => draggingCard == display.Card)) {
+            return true;
+        }
+        return false;
+    }
+    
+    protected override void PostChildSorted(CardDisplay display) {
+        if (DraggingCard.IsSomeAnd(draggingCard => draggingCard == display.Card)) { return; }
+
+        if (_selectedCards.Contains(display.Card)) {
+            display.Position += SelectedOffset;
+        }
+        if (HoveredCard.IsSome && HoveredCard.Value == display.Card) {
+            display.Position += HoveredOffset;
+        }
+    }
+
+    protected override void PostCardPileChanged() {
+        if (CardPile is null) { return; }
+
+        _selectedCards = _selectedCards.Intersect(Cards).ToList();
+    }
+
+    protected override void OnCardMouseOver(CardDisplay display, bool entering) {
+        if (CardPile is null) { return; }
+
+        if (DraggingCard.IsNone) {
+            HoveredCard = entering ? display.Card : None;
+        }
+    }
+
+    protected override void OnCardScroll(CardDisplay display, MouseButton buttonIndex) {
+        if (CardPile is null) { return; }
+
+        if (buttonIndex == MouseButton.WheelUp) {
+            if (HoveredCardDisplay.IsSomeAnd(display => display.GetIndex() + 1 < GetChildCount())) {
+                HoveredCard = HoveredCardDisplay.AndThen(display => Some((GetChild(display.GetIndex() + 1) as CardDisplay).Card));
+            }
+        }
+        else if (buttonIndex == MouseButton.WheelDown) {
+            if (HoveredCardDisplay.IsSomeAnd(display => display.GetIndex() - 1 >= 0)) {
+                HoveredCard = HoveredCardDisplay.AndThen(display => Some((GetChild(display.GetIndex() - 1) as CardDisplay).Card));
+            }
+        }
+    }
+
+    protected override void OnCardClicked(CardDisplay display, MouseButton buttonIndex, bool pressed) {
+        if (CardPile is null) { return; }
+
+        if (buttonIndex == MouseButton.Left && pressed && HoveredCardDisplay.IsSomeAnd(x => x == display)) {
+            ShouldDrag = true;
+        }
+        if (buttonIndex == MouseButton.Left && !pressed) {
+            ShouldDrag = false;
+            if (DraggingCardDisplay.IsSome) {
+                DragOffset = new();
+                DraggingCardDisplay.Inspect(display => {
+                    display.ZIndex = 0;
+                    display.MouseDefaultCursorShape = CursorShape.Arrow;
+                });
+                DraggingCard = None;
+                QueueSort();
+            }
+            else {
+                HoveredCard.Inspect(card => {
+                    if (_selectedCards.Contains(card)) { Deselect(card); }
+                    else { Select(card); }
+                });
+            }
+        }
+    }
+
+    protected override void OnCardMouseMotion(CardDisplay display, InputEventMouseMotion @event) {
+        if (CardPile is null) { return; }
+
+        if (ShouldDrag) {
+            if (DraggingCard.IsNone && HoveredCard.IsSome) {
+                DraggingCard = HoveredCard;
+                HoveredCard = None;
+                DragOffset = DraggingCardDisplay.Value.GlobalPosition - @event.GlobalPosition;
+                DraggingCardDisplay.Value.ZIndex = 100;
+                DraggingCardDisplay.Value.MouseDefaultCursorShape = CursorShape.PointingHand;
+            }
+            DraggingCardDisplay.Inspect(draggingCard => {
+                draggingCard.GlobalPosition = @event.GlobalPosition + DragOffset;
+                float posMainAxis = Direction == DirectionEnum.Horizontal ? draggingCard.Position.X : draggingCard.Position.Y;
+
+                int index = draggingCard.GetIndex();
+                var leftNeighbour = (index - 1 >= 0) ? Some(GetChild(index - 1) as CardDisplay) : None;
+                var rightNeighbour = (index + 1 < GetChildCount()) ? Some(GetChild(index + 1) as CardDisplay) : None;
+
+                leftNeighbour.Inspect(neighbour => {
+                    float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
+                    float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
+                    if (posMainAxis < neighbourPosMainAxis + neighbourSizeMainAxis / 2f) {
+                        MoveChild(draggingCard, neighbour.GetIndex());
+                    }
+                });
+
+                rightNeighbour.Inspect(neighbour => {
+                    float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
+                    float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
+                    if (posMainAxis > neighbourPosMainAxis - neighbourSizeMainAxis / 2f) {
+                        MoveChild(draggingCard, neighbour.GetIndex());
+                    }
+                });
+            });
+        }
+        else {
+            HoveredCard = display.Card;
         }
     }
 }

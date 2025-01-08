@@ -35,6 +35,7 @@ public readonly struct Option<T> {
     public void Match(Action<T> some, Action none) => Inspect(some).InspectNone(none);
 
     public Option<U> AndThen<U>(Func<T, Option<U>> andThen) => IsSome ? andThen(Value) : Option.None;
+    public T Or(T orVal) => IsSome ? Value : orVal;
     public Option<T> OrElse(Func<Option<T>> orElse) => IsSome ? Some(Value) : orElse();
 
     public Option<T> Inspect(Action<T> inspect) {
@@ -45,4 +46,6 @@ public readonly struct Option<T> {
         if (IsNone) { inspect(); };
         return this;
     }
+
+    public bool IsSomeAnd(Func<T, bool> predicate) => IsSome ? predicate(Value) : false;
 }

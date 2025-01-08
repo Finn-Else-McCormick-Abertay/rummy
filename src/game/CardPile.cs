@@ -40,7 +40,7 @@ public abstract class CardPile : ICountable
 	}
 
     public void Append(CardPile pile) {
-		foreach (Card card in pile._cards) { _cards.Add(card); }
+		foreach (Card card in pile._cards) { AddToBack(card); }
     }
     public void Clear() {
         _cards.Clear();
@@ -53,6 +53,7 @@ public interface IReadableCardPile {
 
 public interface IAccessibleCardPile {
 	public IList<Card> Cards { get; }
+	public SortableObservableCollection<Card> CardsRaw { get; }
 }
 
 public delegate void OnCardDrawn(Card card);
