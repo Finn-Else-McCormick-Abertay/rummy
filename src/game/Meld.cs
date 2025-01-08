@@ -56,9 +56,8 @@ public class Run : CardPile, IMeld, IEquatable<Run>
         return $"Run [{string.Join(", ", Cards)}]";
     }
 
-    public bool Equals(Run other) {
-        return other.Cards.All(card => Cards.Contains(card));
-    }
+    public bool Equals(Run other) => other.Cards.All(card => Cards.Contains(card));
+	public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
 }
 
 public class Set : CardPile, IMeld, IEquatable<Set>
@@ -96,7 +95,6 @@ public class Set : CardPile, IMeld, IEquatable<Set>
         return $"Set [{string.Join(", ", Cards)}]";
     }
 
-    public bool Equals(Set other) {
-        return other.Cards.All(card => Cards.Contains(card));
-    }
+    public bool Equals(Set other) => other.Cards.All(card => Cards.Contains(card));
+	public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
 }

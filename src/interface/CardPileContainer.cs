@@ -2,6 +2,7 @@ using Godot;
 using Rummy.Game;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
@@ -181,67 +182,62 @@ public partial class CardPileContainer : Container
     protected virtual void OnCardMouseMotion(CardDisplay display, InputEventMouseMotion @event) {}
 
     private void Rebuild() {
-        List<Card> oldOrder = new();
-        if (preserveOrderOnRebuild) { GetChildren().Cast<CardDisplay>().ToList().ForEach(display => oldOrder.Add(display.Card)); }
+        var oldOrder = GetChildren().Cast<CardDisplay>().ToList().ConvertAll(x => x.Card);
+        //List<(Card, int)> oldOrder = preserveOrderOnRebuild ? GetChildren().ToList().ConvertAll(x => ((x as CardDisplay).Card, x.GetIndex())) : new();
 
-        Clear();
-        if (!IsNodeReady() || (CardPile is null && !Engine.IsEditorHint())) { return; }
+        if (!IsNodeReady() || (CardPile is null && !Engine.IsEditorHint())) {
+            Clear();
+            return;
+        }
         else if (Engine.IsEditorHint()) {
+            Clear();
             for (int i = 0; i < NumCardsInEditor; ++i) { AddCard(new Card(Rank.Ace, Suit.Spades)); }
             return;
         }
 
         // Is readable pile
         if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
-            foreach (Card card in Cards) { AddCard(card); }
-            if (preserveOrderOnRebuild) {
-                foreach (CardDisplay display in GetChildren().Cast<CardDisplay>()) {
-                    MoveChild(display, oldOrder.FindIndex(x => x == display.Card));
+            foreach (var card in Cards) {
+                if (!oldOrder.Contains(card)) {
+                    AddCard(card, GetChildCount());
                 }
             }
+            foreach (var card in oldOrder) {
+                if (!Cards.Contains(card)) {
+                    var display = GetChildren().Cast<CardDisplay>().ToList().Find(x => x.Card == card);
+                    if (display is not null) {
+                        RemoveChild(display);
+                        display.QueueFree();
+                    }
+                }
+            }
+            /*if (preserveOrderOnRebuild) {
+                GD.Print($"OLD {string.Join(", ", oldOrder)}");
+                var cards = GetChildren().Cast<CardDisplay>().ToList();
+                //var newCard = cards.Find(display => !oldOrder.Any(x => x.Item1 == display.Card));
+                //if (newCard is not null) {}
+                //MoveChild(newCard, GetChildCount() - 1);
+                GetChildren().
+
+                for (int i = 0; i < cards.Count; ++i) {
+                    for (int j = 0; j < cards.Count - i; ++j) {
+                        var display = cards.ElementAt(j);
+                        int index = oldOrder.Any(x => x.Item1 == display.Card) ? oldOrder.Find(x => x.Item1 == display.Card).Item2 : -1;
+                        if (index != -1) { MoveChild(display, index); } else { MoveChild(display, GetChildCount() - 1); }
+                        GD.Print($" - {display.Card} : {index}");
+                    }
+                }
+                GD.Print($"NEW {string.Join(", ", GetChildren().ToList().ConvertAll(x => ((x as CardDisplay).Card, x.GetIndex())))}");
+            }*/
         }
         else {
+            Clear();
             for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); }
         }
     }
     
     private void OnCardPileChanged(object sender, NotifyCollectionChangedEventArgs args) {
         Rebuild();
-        /*if (args.Action == NotifyCollectionChangedAction.Add) {
-            int index = args.NewStartingIndex;
-            foreach (object item in args.NewItems) {
-                AddCard((Card)item, GetChildCount() - index - 1);
-                index++;
-            }
-        }
-        else if (args.Action == NotifyCollectionChangedAction.Replace) {
-            int index = args.OldStartingIndex;
-            foreach (object item in args.NewItems) {
-                (GetChild(GetChildCount() - index - 1) as CardDisplay).Card = (Card)item;
-                index++;
-            }
-        }
-        else if (args.Action == NotifyCollectionChangedAction.Move) {
-            int oldIndex = args.OldStartingIndex;
-            int newIndex = args.NewStartingIndex;
-            foreach (object item in args.OldItems) {
-                MoveChild(GetChild(GetChildCount() - oldIndex - 1), GetChildCount() - newIndex - 1);
-                oldIndex++;
-                newIndex++;
-            }
-        }
-        else if (args.Action == NotifyCollectionChangedAction.Remove) {
-            int oldIndex = args.OldStartingIndex;
-            foreach (object item in args.OldItems) {
-                var display = GetChild(GetChildCount() - oldIndex - 1) as CardDisplay;
-                RemoveChild(display);
-                display.QueueFree();
-                oldIndex++;
-            }
-        }
-        else if (args.Action == NotifyCollectionChangedAction.Reset) {
-            Rebuild();
-        }*/
         PostCardPileChanged();
     }
 
