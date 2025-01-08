@@ -22,6 +22,7 @@ public partial class PlayerHand : CardPileContainer
 
     private bool ShouldDrag { get; set; }
     private Vector2 DragOffset { get; set; }
+    private Vector2 DragBeginMousePosition { get; set; }
 
     private Option<Card> _dragging = None;
     private Option<Card> DraggingCard { get => _dragging; set { _dragging = value; QueueSort(); } }
@@ -41,8 +42,8 @@ public partial class PlayerHand : CardPileContainer
             return sequence;
         }
     }
-    private void Select(Card card) { _selectedCards.Add(card); QueueSort(); } 
-    private void Deselect(Card card) { _selectedCards.Remove(card); QueueSort(); }
+    public void Select(Card card) { _selectedCards.Add(card); QueueSort(); } 
+    public void Deselect(Card card) { _selectedCards.Remove(card); QueueSort(); }
     
     private Option<CardDisplay> FindCard(Card card) {
         var display = GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
@@ -104,8 +105,11 @@ public partial class PlayerHand : CardPileContainer
         }
         if (buttonIndex == MouseButton.Left && !pressed) {
             ShouldDrag = false;
+            bool shouldToggleSelect = true;
             if (DraggingCardDisplay.IsSome) {
-                DragOffset = new();
+                var dragDistance = (GetGlobalMousePosition() - DragBeginMousePosition).Length();
+                shouldToggleSelect = dragDistance < 5f;
+                HoveredCard = DraggingCard;
                 DraggingCardDisplay.Inspect(display => {
                     display.ZIndex = 0;
                     display.MouseDefaultCursorShape = CursorShape.Arrow;
@@ -113,7 +117,7 @@ public partial class PlayerHand : CardPileContainer
                 DraggingCard = None;
                 QueueSort();
             }
-            else {
+            if (shouldToggleSelect) {
                 HoveredCard.Inspect(card => {
                     if (_selectedCards.Contains(card)) { Deselect(card); }
                     else { Select(card); }
@@ -132,6 +136,7 @@ public partial class PlayerHand : CardPileContainer
                 DragOffset = DraggingCardDisplay.Value.GlobalPosition - @event.GlobalPosition;
                 DraggingCardDisplay.Value.ZIndex = 100;
                 DraggingCardDisplay.Value.MouseDefaultCursorShape = CursorShape.PointingHand;
+                DragBeginMousePosition = GetGlobalMousePosition();
             }
             DraggingCardDisplay.Inspect(draggingCard => {
                 draggingCard.GlobalPosition = @event.GlobalPosition + DragOffset;

@@ -30,7 +30,13 @@ public partial class GameManager : Node
         userPlayer.TurnBegin += PlayerTurnBegin;
 
         Deck.NotifyDrew += _ => round.Deck.Draw().Inspect(card => userPlayer.Hand.Add(card));
-        DiscardPile.NotifyDrew += count => round.DiscardPile.Draw(count).ForEach(card => userPlayer.Hand.Add(card));
+        DiscardPile.NotifyDrew += count => {
+            var drawnCards = round.DiscardPile.Draw(count);
+            drawnCards.ForEach(card => userPlayer.Hand.Add(card));
+            if (count > 1) {
+                PlayerHand.Select(drawnCards.Last());
+            }
+        };
         
         DiscardButton.Pressed += () => {
             var selected = PlayerHand.SelectedSequence.First();
