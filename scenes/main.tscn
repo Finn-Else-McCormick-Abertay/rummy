@@ -123,6 +123,7 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
 [node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
+visible = false
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5

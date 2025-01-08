@@ -99,18 +99,16 @@ public partial class GameManager : Node
             player.Hand.PopAt(0).Inspect(card => round.DiscardPile.Discard(card));
             round.EndTurn();
         };
-
-        var melds = new List<IMeld> {
-            new Run(new List<Card> { new(Rank.Two, Suit.Hearts), new(Rank.Three, Suit.Hearts), new(Rank.Four, Suit.Hearts) }),
-            new Run(new List<Card> { new(Rank.Five, Suit.Hearts), new(Rank.Seven, Suit.Hearts), new(Rank.Ace, Suit.Hearts) }),
-            new Run(new List<Card> { new(Rank.Six, Suit.Hearts), new(Rank.Seven, Suit.Hearts), new(Rank.Eight, Suit.Hearts), new(Rank.Nine, Suit.Hearts) }),
-            new Run(new List<Card> { new(Rank.Ten, Suit.Clubs), new(Rank.Jack, Suit.Clubs), new(Rank.King, Suit.Clubs), new(Rank.Queen, Suit.Clubs) }),
-        };
-        melds.ForEach(meld => GD.Print($"{meld} ", meld.Valid ? "is valid." : "is not valid"));
     }
 
     public override void _Process(double delta) {
         if (stateInvalid) { return; }
+
+        if (round.Finished) {
+            FailureMessage.Message = $"Player {round.Players.ToList().FindIndex(x => x == round.Winner)} '{round.Winner.Name}' wins!";
+            FailureMessage.UseButton = false;
+            FailureMessage.Show();
+        }
 
         if (!round.Finished && !round.MidTurn) {
             round.BeginTurn();

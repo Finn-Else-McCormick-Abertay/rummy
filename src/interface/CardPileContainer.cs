@@ -99,15 +99,15 @@ public partial class CardPileContainer : Container
             
             float cardSizeAlongAxis = Direction == DirectionEnum.Horizontal ?
                 CardSize : GetChildCount() > 0 ? (GetChild(0) as Control).Size.Y : 0f;
-                
-            float sizeAlongAxisMax =
-                (Direction == DirectionEnum.Horizontal ? Size.X : Size.Y) / GetChildCount();// - (!CardsOverlap ? CardSeparation * 2 : 0f);
 
-            float sizeAlongAxisPerCard = CardsOverlap ? CardSeparation : CardSeparation * 2 + cardSizeAlongAxis;
-            if (CardSizingReaction != CardSizingReactionEnum.None && sizeAlongAxisPerCard > sizeAlongAxisMax) {
-                sizeAlongAxisPerCard = sizeAlongAxisMax;
+            float areaAlongAxis = Direction == DirectionEnum.Horizontal ? Size.X : Size.Y - (!CardsOverlap ? CardSeparation * 2 : 0f);
+
+            float sizeAlongAxisPerCard = CardsOverlap ? CardSeparation : CardSeparation + cardSizeAlongAxis;
+            float sizeAlongAxisPerCardMax = areaAlongAxis / GetChildCount();
+            if (CardSizingReaction != CardSizingReactionEnum.None && sizeAlongAxisPerCard > sizeAlongAxisPerCardMax) {
+                sizeAlongAxisPerCard = sizeAlongAxisPerCardMax;
             }
-            float startPos = -(GetChildCount() * sizeAlongAxisPerCard - CardSeparation * 2) / 2f;
+            float startPos = -(GetChildCount() * sizeAlongAxisPerCard) / 2f;
             foreach (CardDisplay display in GetChildren().Cast<CardDisplay>()) {
                 display.SetAnchorsPreset(LayoutPreset.Center);
                 display.Size = display.Size with { X = CardSize };

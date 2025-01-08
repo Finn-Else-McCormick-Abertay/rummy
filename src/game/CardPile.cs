@@ -103,7 +103,7 @@ public class Deck : CardPile, IDrawable
 	public void Shuffle() { Shuffle(Random.Shared); }
 
     public void Flip() {
-		_cards.Replace(_cards.Reverse());
+		_cards.Replace(_cards.Reverse().ToList().ConvertAll(x => x));
 	}
 }
 
