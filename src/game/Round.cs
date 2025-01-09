@@ -11,12 +11,23 @@ namespace Rummy.Game;
 
 public class Round
 {
+	public delegate void NotifyTurnBeganAction(Player player);
+	public delegate void NotifyTurnEndedAction(Player player, Result<Unit, string> result);
+	public delegate void NotifyTurnResetAction();
+	public delegate void NotifyGameEndedAction(Player winner, int roundScore, bool wasRummy);
+
+	public event NotifyTurnBeganAction NotifyTurnBegan;
+	public event NotifyTurnEndedAction NotifyTurnEnded;
+	public event NotifyTurnResetAction NotifyTurnReset;
+	public event NotifyGameEndedAction NotifyGameEnded;
+
 	private readonly List<Player> _players;
 	public ReadOnlyCollection<Player> Players { get => _players.AsReadOnly(); }
 
 	public int Turn { get; private set; } = 0;
 	public bool MidTurn { get; private set; } = false;
 	public Player CurrentPlayer => Players[Turn % Players.Count];
+	public Player NextPlayer => Players[(Turn + 1) % Players.Count];
 	
 	public bool Finished { get; private set; } = false;
 	public Player Winner { get; private set; }
@@ -121,10 +132,13 @@ public class Round
         turnData = new TurnData { PriorMelds = CurrentPlayer.Melds.Count };
 		MidTurn = true;
 		CurrentPlayer.BeginTurn(this);
+		NotifyTurnBegan?.Invoke(CurrentPlayer);
 	}
+
 
 	public Result<Unit, string> EndTurn() {
 		var turnResult = IsTurnValid();
+		NotifyTurnEnded?.Invoke(CurrentPlayer, turnResult);
 		if (turnResult.IsErr) { return turnResult; }
 
 		// Game End
@@ -137,15 +151,14 @@ public class Round
 				roundScore += player.Hand.Score();
 			}
 			// Rummied, score doubled
-			if (turnData.Melds.Count > 1) { roundScore *= 2; }
+			bool wasRummy = turnData.Melds.Count > 1;
+			if (wasRummy) { roundScore *= 2; }
 			Winner.Score += roundScore;
+			NotifyGameEnded?.Invoke(Winner, roundScore, wasRummy);
 		}
 		Turn++; MidTurn = false;
 		return Ok();
 	}
-
-	public delegate void NotifyResetAction();
-	public event NotifyResetAction NotifyReset;
 
 	public void ResetTurn() {
 		// Undo discards
@@ -193,7 +206,7 @@ public class Round
 		});
 		turnData.DrawnCardsDiscardPile.Clear();
 
-		NotifyReset?.Invoke();
+		NotifyTurnReset?.Invoke();
 	}
 
 	private Result<Unit, string> IsTurnValid() {
@@ -211,7 +224,7 @@ public class Round
 		}
 
 		if (turnData.DrawnCardsDiscardPile.Count > 0 && turnData.Discards.Last() == turnData.DrawnCardsDiscardPile.First() && !CurrentPlayer.Hand.Empty) {
-			return Err($"Discarded top card picked up from discard pile while not going out.");
+			return Err($"Discarded top card picked up from discard pile without going out.");
 		}
 
 		if (turnData.DrawnCardsDiscardPile.Count > 1 &&

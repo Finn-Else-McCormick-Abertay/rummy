@@ -5,6 +5,7 @@ using static Rummy.Util.Result;
 using static Rummy.Util.Option;
 using System.Collections.Generic;
 using System.Linq;
+using Rummy.AI;
 
 namespace Rummy.Interface;
 
@@ -20,17 +21,19 @@ public partial class GameManager : Node
     [Export] private DrawableCardPileContainer Deck { get; set; }
     [Export] private DrawableCardPileContainer DiscardPile { get; set; }
     [Export] private PlayerHand PlayerHand { get; set; }
-    [Export] private CardPileContainer EnemyHand { get; set; }
+    [Export] private PlayerScoreDisplay PlayerScoreDisplay { get; set; }
+    [Export] private Control EnemyScoreDisplayRoot { get; set; }
     [Export] private Control MeldRoot { get; set; }
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
+    [Export] private Button NextTurnButton { get; set; }
     [Export] private FailureMessage FailureMessage { get; set; }
 
     [Export] private PackedScene MeldScene { get; set; }
+    [Export] private PackedScene EnemyScoreDisplayScene { get; set; }
 
     public override void _Ready() {
         PlayerHand.CardPile = userPlayer.Hand as CardPile;
-        userPlayer.TurnBegin += PlayerTurnBegin;
 
         Deck.NotifyDrew += _ => round.Deck.Draw().Inspect(card => userPlayer.Hand.Add(card));
         DiscardPile.NotifyDrew += count => {
@@ -101,40 +104,73 @@ public partial class GameManager : Node
 
         DiscardButton.Disabled = true;
         MeldButton.Disabled = true;
+        
+        NextTurnButton.Visible = false;
 
         players = new List<Player> {
             userPlayer,
-            new UserPlayer(),
+            new ComputerPlayer(),
         };
 
         round = new Round(players);
         Deck.CardPile = round.Deck;
         DiscardPile.CardPile = round.DiscardPile;
-        round.NotifyReset += RebuildMelds;
+        round.NotifyTurnReset += RebuildMelds;
 
-        EnemyHand.CardPile = players[1].Hand as CardPile;
+        PlayerScoreDisplay.Player = userPlayer;
+        PlayerScoreDisplay.Round = round;
+        PlayerScoreDisplay.Visible = userPlayer is not null;
 
-        (players[1] as UserPlayer).TurnBegin += (player, round) => {
-            round.Deck.Draw().Inspect(card => player.Hand.Add(card));
-            player.Hand.PopAt(0).Inspect(card => round.DiscardPile.Discard(card));
-            round.EndTurn();
+        foreach (Node node in EnemyScoreDisplayRoot.GetChildren()) {
+            EnemyScoreDisplayRoot.RemoveChild(node);
+            node.QueueFree();
+        }
+        round.Players.Where(x => x is not null && x != userPlayer).ToList().ForEach(player => {
+            var node = EnemyScoreDisplayScene.Instantiate();
+            EnemyScoreDisplayRoot.AddChild(node);
+            node.SetOwner(EnemyScoreDisplayRoot);
+            var display = node.GetNode("PlayerScoreDisplay") as PlayerScoreDisplay;
+            display.Player = player;
+            display.Round = round;
+        });
+
+        round.NotifyTurnBegan += player => {
+            if (player == userPlayer) {
+                Deck.AllowDraw = true;
+                DiscardPile.AllowDraw = true;
+                SetCanLayOff(false);
+            }
+        };
+        round.NotifyTurnEnded += (player, result) => {
+            Deck.AllowDraw = false;
+            DiscardPile.AllowDraw = false;
+            SetCanLayOff(false);
+
+            if (round.NextPlayer != userPlayer) {
+                NextTurnButton.Visible = true;
+                NextTurnButton.GrabFocus();
+            }
+        };
+        NextTurnButton.Pressed += () => {
+            NextTurnButton.Visible = false;
+            round.BeginTurn();
+        };
+
+        round.NotifyGameEnded += (winner, score, isRummy) => {
+            FailureMessage.Message = $"{round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
+            FailureMessage.UseButton = false;
+            FailureMessage.Show();
+            SetCanLayOff(false);
         };
     }
 
     public override void _Process(double delta) {
-        if (stateInvalid) { return; }
+        if (stateInvalid || round.CurrentPlayer != userPlayer) { return; }
 
-        if (round.Finished) {
-            FailureMessage.Message = $"Player {round.Players.ToList().FindIndex(x => x == round.Winner)} '{round.Winner.Name}' wins!";
-            FailureMessage.UseButton = false;
-            FailureMessage.Show();
-            SetCanLayOff(false);
-        }
-
-        if (!round.Finished && !round.MidTurn) {
+        if (!round.MidTurn && !round.Finished) {
             round.BeginTurn();
         }
-        if (round.CurrentPlayer == userPlayer && round.MidTurn) {
+        if (round.MidTurn) {
             if (round.HasDrawn) {
                 Deck.AllowDraw = false;
                 DiscardPile.AllowDraw = false;
@@ -152,12 +188,6 @@ public partial class GameManager : Node
                 SetCanLayOff(false);
             }
         }
-    }
-
-    private void PlayerTurnBegin(Player player, Round round) {
-        Deck.AllowDraw = true;
-        DiscardPile.AllowDraw = true;
-        SetCanLayOff(false);
     }
 
     private void RebuildMelds() {

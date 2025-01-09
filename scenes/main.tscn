@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=9 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
+[ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
+[ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/player_score_display.tscn" id="7_nrs5b"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -15,19 +17,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "EnemyHand", "MeldRoot", "DiscardButton", "MeldButton", "FailureMessage")]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "PlayerScoreDisplay", "EnemyScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../VBoxContainer/PlayerHand")
-EnemyHand = NodePath("../EnemyHand")
+PlayerScoreDisplay = NodePath("../PlayerScoreDisplay")
+EnemyScoreDisplayRoot = NodePath("../HBoxContainer")
 MeldRoot = NodePath("../HFlowContainer")
 DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
 MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
+NextTurnButton = NodePath("../Next Turn")
 FailureMessage = NodePath("../FailureMessage")
 MeldScene = ExtResource("6_13xch")
+EnemyScoreDisplayScene = ExtResource("7_66nw7")
 
 [node name="EnemyHand" parent="." instance=ExtResource("2_rfff7")]
+visible = false
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.386
@@ -127,19 +133,6 @@ layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
-[node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
-visible = false
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.0
-offset_left = -178.0
-offset_top = 20.0
-offset_right = 178.0
-offset_bottom = 97.0
-grow_vertical = 1
-
 [node name="HFlowContainer" type="HFlowContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
@@ -196,3 +189,56 @@ layout_mode = 2
 [node name="Meld12" parent="HFlowContainer" instance=ExtResource("6_13xch")]
 visible = false
 layout_mode = 2
+
+[node name="PlayerScoreDisplay" parent="." instance=ExtResource("7_nrs5b")]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.27
+anchor_bottom = 0.0
+offset_left = 25.0
+offset_top = 8.0
+offset_right = -32.04
+offset_bottom = 31.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.251
+anchor_right = 1.002
+offset_left = 21.848
+offset_top = 8.0
+offset_right = -22.3041
+offset_bottom = 84.0
+theme_override_constants/separation = 20
+
+[node name="EnemyPlayerDisplay" parent="HBoxContainer" instance=ExtResource("7_66nw7")]
+layout_mode = 2
+
+[node name="EnemyPlayerDisplay2" parent="HBoxContainer" instance=ExtResource("7_66nw7")]
+layout_mode = 2
+
+[node name="Next Turn" type="Button" parent="."]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+anchor_left = 1.0
+anchor_top = 0.461
+anchor_right = 1.0
+anchor_bottom = 0.461
+offset_left = -239.0
+offset_top = -41.728
+offset_right = -39.0
+offset_bottom = 45.272
+text = "Progress Turn"
+
+[node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -178.0
+offset_top = 20.0
+offset_right = 178.0
+offset_bottom = 97.0
+grow_vertical = 1

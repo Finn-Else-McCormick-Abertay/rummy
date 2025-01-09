@@ -10,8 +10,12 @@ namespace Rummy.Game;
 
 public abstract class Player
 {
+    public delegate void NotifyScoreChangedAction();
+    public event NotifyScoreChangedAction NotifyScoreChanged;
+
     public abstract string Name { get; }
-    public int Score { get; set; }
+    private int _score;
+    public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
 
     public interface IHand : ICountable {
         public void Add(Card card);
