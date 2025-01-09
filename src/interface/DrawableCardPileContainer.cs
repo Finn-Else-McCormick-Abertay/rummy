@@ -1,3 +1,5 @@
+using System;
+using System.Text.RegularExpressions;
 using Godot;
 using Rummy.Game;
 
@@ -56,6 +58,7 @@ public partial class DrawableCardPileContainer : CardPileContainer
     protected override void OnCardClicked(CardDisplay display, MouseButton buttonIndex, bool pressed) {
         if (CardPile is null || CardPile is not IDrawable || !AllowDraw) { return; }
 
+        // Left mouse button released
         if (buttonIndex == MouseButton.Left && !pressed) {
             NotifyDrew?.Invoke((int)HighlightedIndex + 1);
         }

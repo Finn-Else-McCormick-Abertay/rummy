@@ -49,6 +49,7 @@ public readonly struct Result<T, E> {
     public R Match<R>(Func<T, R> success, Func<E, R> failure) => IsOk ? success(Value) : failure(Error);
     public void Match(Action<T> success, Action<E> failure) => Inspect(success).InspectErr(failure);
 
+    public Result<U, E> And<U>(U andVal) => IsOk ? Result.Ok(andVal) : Result.Err(Error);
     public Result<U, E> AndThen<U>(Func<T, Result<U, E>> andThen) => IsOk ? andThen(Value) : Result.Err(Error);
     public Result<T, F> OrElse<F>(Func<E, Result<T, F>> orElse) => IsOk ? Result.Ok(Value) : orElse(Error);
 

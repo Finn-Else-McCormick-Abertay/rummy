@@ -43,7 +43,7 @@ public class Round
 				if (!turnData.LayOffs[meldPlayer].ContainsKey(index)) { turnData.LayOffs[meldPlayer].Add(index, new()); }
 				turnData.LayOffs[meldPlayer][index].Add(card);
 			};
-			turnData.Melds.Add(meld);
+			turnData.Melds.Add(meld.Clone());
 			return Ok();
 		}
 		return Err($"{meld} is not a valid meld.");
@@ -144,26 +144,17 @@ public class Round
 		return Ok();
 	}
 
-	public void ResetTurn() {
-		// Undo draws
-		turnData.DrawnCardsDeck.ForEach(card => {
-			Deck.InternalUndoDraw(card);
-			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
-		});
-		turnData.DrawnCardsDeck.Clear();
-		turnData.DrawnCardsDiscardPile.ForEach(card => {
-			DiscardPile.InternalUndoDraw(card);
-			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
-		});
-		turnData.DrawnCardsDiscardPile.Clear();
+	public delegate void NotifyResetAction();
+	public event NotifyResetAction NotifyReset;
 
+	public void ResetTurn() {
 		// Undo discards
 		turnData.Discards.ForEach(card => {
 			DiscardPile.InternalUndoDiscard(card);
 			CurrentPlayer.Hand.Add(card);
 		});
 		turnData.Discards.Clear();
-
+		
 		// Undo layoffs
 		turnData.LayOffs.Keys.ToList().ForEach(player => {
 			turnData.LayOffs[player].Keys.ToList().ForEach(index => {
@@ -180,9 +171,29 @@ public class Round
 			meld.Cards.ToList().ForEach(card => {
 				CurrentPlayer.Hand.Add(card);
 			});
-			CurrentPlayer.Melds.Remove(meld);
+			int index = CurrentPlayer.Melds.FindIndex(x => x.Equals(meld));
+			if (index == -1) { GD.PushWarning($"Tried to reset nonexistent meld {meld}."); }
+			else {
+				CurrentPlayer.Melds.RemoveAt(index);
+			}
 		});
 		turnData.Melds.Clear();
+
+		// Undo draws
+		turnData.DrawnCardsDeck.Reverse();
+		turnData.DrawnCardsDeck.ForEach(card => {
+			Deck.InternalUndoDraw(card);
+			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
+		});
+		turnData.DrawnCardsDeck.Clear();
+		turnData.DrawnCardsDiscardPile.Reverse();
+		turnData.DrawnCardsDiscardPile.ForEach(card => {
+			DiscardPile.InternalUndoDraw(card);
+			(CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
+		});
+		turnData.DrawnCardsDiscardPile.Clear();
+
+		NotifyReset?.Invoke();
 	}
 
 	private Result<Unit, string> IsTurnValid() {
@@ -207,7 +218,7 @@ public class Round
 			!turnData.Melds.Any(meld => meld.Cards.Contains(turnData.DrawnCardsDiscardPile.Last())) &&
 			!turnData.LaidOffCards.Contains(turnData.DrawnCardsDiscardPile.Last())) {
 			
-			return Err($"Drew {turnData.DrawnCardsDiscardPile.Count} cards but did not use bottommost card ({turnData.DrawnCardsDiscardPile.First()}).");
+			return Err($"Drew {turnData.DrawnCardsDiscardPile.Count} cards but did not use bottommost card ({turnData.DrawnCardsDiscardPile.Last()}).");
 		}
 
 		if (turnData.LayOffs.Count > 0 && CurrentPlayer.Melds.Count == 0) {

@@ -12,12 +12,8 @@ namespace Rummy.Interface;
 [Tool]
 public partial class PlayerHand : CardPileContainer
 {
-    public PlayerHand() : base() {
-        preserveOrderOnRebuild = true;
-    }
-
     private Option<Card> _hovered = None;
-    private Option<Card> HoveredCard { get => _hovered; set { _hovered = value; QueueSort(); } }
+    public Option<Card> HoveredCard { get => _hovered; set { _hovered = value; QueueSort(); } }
     private Option<CardDisplay> HoveredCardDisplay => HoveredCard.AndThen(FindCard);
 
     private bool ShouldDrag { get; set; }
@@ -25,7 +21,7 @@ public partial class PlayerHand : CardPileContainer
     private Vector2 DragBeginMousePosition { get; set; }
 
     private Option<Card> _dragging = None;
-    private Option<Card> DraggingCard { get => _dragging; set { _dragging = value; QueueSort(); } }
+    public Option<Card> DraggingCard { get => _dragging; set { _dragging = value; QueueSort(); } }
     private Option<CardDisplay> DraggingCardDisplay => DraggingCard.AndThen(FindCard);
 
     private Vector2 _hoveredOffset = new (0f, 5f);
@@ -72,6 +68,13 @@ public partial class PlayerHand : CardPileContainer
         if (CardPile is null) { return; }
 
         _selectedCards = _selectedCards.Intersect(Cards).ToList();
+        HoveredCard.Inspect(card => { if (!Cards.Contains(card)) { DraggingCard = None; } });
+        DraggingCard.Inspect(card => {
+            if (!Cards.Contains(card)) {
+                DraggingCard = None;
+                ShouldDrag = false;
+            }
+        });
     }
 
     protected override void OnCardMouseOver(CardDisplay display, bool entering) {
@@ -137,34 +140,51 @@ public partial class PlayerHand : CardPileContainer
                 DraggingCardDisplay.Value.ZIndex = 100;
                 DraggingCardDisplay.Value.MouseDefaultCursorShape = CursorShape.PointingHand;
                 DragBeginMousePosition = GetGlobalMousePosition();
+                //DraggingCardDisplay.Value.MouseFilter = MouseFilterEnum.Ignore;
             }
-            DraggingCardDisplay.Inspect(draggingCard => {
-                draggingCard.GlobalPosition = @event.GlobalPosition + DragOffset;
-                float posMainAxis = Direction == DirectionEnum.Horizontal ? draggingCard.Position.X : draggingCard.Position.Y;
-
-                int index = draggingCard.GetIndex();
-                var leftNeighbour = (index - 1 >= 0) ? Some(GetChild(index - 1) as CardDisplay) : None;
-                var rightNeighbour = (index + 1 < GetChildCount()) ? Some(GetChild(index + 1) as CardDisplay) : None;
-
-                leftNeighbour.Inspect(neighbour => {
-                    float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
-                    float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
-                    if (posMainAxis < neighbourPosMainAxis + neighbourSizeMainAxis / 2f) {
-                        MoveChild(draggingCard, neighbour.GetIndex());
-                    }
-                });
-
-                rightNeighbour.Inspect(neighbour => {
-                    float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
-                    float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
-                    if (posMainAxis > neighbourPosMainAxis - neighbourSizeMainAxis / 2f) {
-                        MoveChild(draggingCard, neighbour.GetIndex());
-                    }
-                });
-            });
         }
         else {
             HoveredCard = display.Card;
+        }
+    }
+
+    public override void _Input(InputEvent @event) {
+        if (@event is InputEventMouseButton) {
+            var buttonEvent = @event as InputEventMouseButton;
+            if (DraggingCard.IsSome && buttonEvent.ButtonIndex == MouseButton.Left && !buttonEvent.Pressed) {
+                //ShouldDrag = false;
+                //DraggingCardDisplay.Value.MouseFilter = MouseFilterEnum.Stop;
+
+            }
+        }
+        else if (@event is InputEventMouseMotion) {
+            var motionEvent = @event as InputEventMouseMotion;
+            if (ShouldDrag && DraggingCard.IsSome) {
+                DraggingCardDisplay.Inspect(draggingCard => {
+                    draggingCard.GlobalPosition = motionEvent.GlobalPosition + DragOffset;
+                    float posMainAxis = Direction == DirectionEnum.Horizontal ? draggingCard.Position.X : draggingCard.Position.Y;
+
+                    int index = draggingCard.GetIndex();
+                    var leftNeighbour = (index - 1 >= 0) ? Some(GetChild(index - 1) as CardDisplay) : None;
+                    var rightNeighbour = (index + 1 < GetChildCount()) ? Some(GetChild(index + 1) as CardDisplay) : None;
+
+                    leftNeighbour.Inspect(neighbour => {
+                        float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
+                        float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
+                        if (posMainAxis < neighbourPosMainAxis + neighbourSizeMainAxis / 2f) {
+                            MoveChild(draggingCard, neighbour.GetIndex());
+                        }
+                    });
+
+                    rightNeighbour.Inspect(neighbour => {
+                        float neighbourPosMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Position.X : neighbour.Position.Y;
+                        float neighbourSizeMainAxis = Direction == DirectionEnum.Horizontal ? neighbour.Size.X : neighbour.Size.Y;
+                        if (posMainAxis > neighbourPosMainAxis - neighbourSizeMainAxis / 2f) {
+                            MoveChild(draggingCard, neighbour.GetIndex());
+                        }
+                    });
+                });
+            }
         }
     }
 }

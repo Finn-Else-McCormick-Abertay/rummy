@@ -1,20 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://di3h81vxsl8dh"]
+[gd_scene load_steps=2 format=3 uid="uid://di3h81vxsl8dh"]
 
-[ext_resource type="Script" path="res://src/interface/CardPileDisplay.cs" id="1_e6rjs"]
-[ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="2_wvo3q"]
+[ext_resource type="Script" path="res://src/interface/MeldContainer.cs" id="1_s5gio"]
 
-[node name="Meld" type="HBoxContainer"]
+[node name="Meld" type="Container"]
+custom_minimum_size = Vector2(200, 105)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 3
-alignment = 1
-script = ExtResource("1_e6rjs")
-CardSeparation = 65
-CardInPileTheme = ExtResource("2_wvo3q")
-
-[node name="Container" type="HBoxContainer" parent="."]
-layout_mode = 2
-theme_override_constants/separation = 65
+size_flags_vertical = 3
+script = ExtResource("1_s5gio")
+CardSize = 80.0
+CardSeparation = 15
+CardSizingReaction = 1
+NumCardsInEditor = 13

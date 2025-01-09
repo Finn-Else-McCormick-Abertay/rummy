@@ -21,9 +21,12 @@ public partial class GameManager : Node
     [Export] private DrawableCardPileContainer DiscardPile { get; set; }
     [Export] private PlayerHand PlayerHand { get; set; }
     [Export] private CardPileContainer EnemyHand { get; set; }
+    [Export] private Control MeldRoot { get; set; }
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
     [Export] private FailureMessage FailureMessage { get; set; }
+
+    [Export] private PackedScene MeldScene { get; set; }
 
     public override void _Ready() {
         PlayerHand.CardPile = userPlayer.Hand as CardPile;
@@ -37,6 +40,11 @@ public partial class GameManager : Node
                 PlayerHand.Select(drawnCards.Last());
             }
         };
+
+        foreach (Node node in MeldRoot.GetChildren()) {
+            MeldRoot.RemoveChild(node);
+            node.QueueFree();
+        }
         
         DiscardButton.Pressed += () => {
             var selected = PlayerHand.SelectedSequence.First();
@@ -46,6 +54,8 @@ public partial class GameManager : Node
                 _ => {
                     DiscardButton.Disabled = true;
                     MeldButton.Disabled = true;
+                    
+                    SetCanLayOff(false);
                     FailureMessage.Hide();
                 },
                 err => {
@@ -64,11 +74,14 @@ public partial class GameManager : Node
             var set = new Set(sequence);
             var run = new Run(sequence);
             
-            Result<Unit, string> melded = Err("Invalid meld");
-            if (set.Valid) { melded = round.Meld(set); } else if (run.Valid) { melded = round.Meld(run); }
+            Result<IMeld, string> melded = Err("Invalid meld");
+            if (set.Valid) { melded = round.Meld(set).And(set as IMeld); } else if (run.Valid) { melded = round.Meld(run).And(run as IMeld); }
 
             melded.Match(
-                _ => sequence.ForEach(card => userPlayer.Hand.Pop(card)),
+                meld => {
+                    sequence.ForEach(card => userPlayer.Hand.Pop(card));
+                    RebuildMelds();
+                },
                 err => {
                     FailureMessage.Message = err;
                     FailureMessage.UseButton = false;
@@ -97,6 +110,7 @@ public partial class GameManager : Node
         round = new Round(players);
         Deck.CardPile = round.Deck;
         DiscardPile.CardPile = round.DiscardPile;
+        round.NotifyReset += RebuildMelds;
 
         EnemyHand.CardPile = players[1].Hand as CardPile;
 
@@ -114,6 +128,7 @@ public partial class GameManager : Node
             FailureMessage.Message = $"Player {round.Players.ToList().FindIndex(x => x == round.Winner)} '{round.Winner.Name}' wins!";
             FailureMessage.UseButton = false;
             FailureMessage.Show();
+            SetCanLayOff(false);
         }
 
         if (!round.Finished && !round.MidTurn) {
@@ -123,6 +138,7 @@ public partial class GameManager : Node
             if (round.HasDrawn) {
                 Deck.AllowDraw = false;
                 DiscardPile.AllowDraw = false;
+                SetCanLayOff(true);
 
                 var selected = PlayerHand.SelectedSequence;
                 DiscardButton.Disabled = selected.Count != 1;
@@ -133,6 +149,7 @@ public partial class GameManager : Node
                 DiscardPile.AllowDraw = true;
                 DiscardButton.Disabled = true;
                 MeldButton.Disabled = true;
+                SetCanLayOff(false);
             }
         }
     }
@@ -140,5 +157,32 @@ public partial class GameManager : Node
     private void PlayerTurnBegin(Player player, Round round) {
         Deck.AllowDraw = true;
         DiscardPile.AllowDraw = true;
+        SetCanLayOff(false);
+    }
+
+    private void RebuildMelds() {
+        foreach (Node node in MeldRoot.GetChildren()) {
+            MeldRoot.RemoveChild(node);
+            node.QueueFree();
+        }
+        round.Melds.ToList().ForEach(meld => {
+            var meldContainer = MeldScene.Instantiate() as MeldContainer;
+            MeldRoot.AddChild(meldContainer);
+            meldContainer.SetOwner(MeldRoot);
+            meldContainer.CardPile = meld as CardPile;
+            meldContainer.PlayerHand = PlayerHand;
+            meldContainer.NotifyLaidOff += card => {
+                if (meldContainer.CardPile is IMeld) {
+                    userPlayer.Hand.Pop(card);
+                    (meldContainer.CardPile as IMeld).LayOff(card);
+                }
+            };
+        });
+    }
+
+    private void SetCanLayOff(bool canLayOff) {
+        foreach (MeldContainer container in MeldRoot.GetChildren().Cast<MeldContainer>()) {
+            container.CanLayOff = canLayOff;
+        }
     }
 }

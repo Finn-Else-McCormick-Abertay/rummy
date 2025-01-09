@@ -12,8 +12,11 @@ public interface IMeld : IReadableCardPile
     public bool Valid { get; }
 
     public bool CanLayOff(Card card);
+    public int IndexIfLaidOff(Card card);
     public void LayOff(Card card);
     public void InternalUndoLayOff(Card card);
+
+    public IMeld Clone();
 }
 
 public class Run : CardPile, IMeld, IEquatable<Run>
@@ -26,10 +29,19 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     }
 
     public bool CanLayOff(Card card) {
-        var cardsTemp = _cards.Select(x => x with {}).ToList();
+        var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
         var runTemp = new Run(cardsTemp);
         return runTemp.Valid;
+    }
+
+    public int IndexIfLaidOff(Card card) {
+        if (!CanLayOff(card)) { return -1; }
+
+        var cardsTemp = _cards.ToList().ConvertAll(x => x);
+        cardsTemp.Add(card);
+        var runTemp = new Run(cardsTemp);
+        return runTemp.Cards.ToList().FindIndex(x => x == card);
     }
 
     public void LayOff(Card card) {
@@ -56,8 +68,13 @@ public class Run : CardPile, IMeld, IEquatable<Run>
         return $"Run [{string.Join(", ", Cards)}]";
     }
 
+    public override bool Equals(object obj) => obj is Run ? Equals(obj as Run) : false;
     public bool Equals(Run other) => other.Cards.All(card => Cards.Contains(card));
 	public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
+    
+    public IMeld Clone() {
+        return new Run(_cards.ToList().ConvertAll(x => x));
+    }
 }
 
 public class Set : CardPile, IMeld, IEquatable<Set>
@@ -70,17 +87,25 @@ public class Set : CardPile, IMeld, IEquatable<Set>
     }
     
     public bool CanLayOff(Card card) {
-        var cardsTemp = _cards.Select(x => x with {}).ToList();
+        var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
         var setTemp = new Set(cardsTemp);
         return setTemp.Valid;
     }
-    public void InternalUndoLayOff(Card card) {
-        _cards.Remove(card);
+    public int IndexIfLaidOff(Card card) {
+        if (!CanLayOff(card)) { return -1; }
+
+        var cardsTemp = _cards.ToList().ConvertAll(x => x);
+        cardsTemp.Add(card);
+        var setTemp = new Set(cardsTemp);
+        return setTemp.Cards.ToList().FindIndex(x => x == card);
     }
     
     public void LayOff(Card card) {
         AddToBack(card);
+    }
+    public void InternalUndoLayOff(Card card) {
+        _cards.Remove(card);
     }
 
     public bool Valid {
@@ -95,6 +120,11 @@ public class Set : CardPile, IMeld, IEquatable<Set>
         return $"Set [{string.Join(", ", Cards)}]";
     }
 
+    public override bool Equals(object obj) => obj is Set ? Equals(obj as Set) : false;
     public bool Equals(Set other) => other.Cards.All(card => Cards.Contains(card));
 	public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
+
+    public IMeld Clone() {
+        return new Set(_cards.ToList().ConvertAll(x => x));
+    }
 }

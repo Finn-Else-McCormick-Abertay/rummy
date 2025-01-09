@@ -75,8 +75,6 @@ public partial class CardPileContainer : Container
         }
     }
 
-    protected bool preserveOrderOnRebuild = false;
-
     protected ReadOnlyCollection<Card> Cards => CardPile is null ? new List<Card>().AsReadOnly() :
         (CardPile is IReadableCardPile) ? (CardPile as IReadableCardPile).Cards :
         (CardPile is IAccessibleCardPile) ? (CardPile as IAccessibleCardPile).Cards.ToList().AsReadOnly() :
@@ -142,7 +140,13 @@ public partial class CardPileContainer : Container
         }
     }
 
-    private void AddCard(Card card, int index = 0) {
+    public override void _ExitTree() {
+        if (CardPile is not null) {
+            CardPile.OnChanged -= OnCardPileChanged;
+        }
+    }
+
+    protected void AddCard(Card card, int index = 0) {
         if (!IsNodeReady()) { return; }
         
         var cardDisplay = CardDisplayScene.Instantiate() as CardDisplay;
@@ -181,60 +185,41 @@ public partial class CardPileContainer : Container
     protected virtual void OnCardClicked(CardDisplay display, MouseButton buttonIndex, bool pressed) {}
     protected virtual void OnCardMouseMotion(CardDisplay display, InputEventMouseMotion @event) {}
 
-    private void Rebuild() {
-        var oldOrder = GetChildren().Cast<CardDisplay>().ToList().ConvertAll(x => x.Card);
-        //List<(Card, int)> oldOrder = preserveOrderOnRebuild ? GetChildren().ToList().ConvertAll(x => ((x as CardDisplay).Card, x.GetIndex())) : new();
-
+    protected void Rebuild() {
         if (!IsNodeReady() || (CardPile is null && !Engine.IsEditorHint())) {
             Clear();
-            return;
         }
         else if (Engine.IsEditorHint()) {
             Clear();
             for (int i = 0; i < NumCardsInEditor; ++i) { AddCard(new Card(Rank.Ace, Suit.Spades)); }
-            return;
-        }
-
-        // Is readable pile
-        if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
-            foreach (var card in Cards) {
-                if (!oldOrder.Contains(card)) {
-                    AddCard(card, GetChildCount());
-                }
-            }
-            foreach (var card in oldOrder) {
-                if (!Cards.Contains(card)) {
-                    var display = GetChildren().Cast<CardDisplay>().ToList().Find(x => x.Card == card);
-                    if (display is not null) {
-                        RemoveChild(display);
-                        display.QueueFree();
-                    }
-                }
-            }
-            /*if (preserveOrderOnRebuild) {
-                GD.Print($"OLD {string.Join(", ", oldOrder)}");
-                var cards = GetChildren().Cast<CardDisplay>().ToList();
-                //var newCard = cards.Find(display => !oldOrder.Any(x => x.Item1 == display.Card));
-                //if (newCard is not null) {}
-                //MoveChild(newCard, GetChildCount() - 1);
-                GetChildren().
-
-                for (int i = 0; i < cards.Count; ++i) {
-                    for (int j = 0; j < cards.Count - i; ++j) {
-                        var display = cards.ElementAt(j);
-                        int index = oldOrder.Any(x => x.Item1 == display.Card) ? oldOrder.Find(x => x.Item1 == display.Card).Item2 : -1;
-                        if (index != -1) { MoveChild(display, index); } else { MoveChild(display, GetChildCount() - 1); }
-                        GD.Print($" - {display.Card} : {index}");
-                    }
-                }
-                GD.Print($"NEW {string.Join(", ", GetChildren().ToList().ConvertAll(x => ((x as CardDisplay).Card, x.GetIndex())))}");
-            }*/
         }
         else {
-            Clear();
-            for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); }
+            if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
+                var oldOrder = GetChildren().Cast<CardDisplay>().ToList().ConvertAll(x => x.Card);
+                foreach (var card in Cards) {
+                    if (!oldOrder.Contains(card)) {
+                        AddCard(card, GetChildCount());
+                    }
+                }
+                foreach (var card in oldOrder) {
+                    if (!Cards.Contains(card)) {
+                        var display = GetChildren().Cast<CardDisplay>().ToList().Find(x => x.Card == card);
+                        if (display is not null) {
+                            RemoveChild(display);
+                            display.QueueFree();
+                        }
+                    }
+                }
+            }
+            else {
+                Clear();
+                for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); }
+            }
         }
+        PostRebuild();
     }
+
+    protected virtual void PostRebuild() {}
     
     private void OnCardPileChanged(object sender, NotifyCollectionChangedEventArgs args) {
         Rebuild();
