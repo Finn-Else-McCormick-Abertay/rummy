@@ -104,6 +104,7 @@ public partial class PlayerHand : CardPileContainer
         if (CardPile is null) { return; }
 
         if (buttonIndex == MouseButton.Left && pressed && HoveredCardDisplay.IsSomeAnd(x => x == display)) {
+            HoveredCardDisplay.Value.GrabFocus();
             ShouldDrag = true;
         }
         if (buttonIndex == MouseButton.Left && !pressed) {

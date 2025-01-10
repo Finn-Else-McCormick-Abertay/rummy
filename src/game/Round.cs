@@ -7,6 +7,7 @@ using static Rummy.Util.Option;
 using static Rummy.Util.Result;
 using Godot;
 using System.Collections.Immutable;
+using System;
 
 namespace Rummy.Game;
 
@@ -173,10 +174,10 @@ public class Round
 			CurrentPlayer.Melds.Add(meld);
 			Player meldPlayer = CurrentPlayer;
 			(meld as CardPile).OnCardAdded += (card) => {
-				if (!turnData.LayOffs.ContainsKey(meldPlayer)) { turnData.LayOffs.Add(meldPlayer, new()); }
-				var index = meldPlayer.Melds.FindIndex(x => x == meld);
-				if (!turnData.LayOffs[meldPlayer].ContainsKey(index)) { turnData.LayOffs[meldPlayer].Add(index, new()); }
-				turnData.LayOffs[meldPlayer][index].Add(card);
+				turnData.LayOffs
+					.GetOrCreate(meldPlayer)
+					.GetOrCreate(meldPlayer.Melds.FindIndex(x => x == meld))
+					.Add(card);
 				NotifyLaidOff?.Invoke(CurrentPlayer, card);
 			};
 			turnData.Melds.Add(meld.Clone());
@@ -185,7 +186,9 @@ public class Round
 		return Err($"{meld} is not a valid meld.");
 	}
 
-	public Round(List<Player> players, int numPacks = 1) {
+	public Round(List<Player> players, int numPacks = 1) : this(players, Random.Shared, numPacks) {}
+
+	public Round(List<Player> players, Random random, int numPacks = 1) {
 		_players = players;
 		foreach (Player player in Players) {
 			player.Hand.Reset();
@@ -195,7 +198,7 @@ public class Round
 		
 		// Set up deck
 		for (int i = 0; i < numPacks; ++i) { Deck.AddPack(); }
-		Deck.Shuffle();
+		Deck.Shuffle(random);
 		
 		// Deal to players
 		int handSize = 10;
@@ -236,6 +239,7 @@ public class Round
 	}
 
 	public void BeginTurn() {
+		if (Finished) { return; }
         turnData = new TurnData(CurrentPlayer);
 		MidTurn = true;
 		CurrentPlayer.BeginTurn(this);

@@ -27,4 +27,5 @@ size_flags_stretch_ratio = 0.02
 [node name="EnemyHand" parent="HBoxContainer" instance=ExtResource("2_fgbij")]
 layout_mode = 2
 size_flags_vertical = 3
-CardSize = 35.0
+FaceDown = false
+CardSize = 40.0

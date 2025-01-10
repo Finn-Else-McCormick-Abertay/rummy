@@ -82,9 +82,14 @@ public partial class GameManager : Node
 
         players = new List<Player> {
             userPlayer,
-            new ComputerPlayer(),
-            new RandomPlayer(new Random()),
+            new RandomPlayer(),
+            new RandomPlayer(),
+            new RandomPlayer(5),
         };
+        players.ForEach(player => {
+            player.OnSayingMessage += (message) => GD.Print($"{player.Name}: {message}");
+            player.OnThinkingMessage += (message) => GD.Print($"{player.Name}(Think): {message}");
+        });
 
         round = new Round(players);
         Deck.CardPile = round.Deck;
@@ -123,7 +128,7 @@ public partial class GameManager : Node
             DiscardPile.AllowDraw = false;
             SetCanLayOff(false);
 
-            if (round.NextPlayer != userPlayer) {
+            if (round.NextPlayer != userPlayer && !round.Finished) {
                 NextTurnButton.Visible = true;
                 //NextTurnButton.GrabFocus();
             }
@@ -145,7 +150,7 @@ public partial class GameManager : Node
             });
         };
         round.NotifyTurnReset += () => {
-            if (round.CurrentPlayer != userPlayer) {
+            if (round.CurrentPlayer != userPlayer && !round.Finished) {
                 NextTurnButton.Visible = true;
                 //NextTurnButton.GrabFocus();
             }
@@ -158,7 +163,9 @@ public partial class GameManager : Node
 
         round.NotifyGameEnded += (winner, score, isRummy) => {
             FailureMessage.Message = $"{round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
+            GD.Print(FailureMessage.Message);
             FailureMessage.UseButton = false; FailureMessage.Show();
+            NextTurnButton.Visible = false;
             SetCanLayOff(false);
         };
     }

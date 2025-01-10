@@ -13,7 +13,7 @@ public interface IMeld : IReadableCardPile
 {
     public bool Valid { get; }
 
-    public bool CanLayOff(Card card);
+    public bool CouldLayOff(Card card);
     public int IndexIfLaidOff(Card card);
     public Result<Unit, Unit> LayOff(Card card);
     public void InternalUndoLayOff(Card card);
@@ -26,12 +26,12 @@ public class Run : CardPile, IMeld, IEquatable<Run>
 {
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }
 
-    public Run(List<Card> cards) {
+    public Run(IEnumerable<Card> cards) {
         _cards.Replace(cards);
         _cards.Sort(card => (int)card.Rank);
     }
 
-    public bool CanLayOff(Card card) {
+    public bool CouldLayOff(Card card) {
         var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
         var runTemp = new Run(cardsTemp);
@@ -39,7 +39,7 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     }
 
     public int IndexIfLaidOff(Card card) {
-        if (!CanLayOff(card)) { return -1; }
+        if (!CouldLayOff(card)) { return -1; }
 
         var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
@@ -48,7 +48,8 @@ public class Run : CardPile, IMeld, IEquatable<Run>
     }
 
     public Result<Unit, Unit> LayOff(Card card) {
-        if (!CanLayOff(card)) { return Err(Unit.unit); }
+        if (!CouldLayOff(card)) { return Err(Unit.unit); }
+
         if (card.Rank < _cards.First().Rank) { AddToFront(card); } else { AddToBack(card); }
         return Ok();
     }
@@ -85,19 +86,19 @@ public class Set : CardPile, IMeld, IEquatable<Set>
 {
 	public new ReadOnlyCollection<Card> Cards { get => _cards.ToList().AsReadOnly(); }
     
-    public Set(List<Card> cards) {
+    public Set(IEnumerable<Card> cards) {
         _cards.Replace(cards);
         _cards.Sort(card => (int)card.Suit);
     }
     
-    public bool CanLayOff(Card card) {
+    public bool CouldLayOff(Card card) {
         var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
         var setTemp = new Set(cardsTemp);
         return setTemp.Valid;
     }
     public int IndexIfLaidOff(Card card) {
-        if (!CanLayOff(card)) { return -1; }
+        if (!CouldLayOff(card)) { return -1; }
 
         var cardsTemp = _cards.ToList().ConvertAll(x => x);
         cardsTemp.Add(card);
@@ -106,7 +107,8 @@ public class Set : CardPile, IMeld, IEquatable<Set>
     }
     
     public Result<Unit, Unit> LayOff(Card card) {
-        if (!CanLayOff(card)) { return Err(Unit.unit); }
+        if (!CouldLayOff(card)) { return Err(Unit.unit); }
+        
         AddToBack(card);
         return Ok();
     }

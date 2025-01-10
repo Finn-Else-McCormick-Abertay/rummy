@@ -12,15 +12,22 @@ public abstract class Player
 {
     public delegate void NotifyScoreChangedAction();
     public event NotifyScoreChangedAction NotifyScoreChanged;
+    
+    public delegate void SayingMessageAction(string message);
+    public event SayingMessageAction OnSayingMessage;
+    protected void Say(string message) => OnSayingMessage?.Invoke(message);
 
-    private string _name;
-    public string Name { get => _name; }
+    public delegate void ThinkingMessageAction(string message);
+    public event ThinkingMessageAction OnThinkingMessage;
+    protected void Think(string message) => OnThinkingMessage?.Invoke(message);
+
+    public string Name { get; init; }
 
     private int _score;
     public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
     
     protected Player(string name) {
-        _name = name;
+        Name = name;
     }
 
     public interface IHand : ICountable {
@@ -34,41 +41,28 @@ public abstract class Player
 
     protected class HandInternal : CardPile, IHand, IAccessibleCardPile
     {
-        public new IList<Card> Cards { get => base.Cards; }
-	    public SortableObservableCollection<Card> CardsRaw { get => _cards; }
+        public new IList<Card> Cards => base.Cards;
+	    public SortableObservableCollection<Card> CardsRaw => _cards;
 
-        public void Add(Card card) {
-            AddToBack(card);
-        }
-        public void Add(List<Card> cards) {
-            foreach (Card card in cards) { Add(card); }
-        }
+        public void Add(Card card) => AddToBack(card);
+        public void Add(List<Card> cards) => cards.ForEach(card => Add(card));
         
-        public Option<Card> Pop(Card card) { return Cards.Remove(card) ? card : None; }
-
-        public Option<Card> PopAt(int index) {
-            if (index < 0 || index >= Cards.Count) { return None; }
-            return Pop(Cards.ElementAt(index));
-        }
+        public Option<Card> Pop(Card card) => Cards.Remove(card) ? card : None;
+        public Option<Card> PopAt(int index) => (index < 0 || index >= Cards.Count) ? None : Pop(Cards.ElementAt(index));
         
-        public void Reset() {
-            _cards.Clear();
-        }
+        public void Reset() => _cards.Clear();
 
-        public int Score() {
-            int score = 0;
-            foreach (Card card in _cards) {
-                score += card.Rank switch {
-                    Rank.King or Rank.Queen or Rank.Jack => 10,
-                    _ => (int)card.Rank,
-                };
-            }
-            return score;
-        }
+        public int Score() => _cards.ToList().Aggregate(0, (score, card) => score + card.Rank switch {
+            Rank.King or Rank.Queen or Rank.Jack => 10,
+            _ => (int)card.Rank
+        });
+        
+        public IEnumerable<Card> Where(Func<Card, bool> pred) => Cards.Where(pred);
+        public void ForEach(Action<Card> action) => Cards.ToList().ForEach(action);
     }
 
-    protected HandInternal hand = new();
-    public IHand Hand { get => hand; }
+    protected HandInternal _hand = new();
+    public IHand Hand => _hand;
 
 	public List<IMeld> Melds { get; set; } = new();
 

@@ -41,7 +41,7 @@ public partial class MeldContainer : CardPileContainer
         if (entering) {
             // Currently dragging card
             PlayerHand.Inspect(hand => hand.DraggingCard.Inspect(card => {
-                if ((CardPile as IMeld).CanLayOff(card)) {
+                if ((CardPile as IMeld).CouldLayOff(card)) {
                     PotentialCard = card;
                 }
             }));

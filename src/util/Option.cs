@@ -7,7 +7,7 @@ public readonly struct Option {
         return Option<T>.Some(v);
     }
 
-    public static Option<Unit> None => Option<Unit>.None;
+    public static readonly Option<Unit> None = Option<Unit>.None;
 }
 
 public readonly struct Option<T> {
@@ -26,7 +26,7 @@ public readonly struct Option<T> {
         return new(v, true);
     }
 
-    public static Option<T> None => new(default, false);
+    public static readonly Option<T> None = new(default, false);
     
     public static implicit operator Option<T>(T v) => new(v, true);
     public static implicit operator Option<T>(Option<Unit> other) => new(default, other._exists);
