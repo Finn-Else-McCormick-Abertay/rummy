@@ -1,0 +1,81 @@
+[gd_resource type="Theme" load_steps=6 format=3 uid="uid://0jvtb31oofbs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vmla7"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.316406, 0.316406, 0.316406, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wdvmx"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.425781, 0.425781, 0.425781, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k2078"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.328125, 0.328125, 0.328125, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.378906, 0.378906, 0.378906, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8jeg6"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.328125, 0.328125, 0.328125, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.25, 0.25, 0.25, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vecn5"]
+bg_color = Color(0.513726, 0.513726, 0.513726, 0.968627)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.621094, 0.621094, 0.621094, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+expand_margin_left = 5.0
+expand_margin_top = 5.0
+expand_margin_right = 5.0
+expand_margin_bottom = 5.0
+shadow_color = Color(0, 0, 0, 0.458824)
+shadow_size = 8
+shadow_offset = Vector2(0, 7)
+
+[resource]
+Button/styles/focus = SubResource("StyleBoxFlat_vmla7")
+Button/styles/hover = SubResource("StyleBoxFlat_wdvmx")
+Button/styles/normal = SubResource("StyleBoxFlat_k2078")
+Button/styles/pressed = SubResource("StyleBoxFlat_8jeg6")
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_vecn5")

@@ -11,5 +11,5 @@ grow_vertical = 2
 size_flags_horizontal = 3
 script = ExtResource("1_60wra")
 FaceDown = true
-CardSize = 50.0
+CardSize = 30.0
 NumCardsInEditor = 7

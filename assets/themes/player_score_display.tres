@@ -2,6 +2,11 @@
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tp3nf"]
 bg_color = Color(0.380392, 0.380392, 0.380392, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.335938, 0.335938, 0.335938, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -21,6 +26,11 @@ corner_radius_bottom_left = 5
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wbnef"]
 bg_color = Color(0.164063, 0.164063, 0.164063, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.117188, 0.117188, 0.117188, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5

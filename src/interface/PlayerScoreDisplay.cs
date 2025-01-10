@@ -78,16 +78,17 @@ public partial class PlayerScoreDisplay : PanelContainer
         Highlighted = Player == player;
     }
 
-    private void OnTurnEnded(Player player, Result<Unit, string> result) {
+    private void OnTurnEnded(Player player, Result<Round.TurnRecord, string> result) {
         if (Player is not null && player == Player) {
             if (result.IsErr) { Invalid = true; }
         }
-        if (!Round.Finished) {
+        if (result.IsOk && !Round.Finished) {
             Highlighted = Player == Round.NextPlayer;
         }
     }
 
     private void OnTurnReset() {
         Invalid = false;
+        Highlighted = Player == Round.CurrentPlayer;
     }
 }

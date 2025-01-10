@@ -6,9 +6,10 @@ namespace Rummy.Interface;
 
 class UserPlayer : Player 
 {
-    public override string Name { get => "User"; }
+    public UserPlayer() : base("User") {}
 
-    public override void BeginTurn(Round round) {
+    public override void OnAddedToRound(Round round) {}
+    public override void OnRemovedFromRound(Round round) {}
 
-    }
+    public override void BeginTurn(Round round) {}
 }

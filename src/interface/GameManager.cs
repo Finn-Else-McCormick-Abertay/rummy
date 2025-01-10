@@ -6,6 +6,7 @@ using static Rummy.Util.Option;
 using System.Collections.Generic;
 using System.Linq;
 using Rummy.AI;
+using System;
 
 namespace Rummy.Interface;
 
@@ -53,47 +54,19 @@ public partial class GameManager : Node
             var selected = PlayerHand.SelectedSequence.First();
             (userPlayer.Hand as IAccessibleCardPile).Cards.Remove(selected);
             round.DiscardPile.Discard(selected);
-            round.EndTurn().Match(
-                _ => {
-                    DiscardButton.Disabled = true;
-                    MeldButton.Disabled = true;
-                    
-                    SetCanLayOff(false);
-                    FailureMessage.Hide();
-                },
-                err => {
-                    FailureMessage.Message = err;
-                    FailureMessage.UseButton = true;
-                    FailureMessage.Show();
-                    stateInvalid = true;
-                    DiscardButton.Disabled = true;
-                    MeldButton.Disabled = true;
-                }
-            );
+            round.EndTurn();
         };
 
         MeldButton.Pressed += () => {
             var sequence = PlayerHand.SelectedSequence;
-            var set = new Set(sequence);
-            var run = new Run(sequence);
+            var set = new Set(sequence); var run = new Run(sequence);
             
             Result<IMeld, string> melded = Err("Invalid meld");
-            if (set.Valid) { melded = round.Meld(set).And(set as IMeld); } else if (run.Valid) { melded = round.Meld(run).And(run as IMeld); }
+            if (set.Valid)      { melded = round.Meld(set).And(set as IMeld); }
+            else if (run.Valid) { melded = round.Meld(run).And(run as IMeld); }
 
-            melded.Match(
-                meld => {
-                    sequence.ForEach(card => userPlayer.Hand.Pop(card));
-                    RebuildMelds();
-                },
-                err => {
-                    FailureMessage.Message = err;
-                    FailureMessage.UseButton = false;
-                    FailureMessage.Show();
-                    GetTree().CreateTimer(5.0).Timeout += () => {
-                        FailureMessage.Hide();
-                    };
-                }
-            );
+            melded.Inspect(meld => meld.Cards.ToList().ForEach(card => userPlayer.Hand.Pop(card)));
+            if (melded.IsOk) { RebuildMelds(); }
         };
 
         FailureMessage.Button.Pressed += () => {
@@ -110,12 +83,14 @@ public partial class GameManager : Node
         players = new List<Player> {
             userPlayer,
             new ComputerPlayer(),
+            new RandomPlayer(new Random()),
         };
 
         round = new Round(players);
         Deck.CardPile = round.Deck;
         DiscardPile.CardPile = round.DiscardPile;
         round.NotifyTurnReset += RebuildMelds;
+        round.NotifyMelded += (player, cards) => { RebuildMelds(); };
 
         PlayerScoreDisplay.Player = userPlayer;
         PlayerScoreDisplay.Round = round;
@@ -132,6 +107,8 @@ public partial class GameManager : Node
             var display = node.GetNode("PlayerScoreDisplay") as PlayerScoreDisplay;
             display.Player = player;
             display.Round = round;
+            var hand = node.FindChild("EnemyHand") as CardPileContainer;
+            hand.CardPile = player.Hand as CardPile;
         });
 
         round.NotifyTurnBegan += player => {
@@ -148,9 +125,32 @@ public partial class GameManager : Node
 
             if (round.NextPlayer != userPlayer) {
                 NextTurnButton.Visible = true;
-                NextTurnButton.GrabFocus();
+                //NextTurnButton.GrabFocus();
             }
         };
+        round.NotifyTurnEnded += (player, result) => {
+            result.Inspect(_ => {
+                DiscardButton.Disabled = true;
+                MeldButton.Disabled = true;
+                
+                SetCanLayOff(false);
+                FailureMessage.Hide();
+            }).InspectErr(err => {
+                FailureMessage.Message = err.Replace(". ", ".\n");
+                FailureMessage.UseButton = true; FailureMessage.Show();
+                stateInvalid = true;
+                DiscardButton.Disabled = true;
+                MeldButton.Disabled = true;
+                NextTurnButton.Visible = false;
+            });
+        };
+        round.NotifyTurnReset += () => {
+            if (round.CurrentPlayer != userPlayer) {
+                NextTurnButton.Visible = true;
+                //NextTurnButton.GrabFocus();
+            }
+        };
+
         NextTurnButton.Pressed += () => {
             NextTurnButton.Visible = false;
             round.BeginTurn();
@@ -158,8 +158,7 @@ public partial class GameManager : Node
 
         round.NotifyGameEnded += (winner, score, isRummy) => {
             FailureMessage.Message = $"{round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
-            FailureMessage.UseButton = false;
-            FailureMessage.Show();
+            FailureMessage.UseButton = false; FailureMessage.Show();
             SetCanLayOff(false);
         };
     }

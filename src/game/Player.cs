@@ -13,9 +13,15 @@ public abstract class Player
     public delegate void NotifyScoreChangedAction();
     public event NotifyScoreChangedAction NotifyScoreChanged;
 
-    public abstract string Name { get; }
+    private string _name;
+    public string Name { get => _name; }
+
     private int _score;
     public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
+    
+    protected Player(string name) {
+        _name = name;
+    }
 
     public interface IHand : ICountable {
         public void Add(Card card);
@@ -65,6 +71,9 @@ public abstract class Player
     public IHand Hand { get => hand; }
 
 	public List<IMeld> Melds { get; set; } = new();
+
+    public abstract void OnAddedToRound(Round round);
+    public abstract void OnRemovedFromRound(Round round);
 
     public abstract void BeginTurn(Round game);
 }

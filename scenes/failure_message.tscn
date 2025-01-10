@@ -1,5 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://6jr1lsvpf85"]
+[gd_scene load_steps=3 format=3 uid="uid://6jr1lsvpf85"]
 
+[ext_resource type="Theme" uid="uid://0jvtb31oofbs" path="res://assets/themes/message_ui_theme.tres" id="1_7p03l"]
 [ext_resource type="Script" path="res://src/interface/FailureMessage.cs" id="1_rwuom"]
 
 [node name="FailureMessage" type="PanelContainer" node_paths=PackedStringArray("label", "buttonRoot", "button")]
@@ -8,6 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_7p03l")
 script = ExtResource("1_rwuom")
 label = NodePath("MarginContainer/HBoxContainer/Label")
 buttonRoot = NodePath("MarginContainer/HBoxContainer/AspectRatioContainer")
@@ -24,7 +26,8 @@ layout_mode = 2
 [node name="Label" type="Label" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "MESSAGE"
+text = "First line of message.
+Second line of message."
 horizontal_alignment = 1
 vertical_alignment = 1
 

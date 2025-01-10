@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=12 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
@@ -7,7 +7,10 @@
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
 [ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
+[ext_resource type="Theme" uid="uid://bptu6xt5wdun7" path="res://assets/themes/button_theme_discard.tres" id="7_aj8hm"]
 [ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/player_score_display.tscn" id="7_nrs5b"]
+[ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
+[ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -109,6 +112,7 @@ size_flags_vertical = 3
 [node name="Discard" type="Button" parent="VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme = ExtResource("7_aj8hm")
 text = "Discard
 "
 
@@ -121,6 +125,7 @@ size_flags_stretch_ratio = 0.1
 [node name="Meld" type="Button" parent="VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme = ExtResource("8_kok28")
 text = "Meld"
 
 [node name="Padding5" type="Control" parent="VBoxContainer/HBoxContainer"]
@@ -156,39 +161,18 @@ layout_mode = 2
 
 [node name="Meld3" parent="HFlowContainer" instance=ExtResource("6_13xch")]
 layout_mode = 2
+NumCardsInEditor = 8
 
 [node name="Meld4" parent="HFlowContainer" instance=ExtResource("6_13xch")]
 layout_mode = 2
 
 [node name="Meld5" parent="HFlowContainer" instance=ExtResource("6_13xch")]
 layout_mode = 2
+NumCardsInEditor = 4
 
 [node name="Meld6" parent="HFlowContainer" instance=ExtResource("6_13xch")]
 layout_mode = 2
-
-[node name="Meld7" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
-
-[node name="Meld8" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
-
-[node name="Meld9" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
-
-[node name="Meld10" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
-
-[node name="Meld11" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
-
-[node name="Meld12" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-visible = false
-layout_mode = 2
+NumCardsInEditor = 8
 
 [node name="PlayerScoreDisplay" parent="." instance=ExtResource("7_nrs5b")]
 layout_mode = 1
@@ -198,7 +182,7 @@ anchor_bottom = 0.0
 offset_left = 25.0
 offset_top = 8.0
 offset_right = -32.04
-offset_bottom = 31.0
+offset_bottom = 41.0
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -228,17 +212,17 @@ offset_left = -239.0
 offset_top = -41.728
 offset_right = -39.0
 offset_bottom = 45.272
+theme = ExtResource("8_atslc")
 text = "Progress Turn"
 
 [node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
-visible = false
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.0
 offset_left = -178.0
-offset_top = 20.0
+offset_top = 68.0
 offset_right = 178.0
-offset_bottom = 97.0
+offset_bottom = 145.0
 grow_vertical = 1

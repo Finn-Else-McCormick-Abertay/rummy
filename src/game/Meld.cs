@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Godot;
+using Rummy.Util;
+using static Rummy.Util.Result;
 
 namespace Rummy.Game;
 
@@ -13,9 +15,10 @@ public interface IMeld : IReadableCardPile
 
     public bool CanLayOff(Card card);
     public int IndexIfLaidOff(Card card);
-    public void LayOff(Card card);
+    public Result<Unit, Unit> LayOff(Card card);
     public void InternalUndoLayOff(Card card);
 
+    // Clone of Meld with current cards and without any current listeners
     public IMeld Clone();
 }
 
@@ -44,9 +47,10 @@ public class Run : CardPile, IMeld, IEquatable<Run>
         return runTemp.Cards.ToList().FindIndex(x => x == card);
     }
 
-    public void LayOff(Card card) {
-        if (card.Rank < _cards.First().Rank) { AddToFront(card); }
-        else { AddToBack(card); }
+    public Result<Unit, Unit> LayOff(Card card) {
+        if (!CanLayOff(card)) { return Err(Unit.unit); }
+        if (card.Rank < _cards.First().Rank) { AddToFront(card); } else { AddToBack(card); }
+        return Ok();
     }
     public void InternalUndoLayOff(Card card) {
         _cards.Remove(card);
@@ -101,8 +105,10 @@ public class Set : CardPile, IMeld, IEquatable<Set>
         return setTemp.Cards.ToList().FindIndex(x => x == card);
     }
     
-    public void LayOff(Card card) {
+    public Result<Unit, Unit> LayOff(Card card) {
+        if (!CanLayOff(card)) { return Err(Unit.unit); }
         AddToBack(card);
+        return Ok();
     }
     public void InternalUndoLayOff(Card card) {
         _cards.Remove(card);
