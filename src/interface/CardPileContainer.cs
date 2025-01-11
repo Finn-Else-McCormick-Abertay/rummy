@@ -69,11 +69,13 @@ public partial class CardPileContainer : Container
     public CardPile CardPile {
         get => _cardPile;
         set {
-            if (_cardPile is not null) { _cardPile.OnChanged -= OnCardPileChanged; }
+            if (_cardPile is not null) { OnCardPileRemoved(_cardPile); }
             _cardPile = value; Rebuild();
-            if (_cardPile is not null) { _cardPile.OnChanged += OnCardPileChanged; }
+            if (_cardPile is not null) { OnCardPileAdded(_cardPile); }
         }
     }
+    protected virtual void OnCardPileAdded(CardPile newPile) => newPile.OnChanged += OnCardPileChanged;
+    protected virtual void OnCardPileRemoved(CardPile oldPile) => oldPile.OnChanged -= OnCardPileChanged;
 
     protected ReadOnlyCollection<Card> Cards => CardPile is null ? new List<Card>().AsReadOnly() :
         (CardPile is IReadableCardPile) ? (CardPile as IReadableCardPile).Cards :
@@ -196,25 +198,17 @@ public partial class CardPileContainer : Container
         else {
             if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
                 var oldOrder = GetChildren().Cast<CardDisplay>().ToList().ConvertAll(x => x.Card);
-                foreach (var card in Cards) {
-                    if (!oldOrder.Contains(card)) {
-                        AddCard(card, GetChildCount());
-                    }
-                }
-                foreach (var card in oldOrder) {
+                Cards.ToList().ForEach(card => {
+                    if (!oldOrder.Contains(card)) { AddCard(card, GetChildCount()); }
+                });
+                oldOrder.ForEach(card => {
                     if (!Cards.Contains(card)) {
                         var display = GetChildren().Cast<CardDisplay>().ToList().Find(x => x.Card == card);
-                        if (display is not null) {
-                            RemoveChild(display);
-                            display.QueueFree();
-                        }
+                        if (display is not null) { RemoveChild(display); display.QueueFree(); }
                     }
-                }
+                });
             }
-            else {
-                Clear();
-                for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); }
-            }
+            else { Clear(); for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); } }
         }
         PostRebuild();
     }

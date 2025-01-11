@@ -16,7 +16,19 @@ public partial class MeldContainer : CardPileContainer
 
     private bool _canLayOff = false;
     public bool CanLayOff { get => _canLayOff; set { _canLayOff = value; if (!_canLayOff) { PotentialCard = None; } } }
-    
+
+    private bool IsMouseOver { get; set; } = false;
+
+    protected override void OnCardPileAdded(CardPile newPile) {
+        base.OnCardPileAdded(newPile);
+        //if (newPile is IMeld) { (newPile as IMeld).NotifyLaidOff += OnLayOff; }
+    }
+    protected override void OnCardPileRemoved(CardPile oldPile) {
+        base.OnCardPileAdded(oldPile);
+        //if (oldPile is IMeld) { (oldPile as IMeld).NotifyLaidOff -= OnLayOff; }
+    }
+    //private void OnLayOff(Card card) => Rebuild();
+
     protected override void PostRebuild() {
         if (CardPile is null || CardPile is not IMeld) { return; }
 
@@ -33,20 +45,6 @@ public partial class MeldContainer : CardPileContainer
                 child.Modulate = child.Modulate with { A = 1f };
             }
         });
-    }
-
-    protected override void OnCardMouseOver(CardDisplay display, bool entering) {
-        if (CardPile is null || CardPile is not IMeld || !CanLayOff) { return; }
-        
-        if (entering) {
-            // Currently dragging card
-            PlayerHand.Inspect(hand => hand.DraggingCard.Inspect(card => {
-                if ((CardPile as IMeld).CouldLayOff(card)) {
-                    PotentialCard = card;
-                }
-            }));
-        }
-        else { PotentialCard = None; }
     }
     
     public delegate void NotifyLaidOffAction(Card card);
@@ -66,11 +64,17 @@ public partial class MeldContainer : CardPileContainer
         }
         if (@event is InputEventMouseMotion) {
             var mouseMotionEvent = @event as InputEventMouseMotion;
-            //bool mouseOver = GetChildren().Cast<Control>().Any(child => child.GetGlobalRect().HasPoint(mouseMotionEvent.GlobalPosition));
-            //GD.Print($"Mouse Over {mouseOver}");
-            //if (!mouseOver) {
-            //    PotentialCard = None;
-            //}
+            bool mouseOver = GetChildren().Any(display => display.GetNode<Control>("Shadow").GetGlobalRect().HasPoint(mouseMotionEvent.GlobalPosition));
+            
+            if (!IsMouseOver && mouseOver) {
+                // If currently dragging card
+                PlayerHand.Inspect(hand => hand.DraggingCard.Inspect(card => {
+                    if ((CardPile as IMeld).CouldLayOff(card)) { PotentialCard = card; }
+                }));
+            }
+            if (IsMouseOver && !mouseOver) { PotentialCard = None; }
+
+            IsMouseOver = mouseOver;
         }
     }
 }

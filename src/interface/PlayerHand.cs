@@ -12,6 +12,10 @@ namespace Rummy.Interface;
 [Tool]
 public partial class PlayerHand : CardPileContainer
 {
+    public PlayerHand() : base() {
+        CardInPileTheme = ResourceLoader.Load<Theme>("res://assets/themes/card/dropshadow.tres");
+    }
+
     private Option<Card> _hovered = None;
     public Option<Card> HoveredCard { get => _hovered; set { _hovered = value; QueueSort(); } }
     private Option<CardDisplay> HoveredCardDisplay => HoveredCard.AndThen(FindCard);
@@ -104,7 +108,7 @@ public partial class PlayerHand : CardPileContainer
         if (CardPile is null) { return; }
 
         if (buttonIndex == MouseButton.Left && pressed && HoveredCardDisplay.IsSomeAnd(x => x == display)) {
-            HoveredCardDisplay.Value.GrabFocus();
+            //HoveredCardDisplay.Value.GrabFocus();
             ShouldDrag = true;
         }
         if (buttonIndex == MouseButton.Left && !pressed) {

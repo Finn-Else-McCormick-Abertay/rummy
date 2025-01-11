@@ -62,7 +62,7 @@ class RandomPlayer : ComputerPlayer
 
         Dictionary<Card, List<IMeld>> potentialLayOffs = FindPotentialLayOffs(round);
 
-        if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count > 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
+        if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
         // Can only lay off after having melded at least once
         if (Melds.Count > 0) {
             foreach (var (card, list) in potentialLayOffs) {

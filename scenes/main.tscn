@@ -1,73 +1,118 @@
-[gd_scene load_steps=12 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=14 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
-[ext_resource type="PackedScene" uid="uid://i64idti40js4" path="res://scenes/enemy_hand.tscn" id="2_rfff7"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
 [ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
 [ext_resource type="Theme" uid="uid://bptu6xt5wdun7" path="res://assets/themes/button_theme_discard.tres" id="7_aj8hm"]
 [ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/player_score_display.tscn" id="7_nrs5b"]
+[ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="7_w3bd7"]
 [ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
 
-[node name="Main" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[sub_resource type="Gradient" id="Gradient_yu4g7"]
+interpolation_color_space = 2
+colors = PackedColorArray(0, 0, 0, 0.368627, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_8whrx"]
+gradient = SubResource("Gradient_yu4g7")
+fill_from = Vector2(0, 1)
+fill_to = Vector2(0, 0)
+
+[node name="Main" type="Node"]
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "PlayerScoreDisplay", "EnemyScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
-PlayerHand = NodePath("../VBoxContainer/PlayerHand")
-PlayerScoreDisplay = NodePath("../PlayerScoreDisplay")
-EnemyScoreDisplayRoot = NodePath("../HBoxContainer")
-MeldRoot = NodePath("../HFlowContainer")
-DiscardButton = NodePath("../VBoxContainer/HBoxContainer/Discard")
-MeldButton = NodePath("../VBoxContainer/HBoxContainer/Meld")
+PlayerHand = NodePath("../Hand UI/PlayerHand")
+PlayerScoreDisplay = NodePath("../Player Display")
+EnemyScoreDisplayRoot = NodePath("../Enemy Displays")
+MeldRoot = NodePath("../Melds")
+DiscardButton = NodePath("../Hand UI/HBoxContainer/Discard")
+MeldButton = NodePath("../Hand UI/HBoxContainer/Meld")
 NextTurnButton = NodePath("../Next Turn")
 FailureMessage = NodePath("../FailureMessage")
 MeldScene = ExtResource("6_13xch")
 EnemyScoreDisplayScene = ExtResource("7_66nw7")
 
-[node name="EnemyHand" parent="." instance=ExtResource("2_rfff7")]
-visible = false
-layout_mode = 1
+[node name="ShadowBottom" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.509804)
 anchors_preset = -1
-anchor_right = 0.386
-anchor_bottom = 0.257
-offset_left = 423.0
-offset_top = 37.0
-offset_right = 77.328
-offset_bottom = -89.536
-grow_vertical = 1
+anchor_top = 0.67
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -126.16
+grow_horizontal = 2
+grow_vertical = 0
+texture = SubResource("GradientTexture2D_8whrx")
+
+[node name="ShadowTop" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.627451)
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.104
+offset_bottom = 95.608
+grow_horizontal = 2
+texture = SubResource("GradientTexture2D_8whrx")
+flip_v = true
+
+[node name="Melds" type="HFlowContainer" parent="."]
+anchors_preset = -1
+anchor_left = 0.244
+anchor_top = 0.159
+anchor_right = 1.002
+anchor_bottom = 0.545
+offset_left = -0.0880127
+offset_top = -0.0320053
+offset_right = -2.30396
+offset_bottom = -18.16
+theme_override_constants/h_separation = 50
+theme_override_constants/v_separation = 10
+
+[node name="Meld" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+NumCardsInEditor = 3
+
+[node name="Meld2" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+
+[node name="Meld3" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+NumCardsInEditor = 8
+
+[node name="Meld4" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+
+[node name="Meld5" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+NumCardsInEditor = 4
+
+[node name="Meld6" parent="Melds" instance=ExtResource("6_13xch")]
+layout_mode = 2
+NumCardsInEditor = 8
 
 [node name="Deck" parent="." instance=ExtResource("2_rj55i")]
-layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.277
 anchor_bottom = 0.525
 offset_left = 22.0
-offset_top = 145.0
+offset_top = 172.0
 offset_right = -175.104
-offset_bottom = -132.2
+offset_bottom = -105.2
 mouse_force_pass_scroll_events = true
 CardSizingReaction = 1
 
 [node name="DiscardPile" parent="." instance=ExtResource("2_rj55i")]
-layout_mode = 1
 anchors_preset = -1
 anchor_right = 0.29
 anchor_bottom = 0.525
-offset_left = 177.0
-offset_top = 88.0
-offset_right = -49.08
-offset_bottom = -56.2
+offset_left = 163.0
+offset_top = 116.0
+offset_right = -63.08
+offset_bottom = -29.2
 mouse_force_pass_scroll_events = true
 HighlightOffset = Vector2(-33, 0)
 HighlightBelowOffset = Vector2(-10, 0)
@@ -76,8 +121,7 @@ CardSeparation = 23
 CardSizingReaction = 1
 NumCardsInEditor = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 1
+[node name="Hand UI" type="VBoxContainer" parent="."]
 anchors_preset = -1
 anchor_top = 0.766
 anchor_right = 1.0
@@ -87,95 +131,59 @@ offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="PlayerHand" parent="VBoxContainer" instance=ExtResource("1_2umm0")]
+[node name="PlayerHand" parent="Hand UI" instance=ExtResource("1_2umm0")]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 NumCardsInEditor = 10
+CardInPileTheme = ExtResource("7_w3bd7")
 
-[node name="Padding2" type="Control" parent="VBoxContainer"]
+[node name="Padding2" type="Control" parent="Hand UI"]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.05
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="Hand UI"]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.5
 alignment = 1
 
-[node name="Padding4" type="Control" parent="VBoxContainer/HBoxContainer"]
+[node name="Padding4" type="Control" parent="Hand UI/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Discard" type="Button" parent="VBoxContainer/HBoxContainer"]
+[node name="Discard" type="Button" parent="Hand UI/HBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("7_aj8hm")
 text = "Discard
 "
 
-[node name="Padding3" type="Control" parent="VBoxContainer/HBoxContainer"]
+[node name="Padding3" type="Control" parent="Hand UI/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
-[node name="Meld" type="Button" parent="VBoxContainer/HBoxContainer"]
+[node name="Meld" type="Button" parent="Hand UI/HBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("8_kok28")
 text = "Meld"
 
-[node name="Padding5" type="Control" parent="VBoxContainer/HBoxContainer"]
+[node name="Padding5" type="Control" parent="Hand UI/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Padding" type="Control" parent="VBoxContainer"]
+[node name="Padding" type="Control" parent="Hand UI"]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
-[node name="HFlowContainer" type="HFlowContainer" parent="."]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.281
-anchor_top = 0.164
-anchor_right = 1.002
-anchor_bottom = 0.545
-offset_left = 2.28796
-offset_top = -3.272
-offset_right = -2.30408
-offset_bottom = -18.16
-theme_override_constants/h_separation = 50
-theme_override_constants/v_separation = 10
-
-[node name="Meld" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-NumCardsInEditor = 3
-
-[node name="Meld2" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-
-[node name="Meld3" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-NumCardsInEditor = 8
-
-[node name="Meld4" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-
-[node name="Meld5" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-NumCardsInEditor = 4
-
-[node name="Meld6" parent="HFlowContainer" instance=ExtResource("6_13xch")]
-layout_mode = 2
-NumCardsInEditor = 8
-
-[node name="PlayerScoreDisplay" parent="." instance=ExtResource("7_nrs5b")]
-layout_mode = 1
+[node name="Player Display" parent="." instance=ExtResource("7_nrs5b")]
 anchors_preset = -1
 anchor_right = 0.27
 anchor_bottom = 0.0
@@ -184,8 +192,7 @@ offset_top = 8.0
 offset_right = -32.04
 offset_bottom = 41.0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
-layout_mode = 1
+[node name="Enemy Displays" type="HBoxContainer" parent="."]
 anchors_preset = -1
 anchor_left = 0.251
 anchor_right = 1.002
@@ -195,15 +202,16 @@ offset_right = -22.3041
 offset_bottom = 84.0
 theme_override_constants/separation = 20
 
-[node name="EnemyPlayerDisplay" parent="HBoxContainer" instance=ExtResource("7_66nw7")]
+[node name="EnemyPlayerDisplay" parent="Enemy Displays" instance=ExtResource("7_66nw7")]
 layout_mode = 2
 
-[node name="EnemyPlayerDisplay2" parent="HBoxContainer" instance=ExtResource("7_66nw7")]
+[node name="EnemyPlayerDisplay2" parent="Enemy Displays" instance=ExtResource("7_66nw7")]
 layout_mode = 2
 
 [node name="Next Turn" type="Button" parent="."]
+visible = false
 custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
+anchors_preset = -1
 anchor_left = 1.0
 anchor_top = 0.461
 anchor_right = 1.0
@@ -216,8 +224,8 @@ theme = ExtResource("8_atslc")
 text = "Progress Turn"
 
 [node name="FailureMessage" parent="." instance=ExtResource("5_masi0")]
-layout_mode = 1
-anchors_preset = -1
+visible = false
+anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.0

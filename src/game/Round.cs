@@ -160,15 +160,12 @@ public class Round
 
 	public bool HasDrawn { get => turnData.DrawnCardsDeck.Count > 0 || turnData.DrawnCardsDiscardPile.Count > 0; }
 
-	public ReadOnlyCollection<IMeld> Melds {
-		get {
-			List<IMeld> melds = new();
-			foreach (Player player in Players) {
-				melds = melds.Concat(player.Melds).ToList();
-			}
-			return melds.AsReadOnly();
-		}
-	}
+	private readonly Dictionary<(Player, int), int> _meldOrder = new();
+	public ReadOnlyCollection<IMeld> Melds => Players.ToList()
+		.Aggregate(new List<(Player, IMeld)>(), (melds, player) => melds.Concat(player.Melds.ConvertAll(x => (player, x))).ToList())
+		.OrderBy(pair => _meldOrder[(pair.Item1, pair.Item1.Melds.FindIndex(x => x == pair.Item2))]).ToList()
+		.ConvertAll(pair => pair.Item2).AsReadOnly();
+	
 	public Result<Unit, string> Meld(IMeld meld) {
 		if (meld.Valid) {
 			CurrentPlayer.Melds.Add(meld);
@@ -181,6 +178,9 @@ public class Round
 				NotifyLaidOff?.Invoke(CurrentPlayer, card);
 			};
 			turnData.Melds.Add(meld.Clone());
+			var orderKey = (meldPlayer, meldPlayer.Melds.FindIndex(x => x == meld));
+			_meldOrder.GetOrAdd(orderKey, 0);
+			_meldOrder[orderKey] = Melds.Count;
 			return Ok();
 		}
 		return Err($"{meld} is not a valid meld.");
@@ -308,6 +308,7 @@ public class Round
 			meld.Cards.ToList().ForEach(card => {
 				CurrentPlayer.Hand.Add(card);
 			});
+			_meldOrder.Remove((CurrentPlayer, CurrentPlayer.Melds.FindIndex(x => x == meld)));
 			int index = CurrentPlayer.Melds.FindIndex(x => x.Equals(meld));
 			if (index == -1) { GD.PushWarning($"Tried to reset nonexistent meld {meld}."); }
 			else { CurrentPlayer.Melds.RemoveAt(index); }
