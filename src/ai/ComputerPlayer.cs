@@ -10,10 +10,14 @@ using static Rummy.Util.Option;
 
 namespace Rummy.AI;
 
-class ComputerPlayer : Player 
+[Tool]
+[GlobalClass]
+public partial class ComputerPlayer : Player 
 {
     protected new HandInternal Hand => _hand;
-    public ComputerPlayer(string name = "ComputerPlayer") : base(name) {}
+    
+    public ComputerPlayer() : this("ComputerPlayer") {}
+    public ComputerPlayer(string name) : base(name) {}
     
     public override void OnAddedToRound(Round round) {}
     public override void OnRemovedFromRound(Round round) {}

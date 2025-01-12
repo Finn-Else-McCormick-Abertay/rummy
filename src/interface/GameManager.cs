@@ -10,15 +10,46 @@ using System;
 
 namespace Rummy.Interface;
 
+[Tool]
 public partial class GameManager : Node
 {
-    private Round round;
-    private List<Player> players;
-
+    public Round Round { get; private set; }
     private bool stateInvalid = false;
 
-    private readonly UserPlayer userPlayer = new();
+    private List<Player> players = new();
+    private UserPlayer _userPlayer;
+    public UserPlayer UserPlayer {
+        get => _userPlayer;
+        private set {
+            _userPlayer = value;
+            if (IsNodeReady() && DiscardButton is not null && MeldButton is not null && PlayerHand is not null) {
+                DiscardButton.Visible = UserPlayer is not null;
+                MeldButton.Visible = UserPlayer is not null;
+                PlayerHand.CardPile = UserPlayer?.Hand as CardPile;
+            }
+        }
+    }
 
+    [Export] public Godot.Collections.Array<Player> Players {
+        get => new(players);
+        set {
+            players.ForEach(player => {
+                if (player is null) { return; }
+                player.OnSayingMessage -= OnPlayerSay;
+                player.OnThinkingMessage -= OnPlayerThink;
+            });
+            players = value.Cast<Player>().ToList();
+            players.ForEach(player => {
+                if (player is null) { return; }
+                player.OnSayingMessage += OnPlayerSay;
+                player.OnThinkingMessage += OnPlayerThink;
+            });
+            _userPlayer = (UserPlayer)players.Find(x => x is UserPlayer);
+            RebuildPlayerDisplays(players);
+        }
+    }
+
+    [ExportGroup("Nodes")]
     [Export] private DrawableCardPileContainer Deck { get; set; }
     [Export] private DrawableCardPileContainer DiscardPile { get; set; }
     [Export] private PlayerHand PlayerHand { get; set; }
@@ -30,116 +61,53 @@ public partial class GameManager : Node
     [Export] private Button NextTurnButton { get; set; }
     [Export] private FailureMessage FailureMessage { get; set; }
 
+    [ExportGroup("Scenes")]
     [Export] private PackedScene MeldScene { get; set; }
     [Export] private PackedScene EnemyScoreDisplayScene { get; set; }
 
     public override void _Ready() {
-        PlayerHand.CardPile = userPlayer.Hand as CardPile;
-
-        Deck.NotifyDrew += _ => round.Deck.Draw().Inspect(card => userPlayer.Hand.Add(card));
-        DiscardPile.NotifyDrew += count => {
-            var drawnCards = round.DiscardPile.Draw(count);
-            drawnCards.ForEach(card => userPlayer.Hand.Add(card));
-            if (count > 1) {
-                PlayerHand.Select(drawnCards.Last());
-            }
-        };
-
-        foreach (Node node in MeldRoot.GetChildren()) {
-            MeldRoot.RemoveChild(node);
-            node.QueueFree();
+        if (Engine.IsEditorHint()) {
+            RebuildPlayerDisplays(players);
+            return;
         }
         
-        DiscardButton.Pressed += () => {
-            var selected = PlayerHand.SelectedSequence.First();
-            (userPlayer.Hand as IAccessibleCardPile).Cards.Remove(selected);
-            round.DiscardPile.Discard(selected);
-            round.EndTurn();
-        };
+        Deck.NotifyDrew += OnUserDrewFromDeck;
+        DiscardPile.NotifyDrew += OnUserDrewFromDiscardPile;
+        DiscardButton.Pressed += OnDiscardButtonPressed;
+        MeldButton.Pressed += OnMeldButtonPressed;
+        FailureMessage.Button.Pressed += OnResetButtonPressed;
+        RebuildMelds();
 
-        MeldButton.Pressed += () => {
-            var sequence = PlayerHand.SelectedSequence;
-            var set = new Set(sequence); var run = new Run(sequence);
-            
-            Result<Meld, string> melded = Err("Invalid meld");
-            if (set.Valid)      { melded = round.Meld(set).And(set as Meld); }
-            else if (run.Valid) { melded = round.Meld(run).And(run as Meld); }
+        BeginNewRound();
+    }
 
-            melded.Inspect(meld => meld.Cards.ToList().ForEach(card => userPlayer.Hand.Pop(card)));
-            if (melded.IsOk) { RebuildMelds(); }
-        };
+    private void BeginNewRound() {
+        if (Engine.IsEditorHint()) { return; }
 
-        FailureMessage.Button.Pressed += () => {
-            round.ResetTurn();
-            stateInvalid = false;
-            FailureMessage.Hide();
-        };
+        Round = new Round(players);
+        Deck.CardPile = Round.Deck; DiscardPile.CardPile = Round.DiscardPile;
+        Round.NotifyTurnReset += RebuildMelds;
+        Round.NotifyMelded += (player, cards) => RebuildMelds();
+        Round.NotifyLaidOff += (player, card) => RebuildMelds();
 
-        DiscardButton.Disabled = true;
-        MeldButton.Disabled = true;
-        
-        NextTurnButton.Visible = false;
+        RebuildMelds();
+        RebuildPlayerDisplays(Round.Players);
 
-        players = new List<Player> {
-            userPlayer,
-            new RandomPlayer(),
-            new RandomPlayer(),
-            new RandomPlayer(5),
-        };
-        players.ForEach(player => {
-            player.OnSayingMessage += (message) => GD.Print($"{player.Name}: {message}");
-            player.OnThinkingMessage += (message) => GD.Print($"{player.Name}(Think): {message}");
-        });
-
-        round = new Round(players);
-        Deck.CardPile = round.Deck;
-        DiscardPile.CardPile = round.DiscardPile;
-        round.NotifyTurnReset += RebuildMelds;
-        round.NotifyMelded += (player, cards) => RebuildMelds();
-        round.NotifyLaidOff += (player, card) => RebuildMelds();
-
-        PlayerScoreDisplay.Player = userPlayer;
-        PlayerScoreDisplay.Round = round;
-        PlayerScoreDisplay.Visible = userPlayer is not null;
-
-        foreach (Node node in EnemyScoreDisplayRoot.GetChildren()) {
-            EnemyScoreDisplayRoot.RemoveChild(node);
-            node.QueueFree();
-        }
-        round.Players.Where(x => x is not null && x != userPlayer).ToList().ForEach(player => {
-            var node = EnemyScoreDisplayScene.Instantiate();
-            EnemyScoreDisplayRoot.AddChild(node);
-            node.SetOwner(EnemyScoreDisplayRoot);
-            var display = node.GetNode("PlayerScoreDisplay") as PlayerScoreDisplay;
-            display.Player = player;
-            display.Round = round;
-            var hand = node.FindChild("EnemyHand") as CardPileContainer;
-            hand.CardPile = player.Hand as CardPile;
-        });
-
-        round.NotifyTurnBegan += player => {
-            if (player == userPlayer) {
+        Round.NotifyTurnBegan += player => {
+            if (player == UserPlayer) {
                 Deck.AllowDraw = true;
                 DiscardPile.AllowDraw = true;
                 SetCanLayOff(false);
             }
         };
-        round.NotifyTurnEnded += (player, result) => {
+        Round.NotifyTurnEnded += (player, result) => {
             Deck.AllowDraw = false;
             DiscardPile.AllowDraw = false;
             SetCanLayOff(false);
-
-            if (round.NextPlayer != userPlayer && !round.Finished) {
-                NextTurnButton.Visible = true;
-                //NextTurnButton.GrabFocus();
-            }
-        };
-        round.NotifyTurnEnded += (player, result) => {
+            OnReachTurnBoundary(Round.NextPlayer);
             result.Inspect(_ => {
                 DiscardButton.Disabled = true;
                 MeldButton.Disabled = true;
-                
-                SetCanLayOff(false);
                 FailureMessage.Hide();
             }).InspectErr(err => {
                 FailureMessage.Message = err.Replace(". ", ".\n");
@@ -150,35 +118,40 @@ public partial class GameManager : Node
                 NextTurnButton.Visible = false;
             });
         };
-        round.NotifyTurnReset += () => {
-            if (round.CurrentPlayer != userPlayer && !round.Finished) {
-                NextTurnButton.Visible = true;
-                //NextTurnButton.GrabFocus();
-            }
-        };
+        Round.NotifyTurnReset += () => OnReachTurnBoundary(Round.CurrentPlayer);
 
         NextTurnButton.Pressed += () => {
             NextTurnButton.Visible = false;
-            round.BeginTurn();
+            Round.BeginTurn();
         };
 
-        round.NotifyGameEnded += (winner, score, isRummy) => {
-            FailureMessage.Message = $"{round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
+        Round.NotifyGameEnded += (winner, score, isRummy) => {
+            FailureMessage.Message = $"{Round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
             GD.Print(FailureMessage.Message);
             FailureMessage.UseButton = false; FailureMessage.Show();
             NextTurnButton.Visible = false;
             SetCanLayOff(false);
         };
+        
+        DiscardButton.Visible = UserPlayer is not null;
+        MeldButton.Visible = UserPlayer is not null;
+        PlayerHand.CardPile = UserPlayer?.Hand as CardPile;
+
+        DiscardButton.Disabled = true;
+        MeldButton.Disabled = true;
+        NextTurnButton.Visible = false;
+
+        OnReachTurnBoundary(Round.CurrentPlayer);
     }
 
     public override void _Process(double delta) {
-        if (stateInvalid || round.CurrentPlayer != userPlayer) { return; }
+        if (Engine.IsEditorHint() || Round is null || stateInvalid || Round.CurrentPlayer != UserPlayer) { return; }
 
-        if (!round.MidTurn && !round.Finished) {
-            round.BeginTurn();
+        if (!Round.MidTurn && !Round.Finished) {
+            Round.BeginTurn();
         }
-        if (round.MidTurn) {
-            if (round.HasDrawn) {
+        if (Round.MidTurn) {
+            if (Round.HasDrawn) {
                 Deck.AllowDraw = false;
                 DiscardPile.AllowDraw = false;
                 SetCanLayOff(true);
@@ -198,28 +171,86 @@ public partial class GameManager : Node
     }
 
     private void RebuildMelds() {
-        foreach (Node node in MeldRoot.GetChildren()) {
-            MeldRoot.RemoveChild(node);
-            node.QueueFree();
-        }
-        round.Melds.ToList().ForEach(meld => {
+        if (!IsNodeReady() || Engine.IsEditorHint()) { return; }
+        foreach (Node node in MeldRoot.GetChildren()) { MeldRoot.RemoveChild(node); node.QueueFree(); }
+        Round?.Melds.ToList().ForEach(meld => {
             var meldContainer = MeldScene.Instantiate() as MeldContainer;
-            MeldRoot.AddChild(meldContainer);
-            meldContainer.SetOwner(MeldRoot);
+            MeldRoot.AddChild(meldContainer); meldContainer.SetOwner(MeldRoot);
             meldContainer.CardPile = meld as CardPile;
             meldContainer.PlayerHand = PlayerHand;
             meldContainer.NotifyLaidOff += card => {
-                if (meldContainer.CardPile is Meld) {
-                    userPlayer.Hand.Pop(card);
-                    (meldContainer.CardPile as Meld).LayOff(card);
-                }
+                if (meldContainer.CardPile is Meld) { UserPlayer.Hand.Pop(card); (meldContainer.CardPile as Meld).LayOff(card); }
             };
         });
     }
 
     private void SetCanLayOff(bool canLayOff) {
-        foreach (MeldContainer container in MeldRoot.GetChildren().Cast<MeldContainer>()) {
-            container.CanLayOff = canLayOff;
-        }
+        if (!IsNodeReady() || Engine.IsEditorHint()) { return; }
+        foreach (MeldContainer container in MeldRoot.GetChildren().Cast<MeldContainer>()) { container.CanLayOff = canLayOff; }
+    }
+
+    private void OnReachTurnBoundary(Player nextPlayer) {
+        if (!IsNodeReady() || Round is null) { return; }
+        NextTurnButton.Visible = nextPlayer != UserPlayer && !Round.Finished;
+    }
+
+    private void OnPlayerSay(object obj, string message) => GD.Print($"{(obj as Player)?.Name}: {message}");
+    private void OnPlayerThink(object obj, string message) => GD.Print($"{(obj as Player)?.Name}(Think): {message}");
+
+    private void RebuildPlayerDisplays(IEnumerable<Player> players) {
+        if (!IsNodeReady() || PlayerScoreDisplay is null || EnemyScoreDisplayRoot is null) { return; }
+
+        PlayerScoreDisplay.Player = UserPlayer;
+        PlayerScoreDisplay.Visible = UserPlayer is not null;
+        PlayerScoreDisplay.Round = Round;
+
+        foreach (Node node in EnemyScoreDisplayRoot.GetChildren()) { EnemyScoreDisplayRoot.RemoveChild(node); node.QueueFree(); }
+        players.Where(x => x is not null && x != UserPlayer).ToList().ForEach(player => {
+            var root = EnemyScoreDisplayScene.Instantiate();
+            EnemyScoreDisplayRoot.AddChild(root); if (!Engine.IsEditorHint()) { root.SetOwner(EnemyScoreDisplayRoot); }
+            var display = root.GetNode("PlayerScoreDisplay") as PlayerScoreDisplay;
+            display.Player = player; display.Round = Round;
+            var hand = root.FindChild("EnemyHand") as CardPileContainer;
+            hand.CardPile = player.Hand as CardPile;
+        });
+    }
+
+    private void OnUserDrewFromDeck(int _) => Round.Deck.Draw().Inspect(card => UserPlayer.Hand.Add(card));
+    private void OnUserDrewFromDiscardPile(int count) {
+        var drawnCards = Round.DiscardPile.Draw(count);
+        drawnCards.ForEach(card => UserPlayer.Hand.Add(card));
+        if (count > 1) { PlayerHand.Select(drawnCards.Last()); }
+        // Should display in some way that it was the top card drawn
+        //drawnCards.First();
+    }
+
+    private void OnDiscardButtonPressed() {
+        if (!IsNodeReady() || UserPlayer is null || Round is null) { return; }
+
+        var selected = PlayerHand.SelectedSequence.Single();
+        (UserPlayer.Hand as IAccessibleCardPile).Cards.Remove(selected);
+        Round.DiscardPile.Discard(selected);
+        Round.EndTurn();
+    }
+    
+    private void OnMeldButtonPressed() {
+        if (!IsNodeReady() || UserPlayer is null || Round is null) { return; }
+
+        var sequence = PlayerHand.SelectedSequence;
+        var set = new Set(sequence); var run = new Run(sequence);
+        
+        Result<Meld, string> melded = Err("Invalid meld");
+        if (set.Valid)      { melded = Round.Meld(set).And(set as Meld); }
+        else if (run.Valid) { melded = Round.Meld(run).And(run as Meld); }
+
+        melded.Inspect(meld => meld.Cards.ToList().ForEach(card => UserPlayer.Hand.Pop(card)));
+        if (melded.IsOk) { RebuildMelds(); }
+    }
+
+    private void OnResetButtonPressed() {
+        if (Round is null || !IsNodeReady()) { return; }
+        Round.ResetTurn();
+        stateInvalid = false;
+        FailureMessage.Hide();
     }
 }

@@ -1,8 +1,10 @@
-[gd_scene load_steps=14 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=20 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
+[ext_resource type="Script" path="res://src/interface/UserPlayer.cs" id="2_au0nu"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
+[ext_resource type="Script" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
 [ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
@@ -11,6 +13,28 @@
 [ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="7_w3bd7"]
 [ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
+
+[sub_resource type="Resource" id="Resource_u5wfg"]
+script = ExtResource("2_au0nu")
+Name = "User"
+
+[sub_resource type="Resource" id="Resource_uen6t"]
+script = ExtResource("3_1clis")
+TakeMeldChance = 1.0
+TakeLayOffChance = 1.0
+Name = "RandomPlayer"
+
+[sub_resource type="Resource" id="Resource_f6f3l"]
+script = ExtResource("3_1clis")
+TakeMeldChance = 1.0
+TakeLayOffChance = 1.0
+Name = "RandomPlayer"
+
+[sub_resource type="Resource" id="Resource_7r4cp"]
+script = ExtResource("3_1clis")
+TakeMeldChance = 1.0
+TakeLayOffChance = 1.0
+Name = "RandomPlayer"
 
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
@@ -25,6 +49,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "PlayerScoreDisplay", "EnemyScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
+Players = [SubResource("Resource_u5wfg"), SubResource("Resource_uen6t"), SubResource("Resource_f6f3l"), SubResource("Resource_7r4cp")]
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")
@@ -202,12 +227,6 @@ offset_right = -22.3041
 offset_bottom = 84.0
 theme_override_constants/separation = 20
 
-[node name="EnemyPlayerDisplay" parent="Enemy Displays" instance=ExtResource("7_66nw7")]
-layout_mode = 2
-
-[node name="EnemyPlayerDisplay2" parent="Enemy Displays" instance=ExtResource("7_66nw7")]
-layout_mode = 2
-
 [node name="Next Turn" type="Button" parent="."]
 visible = false
 custom_minimum_size = Vector2(200, 0)
@@ -234,3 +253,4 @@ offset_top = 68.0
 offset_right = 178.0
 offset_bottom = 145.0
 grow_vertical = 1
+Message = "Error message"

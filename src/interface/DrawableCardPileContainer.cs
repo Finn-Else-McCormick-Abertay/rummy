@@ -55,8 +55,7 @@ public partial class DrawableCardPileContainer : CardPileContainer
         }
     }
 
-    public delegate void NotifyDrewAction(int count);
-    public event NotifyDrewAction NotifyDrew;
+    public event Action<int> NotifyDrew;
 
     public override void _Input(InputEvent @event) {
         if (CardPile is null || GetChildCount() == 0 || CardPile is not IDrawable || !AllowDraw) { return; }

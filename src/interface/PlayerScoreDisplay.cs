@@ -28,11 +28,13 @@ public partial class PlayerScoreDisplay : PanelContainer
         set {
             if (Player is not null) {
                 Player.NotifyScoreChanged -= UpdateText;
+                Player.NotifyNameChanged -= UpdateText;
             }
             _player = value;
             if (IsNodeReady() && Player is not null) {
                 UpdateText();
                 Player.NotifyScoreChanged += UpdateText;
+                Player.NotifyNameChanged += UpdateText;
             }
         }
     }
@@ -62,7 +64,7 @@ public partial class PlayerScoreDisplay : PanelContainer
     }
 
     private void UpdateText() {
-        if (Player is null) { return; }
+        if (!IsNodeReady() || Player is null || nameLabel is null || scoreLabel is null) { return; }
 
         nameLabel.Text = Player.Name;
         scoreLabel.Text = Player.Score.ToString();

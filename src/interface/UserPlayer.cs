@@ -4,7 +4,9 @@ using Rummy.Game;
 
 namespace Rummy.Interface;
 
-class UserPlayer : Player 
+[Tool]
+[GlobalClass]
+public partial class UserPlayer : Player 
 {
     public UserPlayer() : base("User") {}
 

@@ -5,30 +5,45 @@ using System.Linq;
 using Rummy.Util;
 using static Rummy.Util.Result;
 using static Rummy.Util.Option;
+using Godot;
 
 namespace Rummy.Game;
 
-public abstract class Player
+[Tool]
+[GlobalClass]
+public abstract partial class Player : Resource
 {
-    public delegate void NotifyScoreChangedAction();
-    public event NotifyScoreChangedAction NotifyScoreChanged;
+    public event Action NotifyNameChanged;
+    public event Action NotifyScoreChanged;
     
-    public delegate void SayingMessageAction(string message);
-    public event SayingMessageAction OnSayingMessage;
-    protected void Say(string message) => OnSayingMessage?.Invoke(message);
+    public event EventHandler<string> OnSayingMessage, OnThinkingMessage;
+    protected void Say(string message) => OnSayingMessage?.Invoke(this, message);
+    protected void Think(string message) => OnThinkingMessage?.Invoke(this, message);
 
-    public delegate void ThinkingMessageAction(string message);
-    public event ThinkingMessageAction OnThinkingMessage;
-    protected void Think(string message) => OnThinkingMessage?.Invoke(message);
+    private readonly string _defaultName;
+    private string _name;
+    [Export] public string Name { get => _name; private set { _name = value; NotifyNameChanged?.Invoke(); } }
+    
+    protected Player(string name) {
+        _defaultName = name;
+        _name = name;
+    }
 
-    public string Name { get; init; }
+    public override bool _Set(StringName property, Variant value) {
+        return base._Set(property, value);
+    }
+
+    public override bool _PropertyCanRevert(StringName property) => property.ToString() switch {
+        "Name" => true,
+        _ => base._PropertyCanRevert(property)
+    };
+    public override Variant _PropertyGetRevert(StringName property) => property.ToString() switch {
+        "Name" => _defaultName,
+        _ => base._PropertyGetRevert(property)
+    };
 
     private int _score;
     public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
-    
-    protected Player(string name) {
-        Name = name;
-    }
 
     public interface IHand : ICountable {
         public void Add(Card card);

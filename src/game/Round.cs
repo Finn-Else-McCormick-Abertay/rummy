@@ -119,14 +119,6 @@ public class Round
 	public delegate void NotifyTurnEndedAction(Player player, Result<TurnRecord, string> result);
 	public delegate void NotifyTurnResetAction();
 	public delegate void NotifyGameEndedAction(Player winner, int roundScore, bool wasRummy);
-	
-	public delegate void NotifyDiscardPileRanOutAction();
-
-	public delegate void NotifyDrewFromDeckAction(Player player);
-	public delegate void NotifyDrewFromDiscardPileAction(Player player, ReadOnlyCollection<Card> cards);
-	public delegate void NotifyMeldedAction(Player player, ReadOnlyCollection<Card> cards);
-	public delegate void NotifyLaidOffAction(Player player, Card card);
-	public delegate void NotifyDiscardedAction(Player player, Card card);
 
 	// These events are mainly for the frontend, and fire exactly when it happens
 	public event NotifyTurnBeganAction NotifyTurnBegan;
@@ -134,15 +126,15 @@ public class Round
 	public event NotifyTurnResetAction NotifyTurnReset;
 	public event NotifyGameEndedAction NotifyGameEnded;
 	
-	public event NotifyDiscardPileRanOutAction NotifyDiscardPileRanOut;
+	public event Action NotifyDiscardPileRanOut;
 
 	// These events are intended for computer players and fire on turn end rather than when the event happens
 	// so as to avoid having to deal with actions which are undone by turn resetting
-	public event NotifyDrewFromDeckAction NotifyDrewFromDeck;
-	public event NotifyDrewFromDiscardPileAction NotifyDrewFromDiscardPile;
-	public event NotifyMeldedAction NotifyMelded;
-	public event NotifyLaidOffAction NotifyLaidOff;
-	public event NotifyDiscardedAction NotifyDiscarded;
+	public event Action<Player> 							NotifyDrewFromDeck;
+	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyDrewFromDiscardPile;
+	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyMelded;
+	public event Action<Player, Card> 						NotifyLaidOff;
+	public event Action<Player, Card> 						NotifyDiscarded;
 
 	private readonly List<Player> _players;
 	public ReadOnlyCollection<Player> Players { get => _players.AsReadOnly(); }

@@ -10,7 +10,9 @@ using static Rummy.Util.Option;
 
 namespace Rummy.AI;
 
-class RandomPlayer : ComputerPlayer 
+[Tool]
+[GlobalClass]
+public partial class RandomPlayer : ComputerPlayer 
 {
     public RandomPlayer() : base("RandomPlayer") {
         random = new Random();
@@ -21,8 +23,8 @@ class RandomPlayer : ComputerPlayer
 
     private readonly Random random;
 
-    private readonly double TakeMeldChance = 1.0;//0.85;
-    private readonly double TakeLayOffChance = 1.0;//0.6;
+    [Export] private double TakeMeldChance = 1.0;//0.85;
+    [Export] private double TakeLayOffChance = 1.0;//0.6;
     
     public override void OnAddedToRound(Round round) {}
     public override void OnRemovedFromRound(Round round) {}
