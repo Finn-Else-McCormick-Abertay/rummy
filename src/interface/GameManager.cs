@@ -61,9 +61,9 @@ public partial class GameManager : Node
             var sequence = PlayerHand.SelectedSequence;
             var set = new Set(sequence); var run = new Run(sequence);
             
-            Result<IMeld, string> melded = Err("Invalid meld");
-            if (set.Valid)      { melded = round.Meld(set).And(set as IMeld); }
-            else if (run.Valid) { melded = round.Meld(run).And(run as IMeld); }
+            Result<Meld, string> melded = Err("Invalid meld");
+            if (set.Valid)      { melded = round.Meld(set).And(set as Meld); }
+            else if (run.Valid) { melded = round.Meld(run).And(run as Meld); }
 
             melded.Inspect(meld => meld.Cards.ToList().ForEach(card => userPlayer.Hand.Pop(card)));
             if (melded.IsOk) { RebuildMelds(); }
@@ -209,9 +209,9 @@ public partial class GameManager : Node
             meldContainer.CardPile = meld as CardPile;
             meldContainer.PlayerHand = PlayerHand;
             meldContainer.NotifyLaidOff += card => {
-                if (meldContainer.CardPile is IMeld) {
+                if (meldContainer.CardPile is Meld) {
                     userPlayer.Hand.Pop(card);
-                    (meldContainer.CardPile as IMeld).LayOff(card);
+                    (meldContainer.CardPile as Meld).LayOff(card);
                 }
             };
         });

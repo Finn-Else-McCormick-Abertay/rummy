@@ -19,21 +19,11 @@ public partial class MeldContainer : CardPileContainer
 
     private bool IsMouseOver { get; set; } = false;
 
-    protected override void OnCardPileAdded(CardPile newPile) {
-        base.OnCardPileAdded(newPile);
-        //if (newPile is IMeld) { (newPile as IMeld).NotifyLaidOff += OnLayOff; }
-    }
-    protected override void OnCardPileRemoved(CardPile oldPile) {
-        base.OnCardPileAdded(oldPile);
-        //if (oldPile is IMeld) { (oldPile as IMeld).NotifyLaidOff -= OnLayOff; }
-    }
-    //private void OnLayOff(Card card) => Rebuild();
-
     protected override void PostRebuild() {
-        if (CardPile is null || CardPile is not IMeld) { return; }
+        if (CardPile is null || CardPile is not Meld) { return; }
 
         PotentialCard.Inspect(card => {
-            var meld = CardPile as IMeld;
+            var meld = CardPile as Meld;
             int index = meld.IndexIfLaidOff(card);
             if (index != -1) {
                 AddCard(card, index);
@@ -51,7 +41,7 @@ public partial class MeldContainer : CardPileContainer
     public event NotifyLaidOffAction NotifyLaidOff;
 
     public override void _Input(InputEvent @event) {
-        if (CardPile is null || CardPile is not IMeld) { return; }
+        if (CardPile is null || CardPile is not Meld) { return; }
 
         if (@event is InputEventMouseButton) {
             var mouseButtonEvent = @event as InputEventMouseButton;
@@ -69,7 +59,7 @@ public partial class MeldContainer : CardPileContainer
             if (!IsMouseOver && mouseOver) {
                 // If currently dragging card
                 PlayerHand.Inspect(hand => hand.DraggingCard.Inspect(card => {
-                    if ((CardPile as IMeld).CouldLayOff(card)) { PotentialCard = card; }
+                    if ((CardPile as Meld).CouldLayOff(card)) { PotentialCard = card; }
                 }));
             }
             if (IsMouseOver && !mouseOver) { PotentialCard = None; }

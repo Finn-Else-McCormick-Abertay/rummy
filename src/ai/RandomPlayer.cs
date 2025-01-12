@@ -46,11 +46,10 @@ class RandomPlayer : ComputerPlayer
 
         Think($"Hand: {string.Join(", ", Hand.Cards)}");
 
-        FindPotentialMelds(out var potentialMelds, out var nearSets, out var nearRuns);
+        FindPotentialMelds(out var potentialMelds, out var nearMelds);
 
         if (potentialMelds.Any()) { Think($"Potential Melds: {string.Join(", ", potentialMelds)}"); }
-        if (nearSets.Any()) { Think($"Near Sets: {string.Join(", ", nearSets.Select(x => $"[{string.Join(", ", x)}]"))}"); }
-        if (nearRuns.Any()) { Think($"Near Runs: {string.Join(", ", nearRuns.Select(x => $"[{string.Join(", ", x)}]"))}"); }
+        if (nearMelds.Any()) { Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}"); }
 
         if (potentialMelds.Count > 0 && random.NextDouble() <= TakeMeldChance) {
             var meld = potentialMelds.ElementAt(random.Next(potentialMelds.Count));
@@ -60,7 +59,7 @@ class RandomPlayer : ComputerPlayer
             }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
         }
 
-        Dictionary<Card, List<IMeld>> potentialLayOffs = FindPotentialLayOffs(round);
+        Dictionary<Card, List<Meld>> potentialLayOffs = FindPotentialLayOffs(round);
 
         if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
         // Can only lay off after having melded at least once
@@ -75,8 +74,7 @@ class RandomPlayer : ComputerPlayer
         }
 
         Card cardToDiscard;
-        do {
-            cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
+        do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
         } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard == topCard));
 
         Hand.Pop(cardToDiscard).Inspect(card => round.DiscardPile.Discard(card));

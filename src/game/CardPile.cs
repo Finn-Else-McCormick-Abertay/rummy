@@ -90,8 +90,8 @@ public class Deck : CardPile, IDrawable
 	}
 
 	public void AddPack() {
-		foreach (Suit suit in Enum.GetValues(typeof(Suit)).Cast<Suit>()) {
-			foreach (Rank rank in Enum.GetValues(typeof(Rank)).Cast<Rank>()) {
+		foreach (Suit suit in Enum.GetValues(typeof(Suit))) {
+			foreach (Rank rank in Enum.GetValues(typeof(Rank))) {
 				AddToBack(new Card(rank, suit));
 			}
 		}

@@ -28,23 +28,21 @@ class ComputerPlayer : Player
         round.EndTurn();
     }
 
-    protected void FindPotentialMelds(out List<IMeld> melds, out List<ImmutableSortedSet<Card>> nearSets, out List<ImmutableSortedSet<Card>> nearRuns) {
-        HashSet<IMeld> potentialMelds = new();
-        HashSet<ImmutableSortedSet<Card>> potentialNearSets = new(), potentialNearRuns = new();
+    protected void FindPotentialMelds(out List<Meld> melds, out List<NearMeld> nearMelds) {
+        HashSet<Meld> potentialMelds = new();
+        HashSet<NearMeld> potentialNearMelds = new();
         Hand.ForEach(card => {
             // Sets
             var sameRank = Hand.Where(card.MatchesRank);
             if (sameRank.Count() == 2) {
-                potentialNearSets.Add(sameRank.ToImmutableSortedSet());
+                potentialNearMelds.Add(new NearSet(sameRank));
             }
             while (sameRank.Count() >= 3) {
                 if (sameRank.Count() > 4) {
                     var firstFour = sameRank.SkipLast(sameRank.Count() - 4);
                     potentialMelds.Add(new Set(firstFour));
                 }
-                else {
-                    potentialMelds.Add(new Set(sameRank));
-                }
+                else { potentialMelds.Add(new Set(sameRank)); }
                 sameRank = sameRank.Skip(Math.Min(sameRank.Count(), 4));
             }
 
@@ -67,21 +65,15 @@ class ComputerPlayer : Player
                 potentialMelds.Add(new Run(potentialRun.AsEnumerable()));
             }
             else if (potentialRun.Count == 2) {
-                potentialNearRuns.Add(potentialRun.ToImmutableSortedSet());
+                potentialNearMelds.Add(new NearRun(potentialRun));
             }
         });
         melds = potentialMelds.Distinct().ToList();
-
-        IEqualityComparer<ImmutableSortedSet<Card>> comparer = new Util.EqualityComparer<ImmutableSortedSet<Card>>(
-            (x, y) => x.All(card => y.Contains(card)),
-            x => x.ToList().ConvertAll(x => x.GetHashCode()).Aggregate((x, y) => HashCode.Combine(x, y))
-        );
-        nearSets = potentialNearSets.Distinct(comparer).ToList();
-        nearRuns = potentialNearRuns.Distinct(comparer).ToList();
+        nearMelds = potentialNearMelds.Distinct().ToList();
     }
     
-    protected Dictionary<Card, List<IMeld>> FindPotentialLayOffs(Round round) {
-        Dictionary<Card, List<IMeld>> potentialLayOffs = new();
+    protected Dictionary<Card, List<Meld>> FindPotentialLayOffs(Round round) {
+        Dictionary<Card, List<Meld>> potentialLayOffs = new();
 
         round.Players.ToList().ForEach(player => {
             if (player != this && player.Hand.Count < 4) { Think($"{player.Name} only has {player.Hand.Count} cards left."); }

@@ -23,7 +23,7 @@ public class Round
 		public readonly int PriorMelds;
 		public List<Card> DrawnCardsDeck = new(), DrawnCardsDiscardPile = new();
 		public List<Card> Discards = new();
-		public List<IMeld> Melds = new();
+		public List<Meld> Melds = new();
 		public Dictionary<Player, Dictionary<int, List<Card>>> LayOffs = new();
 
 		public List<Card> LaidOffCards => LayOffs.SelectMany(kvp => kvp.Value.SelectMany(kvp => kvp.Value)).ToList();
@@ -104,14 +104,14 @@ public class Round
 	// Record of a (valid) turn
 	public class TurnRecord {
 		public TurnRecord(Player player, Option<Card> discardedCard,
-							ImmutableArray<Option<Card>> drawnCards, ImmutableArray<IMeld> melds, ImmutableArray<Card> laidOffCards) {
+							ImmutableArray<Option<Card>> drawnCards, ImmutableArray<Meld> melds, ImmutableArray<Card> laidOffCards) {
 			Player = player; DiscardedCard = discardedCard; DrawnCards = drawnCards; Melds = melds; LaidOffCards = laidOffCards;
 		}
 
 		public readonly Player Player;
 		public readonly Option<Card> DiscardedCard; // It is valid for the final turn to end without a discard
 		public readonly ImmutableArray<Option<Card>> DrawnCards; // 'None' in this instance is an unknown card, ie: a card drawn from the deck
-		public readonly ImmutableArray<IMeld> Melds;
+		public readonly ImmutableArray<Meld> Melds;
 		public readonly ImmutableArray<Card> LaidOffCards;
 	}
 	
@@ -161,12 +161,12 @@ public class Round
 	public bool HasDrawn { get => turnData.DrawnCardsDeck.Count > 0 || turnData.DrawnCardsDiscardPile.Count > 0; }
 
 	private readonly Dictionary<(Player, int), int> _meldOrder = new();
-	public ReadOnlyCollection<IMeld> Melds => Players.ToList()
-		.Aggregate(new List<(Player, IMeld)>(), (melds, player) => melds.Concat(player.Melds.ConvertAll(x => (player, x))).ToList())
+	public ReadOnlyCollection<Meld> Melds => Players.ToList()
+		.Aggregate(new List<(Player, Meld)>(), (melds, player) => melds.Concat(player.Melds.ConvertAll(x => (player, x))).ToList())
 		.OrderBy(pair => _meldOrder[(pair.Item1, pair.Item1.Melds.FindIndex(x => x == pair.Item2))]).ToList()
 		.ConvertAll(pair => pair.Item2).AsReadOnly();
 	
-	public Result<Unit, string> Meld(IMeld meld) {
+	public Result<Unit, string> Meld(Meld meld) {
 		if (meld.Valid) {
 			CurrentPlayer.Melds.Add(meld);
 			Player meldPlayer = CurrentPlayer;

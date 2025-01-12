@@ -64,7 +64,7 @@ public abstract class Player
     protected HandInternal _hand = new();
     public IHand Hand => _hand;
 
-	public List<IMeld> Melds { get; set; } = new();
+	public List<Meld> Melds { get; set; } = new();
 
     public abstract void OnAddedToRound(Round round);
     public abstract void OnRemovedFromRound(Round round);
