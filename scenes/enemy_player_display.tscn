@@ -1,9 +1,10 @@
 [gd_scene load_steps=3 format=3 uid="uid://b2s4dxt1v0o47"]
 
-[ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/player_score_display.tscn" id="1_vy2kl"]
+[ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/score_display.tscn" id="1_vy2kl"]
 [ext_resource type="PackedScene" uid="uid://i64idti40js4" path="res://scenes/enemy_hand.tscn" id="2_fgbij"]
 
-[node name="EnemyPlayerDisplay" type="VBoxContainer"]
+[node name="EnemyPlayerDisplay" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,18 +14,14 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="PlayerScoreDisplay" parent="." instance=ExtResource("1_vy2kl")]
-layout_mode = 2
+layout_mode = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
-layout_mode = 2
+[node name="HandDisplay" parent="." instance=ExtResource("2_fgbij")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.711
+anchor_right = 0.711
+offset_left = -333.072
+offset_right = 332.928
 size_flags_vertical = 3
-
-[node name="Padding" type="Control" parent="HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.02
-
-[node name="EnemyHand" parent="HBoxContainer" instance=ExtResource("2_fgbij")]
-layout_mode = 2
-size_flags_vertical = 3
-CardSize = 40.0
+CardSeparation = 7

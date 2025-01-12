@@ -53,8 +53,7 @@ public partial class GameManager : Node
     [Export] private DrawableCardPileContainer Deck { get; set; }
     [Export] private DrawableCardPileContainer DiscardPile { get; set; }
     [Export] private PlayerHand PlayerHand { get; set; }
-    [Export] private PlayerScoreDisplay PlayerScoreDisplay { get; set; }
-    [Export] private Control EnemyScoreDisplayRoot { get; set; }
+    [Export] private Control ScoreDisplayRoot { get; set; }
     [Export] private Control MeldRoot { get; set; }
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
@@ -63,7 +62,7 @@ public partial class GameManager : Node
 
     [ExportGroup("Scenes")]
     [Export] private PackedScene MeldScene { get; set; }
-    [Export] private PackedScene EnemyScoreDisplayScene { get; set; }
+    [Export] private PackedScene ScoreDisplayScene { get; set; }
 
     public override void _Ready() {
         if (Engine.IsEditorHint()) {
@@ -198,19 +197,15 @@ public partial class GameManager : Node
     private void OnPlayerThink(object obj, string message) => GD.Print($"{(obj as Player)?.Name}(Think): {message}");
 
     private void RebuildPlayerDisplays(IEnumerable<Player> players) {
-        if (!IsNodeReady() || PlayerScoreDisplay is null || EnemyScoreDisplayRoot is null) { return; }
+        if (!IsNodeReady() || ScoreDisplayRoot is null) { return; }
 
-        PlayerScoreDisplay.Player = UserPlayer;
-        PlayerScoreDisplay.Visible = UserPlayer is not null;
-        PlayerScoreDisplay.Round = Round;
-
-        foreach (Node node in EnemyScoreDisplayRoot.GetChildren()) { EnemyScoreDisplayRoot.RemoveChild(node); node.QueueFree(); }
-        players.Where(x => x is not null && x != UserPlayer).ToList().ForEach(player => {
-            var root = EnemyScoreDisplayScene.Instantiate();
-            EnemyScoreDisplayRoot.AddChild(root); if (!Engine.IsEditorHint()) { root.SetOwner(EnemyScoreDisplayRoot); }
+        foreach (Node node in ScoreDisplayRoot.GetChildren()) { ScoreDisplayRoot.RemoveChild(node); node.QueueFree(); }
+        players.Where(x => x is not null).ToList().ForEach(player => {
+            var root = ScoreDisplayScene.Instantiate();
+            ScoreDisplayRoot.AddChild(root); if (!Engine.IsEditorHint()) { root.SetOwner(ScoreDisplayRoot); }
             var display = root.GetNode("PlayerScoreDisplay") as PlayerScoreDisplay;
             display.Player = player; display.Round = Round;
-            var hand = root.FindChild("EnemyHand") as CardPileContainer;
+            var hand = root.FindChild("HandDisplay") as CardPileContainer;
             hand.CardPile = player.Hand as CardPile;
         });
     }

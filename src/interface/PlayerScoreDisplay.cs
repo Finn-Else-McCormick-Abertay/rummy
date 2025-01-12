@@ -50,6 +50,7 @@ public partial class PlayerScoreDisplay : PanelContainer
             }
             _round = value;
             if (IsNodeReady() && Round is not null) {
+                Highlighted = Player == Round.CurrentPlayer;
                 Round.NotifyTurnBegan += OnTurnBegan;
                 Round.NotifyTurnEnded += OnTurnEnded;
                 Round.NotifyTurnReset += OnTurnReset;
