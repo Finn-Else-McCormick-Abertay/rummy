@@ -34,13 +34,14 @@ public partial class RandomPlayer : ComputerPlayer
         Option<Card> topFromDiscardPile = None;
 
         // Draw from deck
-        if (random.Next(2) == 0) {
+        int drawSelection = random.Next(2);
+        if (drawSelection == 0) {
             var card = round.Deck.Draw().Inspect(card => drawnCards.Add(card));
             Say($"Drew from deck.");
             Think($"Drew {card.Value} from deck.");
         }
         // Draw from discard
-        else {
+        if (drawSelection == 1 || drawnCards.Count == 0) {
             topFromDiscardPile = round.DiscardPile.Draw().Inspect(card => drawnCards.Add(card));
             Say($"Drew {topFromDiscardPile.Value} from discard pile.");
         }
@@ -75,13 +76,15 @@ public partial class RandomPlayer : ComputerPlayer
             }
         }
 
-        Card cardToDiscard;
-        do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
-        } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard == topCard));
+        if (Hand.Cards.Count > 0) {
+            Card cardToDiscard;
+            do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
+            } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard == topCard));
 
-        Hand.Pop(cardToDiscard).Inspect(card => round.DiscardPile.Discard(card));
+            Hand.Pop(cardToDiscard).Inspect(card => round.DiscardPile.Discard(card));
 
-        Say($"Discarding {cardToDiscard}");
+            Say($"Discarding {cardToDiscard}");
+        }
 
         round.EndTurn();
     }

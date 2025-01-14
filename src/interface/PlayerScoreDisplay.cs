@@ -65,7 +65,8 @@ public partial class PlayerScoreDisplay : PanelContainer
     }
 
     private void UpdateText() {
-        if (!IsNodeReady() || Player is null || nameLabel is null || scoreLabel is null) { return; }
+        if (!IsInstanceValid(nameLabel) || !nameLabel.IsNodeReady() || !IsInstanceValid(scoreLabel) || !scoreLabel.IsNodeReady()
+        || !IsInstanceValid(Player)) { return; }
 
         nameLabel.Text = Player.Name;
         scoreLabel.Text = Player.Score.ToString();

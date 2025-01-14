@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cef2570xhab3f"]
+[gd_scene load_steps=4 format=3 uid="uid://cef2570xhab3f"]
 
 [ext_resource type="Script" path="res://src/interface/PlayerHand.cs" id="1_7oa3w"]
 [ext_resource type="Theme" uid="uid://1wfrf22h0u32" path="res://assets/card_theme.tres" id="1_whccm"]
+[ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="3_a8kpc"]
 
 [node name="PlayerHand" type="Container"]
 layout_direction = 1
@@ -17,3 +18,4 @@ SelectedOffset = Vector2(0, -30)
 CardsOverlap = false
 CardSizingReaction = 1
 NumCardsInEditor = 7
+CardInPileTheme = ExtResource("3_a8kpc")

@@ -101,7 +101,7 @@ public partial class CardPileContainer : Container
             float cardSizeAlongAxis = Direction == DirectionEnum.Horizontal ?
                 CardSize : GetChildCount() > 0 ? (GetChild(0) as Control).Size.Y : 0f;
 
-            float areaAlongAxis = Direction == DirectionEnum.Horizontal ? Size.X : Size.Y - (!CardsOverlap ? CardSeparation * 2 : 0f);
+            float areaAlongAxis = Direction == DirectionEnum.Horizontal ? Size.X : Size.Y - (!CardsOverlap ? CardSeparation : 0f);
 
             float sizeAlongAxisPerCard = CardsOverlap ? CardSeparation : CardSeparation + cardSizeAlongAxis;
             float sizeAlongAxisPerCardMax = areaAlongAxis / GetChildCount();
@@ -179,13 +179,18 @@ public partial class CardPileContainer : Container
             };
         }
 
+        PostAddCard(cardDisplay);
+
         QueueSort();
     }
+    protected virtual void PostAddCard(CardDisplay display) {}
 
     protected virtual void OnCardMouseOver(CardDisplay display, bool entering) {}
     protected virtual void OnCardScroll(CardDisplay display, MouseButton buttonIndex) {}
     protected virtual void OnCardClicked(CardDisplay display, MouseButton buttonIndex, bool pressed) {}
     protected virtual void OnCardMouseMotion(CardDisplay display, InputEventMouseMotion @event) {}
+    
+    public Action NotifyCardPileRebuilt;
 
     protected void Rebuild() {
         if (!IsNodeReady() || (CardPile is null && !Engine.IsEditorHint())) {
@@ -211,6 +216,7 @@ public partial class CardPileContainer : Container
             else { Clear(); for (int i = 0; i < CardPile.Count; ++i) { AddCard(new Card()); } }
         }
         PostRebuild();
+        NotifyCardPileRebuilt?.Invoke();
     }
 
     protected virtual void PostRebuild() {}

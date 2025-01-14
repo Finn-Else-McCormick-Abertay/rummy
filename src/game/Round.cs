@@ -60,11 +60,11 @@ public class Round
 		// Is valid (completed) turn?
 		public Result<Unit, string> IsValid() {
 			var errs = new List<string>();
-			if (DrawnCardsDeck.Count == 0 && DrawnCardsDiscardPile.Count == 0) { errs.Add("$Did not draw."); }
+			if (DrawnCardsDeck.Count == 0 && DrawnCardsDiscardPile.Count == 0) { errs.Add("Did not draw."); }
 			if (DrawnCardsDeck.Count > 0 && DrawnCardsDiscardPile.Count > 0) { errs.Add($"Drew from both deck and discard pile."); }
 			if (DrawnCardsDeck.Count > 1) { errs.Add($"Drew {DrawnCardsDeck.Count} cards from deck."); }
 
-			if (DrawnCardsDiscardPile.Count > 0 && Discards.Last() == DrawnCardsDiscardPile.First() && !Player.Hand.Empty) {
+			if (DrawnCardsDiscardPile.Count > 0 && Discards.Count > 0 && Discards.Last() == DrawnCardsDiscardPile.First() && !Player.Hand.Empty) {
 				errs.Add($"Discarded top card drawn from discard pile without going out.");
 			}
 			if (DrawnCardsDiscardPile.Count > 1) {
@@ -126,7 +126,13 @@ public class Round
 	public event NotifyTurnResetAction NotifyTurnReset;
 	public event NotifyGameEndedAction NotifyGameEnded;
 	
-	public event Action NotifyDiscardPileRanOut;
+	public event Action NotifyDeckRanOut;
+	
+	public event Action<Player> 			ImmediateDisplayNotifyDrewFromDeck;
+	public event Action<Player, Card> 		ImmediateDisplayNotifyDrewFromDiscardPile;
+	public event Action<Player, Meld> 		ImmediateDisplayNotifyMelded;
+	public event Action<Player, Meld, Card> ImmediateDisplayNotifyLaidOff;
+	public event Action<Player, Card> 		ImmediateDisplayNotifyDiscarded;
 
 	// These events are intended for computer players and fire on turn end rather than when the event happens
 	// so as to avoid having to deal with actions which are undone by turn resetting
@@ -150,6 +156,8 @@ public class Round
 	public Deck Deck { get; init; } = new();
 	public DiscardPile DiscardPile { get; init; } = new();
 
+	private bool _currentlyFlippingOverDiscard = false;
+
 	public bool HasDrawn { get => turnData.DrawnCardsDeck.Count > 0 || turnData.DrawnCardsDiscardPile.Count > 0; }
 
 	private readonly Dictionary<(Player, int), int> _meldOrder = new();
@@ -162,17 +170,18 @@ public class Round
 		if (meld.Valid) {
 			CurrentPlayer.Melds.Add(meld);
 			Player meldPlayer = CurrentPlayer;
-			(meld as CardPile).OnCardAdded += (card) => {
+			meld.OnCardAdded += (card) => {
 				turnData.LayOffs
 					.GetOrCreate(meldPlayer)
 					.GetOrCreate(meldPlayer.Melds.FindIndex(x => x == meld))
 					.Add(card);
-				NotifyLaidOff?.Invoke(CurrentPlayer, card);
+				ImmediateDisplayNotifyLaidOff?.Invoke(CurrentPlayer, meld, card);
 			};
 			turnData.Melds.Add(meld.Clone());
 			var orderKey = (meldPlayer, meldPlayer.Melds.FindIndex(x => x == meld));
 			_meldOrder.GetOrAdd(orderKey, 0);
 			_meldOrder[orderKey] = Melds.Count;
+			ImmediateDisplayNotifyMelded?.Invoke(meldPlayer, meld);
 			return Ok();
 		}
 		return Err($"{meld} is not a valid meld.");
@@ -207,20 +216,30 @@ public class Round
 		Deck.Draw().Inspect(card => DiscardPile.Discard(card));
 		
 		// Add required callbacks
-		DiscardPile.OnCardAdded += (card) => { turnData.Discards.Add(card); };
-		Deck.OnCardDrawn += (card) => { turnData.DrawnCardsDeck.Add(card); };
-		DiscardPile.OnCardDrawn += (card) => { turnData.DrawnCardsDiscardPile.Add(card); };
+		DiscardPile.OnCardAdded += (card) => {
+			if (_currentlyFlippingOverDiscard) { return; }
+			turnData.Discards.Add(card);
+			ImmediateDisplayNotifyDiscarded?.Invoke(CurrentPlayer, card);
+		};
+		Deck.OnCardDrawn += (card) => {
+			if (_currentlyFlippingOverDiscard) { return; }
+			turnData.DrawnCardsDeck.Add(card);
+			ImmediateDisplayNotifyDrewFromDeck?.Invoke(CurrentPlayer);
+		};
+		DiscardPile.OnCardDrawn += (card) => {
+			if (_currentlyFlippingOverDiscard) { return; }
+			turnData.DrawnCardsDiscardPile.Add(card);
+			ImmediateDisplayNotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, card);
+		};
 
 		Deck.OnEmptied += () => {
-			NotifyDiscardPileRanOut?.Invoke();
+			NotifyDeckRanOut?.Invoke();
+			_currentlyFlippingOverDiscard = true;
 			Deck.Append(DiscardPile);
 			Deck.Flip();
 			DiscardPile.Clear();
-			Deck.Draw().Inspect(card => {
-				DiscardPile.Discard(card);
-				// Remove these from the turn data since they weren't real, they were just starting the discard pile
-				turnData.Discards.Remove(card); turnData.DrawnCardsDeck.Remove(card);
-			});
+			Deck.Draw().Inspect(card => DiscardPile.Discard(card));
+			_currentlyFlippingOverDiscard = false;
 		};
 	}
 
@@ -255,7 +274,7 @@ public class Round
 		turnData.Melds.ForEach(meld => NotifyMelded?.Invoke(CurrentPlayer, meld.Cards));
 		turnData.LaidOffCards.ForEach(card => NotifyLaidOff?.Invoke(CurrentPlayer, card));
 
-		NotifyDiscarded?.Invoke(CurrentPlayer, turnData.Discards.Last());
+		if (turnData.Discards.Count > 0) { NotifyDiscarded?.Invoke(CurrentPlayer, turnData.Discards.Last()); }
 
 		// Game End
 		if (CurrentPlayer.Hand.Empty) {

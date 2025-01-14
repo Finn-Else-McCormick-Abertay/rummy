@@ -4,7 +4,6 @@ using Rummy.Util;
 using static Rummy.Util.Option;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 
 namespace Rummy.Interface;
@@ -12,13 +11,50 @@ namespace Rummy.Interface;
 [Tool]
 public partial class PlayerHand : CardPileContainer
 {
-    public PlayerHand() : base() {
-        CardInPileTheme = ResourceLoader.Load<Theme>("res://assets/themes/card/dropshadow.tres");
+    public PlayerHand() : base() { CardInPileTheme = ResourceLoader.Load<Theme>("res://assets/themes/card/dropshadow.tres"); }
+
+    public override void _Ready() {
+        base._Ready();
+        if (!Engine.IsEditorHint() && GetViewport().GuiGetFocusOwner() is null) { SendFocusToCards(); }
     }
 
+    protected override void PostAddCard(CardDisplay display) {
+        if (Engine.IsEditorHint()) { return; }
+        display.FocusMode = FocusModeEnum.All;
+        display.Connect(Control.SignalName.FocusEntered, Callable.From(UpdateHoveredToMatchFocus));
+        display.Connect(Control.SignalName.FocusExited, Callable.From(UpdateHoveredToMatchFocus));
+    }
+    private void UpdateHoveredToMatchFocus() {
+        var focusedChild = GetChildren().Cast<Control>().ToList().Find(x => x.HasFocus());
+        if (focusedChild is null) { HoveredCard = None; }
+        else if (focusedChild is CardDisplay) { HoveredCard = (focusedChild as CardDisplay).Card; }
+    }
+
+    public void SendFocusToCards() {
+        if (GetChildCount() > 0 && GetViewport().GuiGetFocusOwner() is not CardDisplay) { _focusJustJumpedIn = true; }
+
+        if (HoveredCard.IsSome) { HoveredCardDisplay.Inspect(display => display.GrabFocus()); }
+        else if (GetChildCount() > 0) { GetChild<Control>(0).GrabFocus(); }
+    }
+
+    private bool _focusJustJumpedIn = false;
+
     private Option<Card> _hovered = None;
-    public Option<Card> HoveredCard { get => _hovered; set { _hovered = value; QueueSort(); } }
+    public Option<Card> HoveredCard {
+        get => _hovered;
+        set {
+            _hovered = value;
+            HoveredCardDisplay.Inspect(display => { if (GetViewport().GuiGetFocusOwner() is CardDisplay) { display.GrabFocus(); } });
+            QueueSort();
+        }
+    }
     private Option<CardDisplay> HoveredCardDisplay => HoveredCard.AndThen(FindCard);
+
+    private Option<Card> _cannotDiscard = None;
+    public Option<Card> CannotDiscardCard { get => _cannotDiscard; set { _cannotDiscard = value; QueueSort(); } }
+
+    private Option<Card> _mustUse = None;
+    public Option<Card> MustUseCard { get => _mustUse; set { _mustUse = value; QueueSort(); } }
 
     private bool ShouldDrag { get; set; }
     private Vector2 DragOffset { get; set; }
@@ -45,25 +81,28 @@ public partial class PlayerHand : CardPileContainer
     public void Select(Card card) { _selectedCards.Add(card); QueueSort(); } 
     public void Deselect(Card card) { _selectedCards.Remove(card); QueueSort(); }
     
-    private Option<CardDisplay> FindCard(Card card) {
+    public Option<CardDisplay> FindCard(Card card) {
         var display = GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
         return display is not null ? Some(display) : None;
     }
 
     protected override bool PreChildSorted(CardDisplay display) {
-        if (DraggingCard.IsSomeAnd(draggingCard => draggingCard == display.Card)) {
-            return true;
-        }
+        if (DraggingCard.IsSomeAnd(draggingCard => draggingCard == display.Card)) { return true; }
         return false;
     }
     
     protected override void PostChildSorted(CardDisplay display) {
         if (DraggingCard.IsSomeAnd(draggingCard => draggingCard == display.Card)) { return; }
 
+        display.Rotation = 0f;
+
         if (_selectedCards.Contains(display.Card)) {
             display.Position += SelectedOffset;
+            if (GetChildCount() > 1 && _selectedCards.Count == 1 && CannotDiscardCard.IsSomeAnd(card => card == display.Card)) {
+                display.Rotation = 5f * (MathF.PI / 180);
+            }
         }
-        if (HoveredCard.IsSome && HoveredCard.Value == display.Card) {
+        if (HoveredCard.IsSomeAnd(card => card == display.Card)) {
             display.Position += HoveredOffset;
         }
     }
@@ -73,12 +112,7 @@ public partial class PlayerHand : CardPileContainer
 
         _selectedCards = _selectedCards.Intersect(Cards).ToList();
         HoveredCard.Inspect(card => { if (!Cards.Contains(card)) { DraggingCard = None; } });
-        DraggingCard.Inspect(card => {
-            if (!Cards.Contains(card)) {
-                DraggingCard = None;
-                ShouldDrag = false;
-            }
-        });
+        DraggingCard.Inspect(card => { if (!Cards.Contains(card)) { DraggingCard = None; ShouldDrag = false; } });
     }
 
     protected override void OnCardMouseOver(CardDisplay display, bool entering) {
@@ -125,12 +159,7 @@ public partial class PlayerHand : CardPileContainer
                 DraggingCard = None;
                 QueueSort();
             }
-            if (shouldToggleSelect) {
-                HoveredCard.Inspect(card => {
-                    if (_selectedCards.Contains(card)) { Deselect(card); }
-                    else { Select(card); }
-                });
-            }
+            if (shouldToggleSelect) { ToggleSelectHovered(); }
         }
     }
 
@@ -153,16 +182,41 @@ public partial class PlayerHand : CardPileContainer
         }
     }
 
-    public override void _Input(InputEvent @event) {
-        if (@event is InputEventMouseButton) {
-            var buttonEvent = @event as InputEventMouseButton;
-            if (DraggingCard.IsSome && buttonEvent.ButtonIndex == MouseButton.Left && !buttonEvent.Pressed) {
-                //ShouldDrag = false;
-                //DraggingCardDisplay.Value.MouseFilter = MouseFilterEnum.Stop;
+    private void ToggleSelectHovered() {
+        HoveredCard.Inspect(card => { if (_selectedCards.Contains(card)) { Deselect(card); } else { Select(card); } });
+    }
 
+    public override void _Process(double delta) {
+        if (Engine.IsEditorHint()) { return; }
+        if (_focusJustJumpedIn && Input.IsActionJustReleased(ActionName.Select)) { _focusJustJumpedIn = false; }
+
+        if (HoveredCard.IsSome && Input.IsActionJustPressed(ActionName.Select) && !_focusJustJumpedIn) {
+            ToggleSelectHovered();
+        }
+
+        if (GetChildren().Cast<Control>().Any(child => child.HasFocus()) && Input.IsActionPressed(ActionName.Select) && HoveredCard.IsSome) {
+            int index = HoveredCardDisplay.Value.GetIndex();
+            if (Input.IsActionJustPressed(ActionName.UI.Left) && index - 1 >= 0) {
+                MoveChild(HoveredCardDisplay.Value, index - 1);
+                QueueSort();
+            }
+            if (Input.IsActionJustPressed(ActionName.UI.Right) && index + 1 < GetChildCount()) {
+                MoveChild(HoveredCardDisplay.Value, index + 1);
+                QueueSort();
             }
         }
-        else if (@event is InputEventMouseMotion) {
+    }
+
+    public override void _Input(InputEvent @event) {
+        if (Engine.IsEditorHint()) { return; }
+        /*if (@event is InputEventAction) {
+            var actionEvent = @event as InputEventAction;
+            if (HoveredCard.IsSome && Input.IsActionPressed(ActionName.Select) &&
+                    (actionEvent.Action == ActionName.UI.Left || actionEvent.Action == ActionName.UI.Right)) {
+                GetViewport().SetInputAsHandled();
+            }
+        }*/
+        if (@event is InputEventMouseMotion) {
             var motionEvent = @event as InputEventMouseMotion;
             if (ShouldDrag && DraggingCard.IsSome) {
                 DraggingCardDisplay.Inspect(draggingCard => {

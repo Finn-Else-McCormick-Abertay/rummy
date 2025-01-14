@@ -12,7 +12,7 @@ public partial class MeldContainer : CardPileContainer
     public Option<PlayerHand> PlayerHand { get; set; } = None;
 
     private Option<Card> _potentialCard = None;
-    private Option<Card> PotentialCard { get => _potentialCard; set { _potentialCard = value; Rebuild(); } }
+    public Option<Card> PotentialCard { get => _potentialCard; set { _potentialCard = value; Rebuild(); } }
 
     private bool _canLayOff = false;
     public bool CanLayOff { get => _canLayOff; set { _canLayOff = value; if (!_canLayOff) { PotentialCard = None; } } }
@@ -36,6 +36,12 @@ public partial class MeldContainer : CardPileContainer
             }
         });
     }
+    protected override void PostChildSorted(CardDisplay display) {
+        if (CardPile is null) { return; }
+
+        int index = (CardPile as Meld).Cards.ToList().FindIndex(x => x == display.Card);
+        if (index != -1) { MoveChild(display, index); }
+    }
     
     public delegate void NotifyLaidOffAction(Card card);
     public event NotifyLaidOffAction NotifyLaidOff;
@@ -47,8 +53,8 @@ public partial class MeldContainer : CardPileContainer
             var mouseButtonEvent = @event as InputEventMouseButton;
             if (mouseButtonEvent.ButtonIndex == MouseButton.Left && !mouseButtonEvent.Pressed) {
                 PotentialCard.Inspect(card => {
-                    NotifyLaidOff?.Invoke(card);
                     PotentialCard = None;
+                    NotifyLaidOff?.Invoke(card);
                 });
             }
         }

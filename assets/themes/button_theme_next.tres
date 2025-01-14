@@ -20,25 +20,20 @@ shadow_color = Color(0, 0, 0, 0.266667)
 shadow_size = 5
 shadow_offset = Vector2(0, 4)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s8aga"]
-content_margin_left = 0.0
-content_margin_top = 0.0
-content_margin_right = 0.0
-content_margin_bottom = 2.0
-bg_color = Color(0.332031, 0.332031, 0.332031, 1)
-border_width_left = 5
-border_width_top = 3
-border_width_right = 5
-border_width_bottom = 8
-border_color = Color(0.25, 0.25, 0.25, 1)
-border_blend = true
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h3mtd"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
 corner_radius_top_left = 30
 corner_radius_top_right = 30
 corner_radius_bottom_right = 30
 corner_radius_bottom_left = 30
-shadow_color = Color(0, 0, 0, 0.266667)
-shadow_size = 5
-shadow_offset = Vector2(0, 4)
+expand_margin_left = 1.0
+expand_margin_top = 1.0
+expand_margin_right = 1.0
+expand_margin_bottom = 1.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_13v1d"]
 content_margin_left = 0.0
@@ -102,7 +97,7 @@ shadow_offset = Vector2(0, 4)
 
 [resource]
 Button/styles/disabled = SubResource("StyleBoxFlat_6nk7k")
-Button/styles/focus = SubResource("StyleBoxFlat_s8aga")
+Button/styles/focus = SubResource("StyleBoxFlat_h3mtd")
 Button/styles/hover = SubResource("StyleBoxFlat_13v1d")
 Button/styles/normal = SubResource("StyleBoxFlat_leyu6")
 Button/styles/pressed = SubResource("StyleBoxFlat_slgtp")

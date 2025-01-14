@@ -61,8 +61,19 @@ public partial class GameManager : Node
     [Export] private FailureMessage FailureMessage { get; set; }
 
     [ExportGroup("Scenes")]
+    [Export] private PackedScene CardDisplayScene { get; set; }
     [Export] private PackedScene MeldScene { get; set; }
     [Export] private PackedScene ScoreDisplayScene { get; set; }
+    private Theme CardInPileTheme = ResourceLoader.Load<Theme>("res://assets/themes/card/in_pile.tres");
+
+    [ExportGroup("Animation")]
+    [Export] public float CardDrawDuration { get; set; } = 0.4f;
+    //[Export] public float CardMultiDrawDelay { get; set; } = 0.1f;
+    [Export] public float CardDiscardDuration { get; set; } = 0.4f;
+    [Export] public float MeldDuration { get; set; } = 0.4f;
+    [Export] public float CardLayOffDurationPlayer { get; set; } = 0.15f;
+    [Export] public float CardLayOffDurationBot { get; set; } = 0.4f;
+    [Export] public float DeckTurnOverDuration { get; set; } = 0.3f;
 
     public override void _Ready() {
         if (Engine.IsEditorHint()) {
@@ -75,6 +86,7 @@ public partial class GameManager : Node
         DiscardButton.Pressed += OnDiscardButtonPressed;
         MeldButton.Pressed += OnMeldButtonPressed;
         FailureMessage.Button.Pressed += OnResetButtonPressed;
+        PlayerHand.NotifyCardPileRebuilt += OnPlayerHandRebuilt;
         RebuildMelds();
 
         BeginNewRound();
@@ -97,6 +109,8 @@ public partial class GameManager : Node
                 Deck.AllowDraw = true;
                 DiscardPile.AllowDraw = true;
                 SetCanLayOff(false);
+                Deck.GrabFocus();
+                //PlayerHand.SendFocusToCards();
             }
         };
         Round.NotifyTurnEnded += (player, result) => {
@@ -108,6 +122,8 @@ public partial class GameManager : Node
                 DiscardButton.Disabled = true;
                 MeldButton.Disabled = true;
                 FailureMessage.Hide();
+                PlayerHand.MustUseCard = None;
+                PlayerHand.CannotDiscardCard = None;
             }).InspectErr(err => {
                 FailureMessage.Message = err.Replace(". ", ".\n");
                 FailureMessage.UseButton = true; FailureMessage.Show();
@@ -119,10 +135,7 @@ public partial class GameManager : Node
         };
         Round.NotifyTurnReset += () => OnReachTurnBoundary(Round.CurrentPlayer);
 
-        NextTurnButton.Pressed += () => {
-            NextTurnButton.Visible = false;
-            Round.BeginTurn();
-        };
+        NextTurnButton.Pressed += () => { NextTurnButton.Visible = false; Round.BeginTurn(); };
 
         Round.NotifyGameEnded += (winner, score, isRummy) => {
             FailureMessage.Message = $"{Round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
@@ -130,6 +143,146 @@ public partial class GameManager : Node
             FailureMessage.UseButton = false; FailureMessage.Show();
             NextTurnButton.Visible = false;
             SetCanLayOff(false);
+        };
+
+        Round.NotifyDeckRanOut += async () => {
+            if (DiscardPile.GetChildCount() == 0) { return; }
+            var discardPileCards = DiscardPile.GetChildren().Cast<CardDisplay>();
+            List<Vector2> startPositions = new();
+            discardPileCards.ToList().ForEach(display => startPositions.Add(display.GlobalPosition));
+            Deck.Hide(); DiscardPile.Hide();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var deckCards = Deck.GetChildren().Cast<Control>();
+            var endPos = deckCards.Any() ? deckCards.Last().GlobalPosition : Deck.GlobalPosition;
+            SignalAwaiter lastAwaiter = null;
+            startPositions.ForEach(startPos => {
+                lastAwaiter = CreateCardMoveTween(DeckTurnOverDuration, None, DiscardPile.CardSize, startPos, endPos, CardInPileTheme);
+            });
+            await lastAwaiter;
+            Deck.Show(); DiscardPile.Show();
+        };
+
+        Round.ImmediateDisplayNotifyDiscarded += async (player, card) => {
+            if (player == UserPlayer) { return; }
+            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
+                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
+                ?.GetNode("HandDisplay") as CardPileContainer;
+            if (handDisplay is null) { return; }
+            var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
+                (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
+            var startPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var cardDisplayInDiscard = DiscardPile.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+            var endPos = cardDisplayInDiscard?.GlobalPosition ?? DiscardPile.GlobalPosition;
+
+            cardDisplayInDiscard?.Hide();
+            
+            await CreateCardMoveScaleTween(CardDiscardDuration, card,
+                handDisplay.CardSize, DiscardPile.CardSize, startPos, endPos, CardInPileTheme);
+            
+            if (IsInstanceValid(cardDisplayInDiscard)) { cardDisplayInDiscard?.Show(); }
+        };
+        Round.ImmediateDisplayNotifyDrewFromDeck += async (player) => {
+            if (player == UserPlayer) { return; }
+            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
+                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
+                ?.GetNode("HandDisplay") as CardPileContainer;
+            if (handDisplay is null) { return; }
+            var cardDisplayInHand = handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null;
+            var cardDisplayInDeck = Deck.GetChildCount() > 0 ? Deck.GetChildren().Cast<Control>().Last() : null;
+
+            var startPos = cardDisplayInDeck?.GlobalPosition ?? Deck.GlobalPosition;
+            var endPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+
+            cardDisplayInHand?.Hide();
+            
+            await CreateCardMoveScaleTween(CardDrawDuration, None, Deck.CardSize, handDisplay.CardSize, startPos, endPos, CardInPileTheme);
+                
+            if (IsInstanceValid(cardDisplayInHand)) { cardDisplayInHand?.Show(); }
+        };
+        Round.ImmediateDisplayNotifyDrewFromDiscardPile += async (player, card) => {
+            if (player == UserPlayer) { return; }
+            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
+                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
+                ?.GetNode("HandDisplay") as CardPileContainer;
+            if (handDisplay is null) { return; }
+            var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
+                (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
+            var cardDisplayInDiscardPile = DiscardPile.GetChildCount() > 0 ? DiscardPile.GetChildren().Cast<Control>().Last() : null;
+
+            var startPos = cardDisplayInDiscardPile?.GlobalPosition ?? DiscardPile.GlobalPosition;
+            var endPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+
+            cardDisplayInHand?.Hide();
+            
+            await CreateCardMoveScaleTween(CardDrawDuration, None,
+                DiscardPile.CardSize, handDisplay.CardSize, startPos, endPos, CardInPileTheme);
+
+            if (IsInstanceValid(cardDisplayInHand)) { cardDisplayInHand?.Show(); }
+
+        };
+        Round.ImmediateDisplayNotifyLaidOff += async (player, meld, card) => {
+            if (player == UserPlayer) { return; }
+            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
+                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
+                ?.GetNode("HandDisplay") as CardPileContainer;
+            if (handDisplay is null) { return; }
+            var handDisplayCardSize = handDisplay.CardSize;
+            
+            var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
+                (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
+                
+            var startPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var meldContainer = MeldRoot.GetChildren().Cast<MeldContainer>().ToList().Find(child => child.CardPile as Meld == meld);
+            if (meldContainer is null) { return; }
+
+            var cardDisplayInMeld = meldContainer.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+            if (cardDisplayInMeld is null) { GD.Print("BOT Layoff display is null"); }
+
+            var endPos = cardDisplayInMeld?.GlobalPosition ?? meldContainer.GlobalPosition;
+            int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
+
+            cardDisplayInMeld?.Hide();
+            
+            var tempDisplay = CreateTempCard(card, handDisplayCardSize, startPos, CardInPileTheme);
+            tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
+            await CreateCardMoveScaleTween(CardLayOffDurationBot, tempDisplay, meldContainer.CardSize, endPos);
+
+            if (IsInstanceValid(cardDisplayInMeld)) { cardDisplayInMeld?.Show(); }
+            RebuildMelds();
+        };
+        Round.ImmediateDisplayNotifyMelded += async (player, meld) => {
+            RebuildMelds();
+            if (player == UserPlayer) { return; }
+
+            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
+                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
+                ?.GetNode("HandDisplay") as CardPileContainer;
+            if (handDisplay is null) { return; }
+
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var newMeld = MeldRoot.GetChildren().Cast<MeldContainer>().ToList().Find(child => child.CardPile as Meld == meld);
+
+            SignalAwaiter finalSignalAwaiter = null;
+            foreach (Card card in meld.Cards) {
+                var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
+                    (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
+                var cardDisplayInMeld = newMeld.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+
+                var startPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+                var endPos = cardDisplayInMeld?.GlobalPosition ?? newMeld.GlobalPosition;
+                int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
+                
+                var tempDisplay = CreateTempCard(card, handDisplay.CardSize, startPos, CardInPileTheme);
+                tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
+                finalSignalAwaiter =  CreateCardMoveScaleTween(MeldDuration, tempDisplay, newMeld.CardSize, endPos);
+            }
+            newMeld?.Hide();
+            await finalSignalAwaiter;
+            if (IsInstanceValid(newMeld)) { newMeld?.Show(); }
         };
         
         DiscardButton.Visible = UserPlayer is not null;
@@ -140,24 +293,40 @@ public partial class GameManager : Node
         MeldButton.Disabled = true;
         NextTurnButton.Visible = false;
 
+        Deck.AllowDraw = false;
+        DiscardPile.AllowDraw = false;
+
+        CallDeferred("OnPlayerHandRebuilt");
         OnReachTurnBoundary(Round.CurrentPlayer);
     }
 
     public override void _Process(double delta) {
-        if (Engine.IsEditorHint() || Round is null || stateInvalid || Round.CurrentPlayer != UserPlayer) { return; }
+        if (Engine.IsEditorHint() || Round is null || stateInvalid) { return; }
 
-        if (!Round.MidTurn && !Round.Finished) {
+        if (NextTurnButton.Visible && !NextTurnButton.Disabled && Input.IsActionJustPressed(ActionName.Skip)) {
+            NextTurnButton.Visible = false;
             Round.BeginTurn();
         }
-        if (Round.MidTurn) {
+        if (!DiscardButton.Disabled && Input.IsActionJustPressed(ActionName.Discard)) { OnDiscardButtonPressed(); }
+        if (!MeldButton.Disabled && Input.IsActionJustPressed(ActionName.Meld)) { OnMeldButtonPressed(); }
+
+        if (Round.CurrentPlayer == UserPlayer && !Round.MidTurn && !Round.Finished) {
+            Round.BeginTurn();
+        }
+        if (Round.CurrentPlayer == UserPlayer && Round.MidTurn) {
             if (Round.HasDrawn) {
                 Deck.AllowDraw = false;
                 DiscardPile.AllowDraw = false;
                 SetCanLayOff(true);
 
                 var selected = PlayerHand.SelectedSequence;
-                DiscardButton.Disabled = selected.Count != 1;
+                DiscardButton.Disabled = !(selected.Count == 1 &&
+                    (PlayerHand.CannotDiscardCard.IsNone ||
+                    selected.First() != PlayerHand.CannotDiscardCard.Value) ||
+                    PlayerHand.GetChildCount() <= 1);
                 MeldButton.Disabled = !(new Run(selected).Valid || new Set(selected).Valid);
+                
+                if (PlayerHand.GetChildCount() == 0 && !Round.Finished) { Round.EndTurn(); }
             }
             else {
                 Deck.AllowDraw = true;
@@ -175,10 +344,32 @@ public partial class GameManager : Node
         Round?.Melds.ToList().ForEach(meld => {
             var meldContainer = MeldScene.Instantiate() as MeldContainer;
             MeldRoot.AddChild(meldContainer); meldContainer.SetOwner(MeldRoot);
-            meldContainer.CardPile = meld as CardPile;
+            meldContainer.CardPile = meld;
             meldContainer.PlayerHand = PlayerHand;
-            meldContainer.NotifyLaidOff += card => {
-                if (meldContainer.CardPile is Meld) { UserPlayer.Hand.Pop(card); (meldContainer.CardPile as Meld).LayOff(card); }
+            meldContainer.NotifyLaidOff += async card => {
+                if (meldContainer.CardPile is Meld) {
+                    var displayInHand = PlayerHand.FindCard(card);
+                    var startPos = displayInHand.AndThen(display => Some(display.GlobalPosition)).Or(PlayerHand.GlobalPosition);
+
+                    UserPlayer.Hand.Pop(card);
+                    (meldContainer.CardPile as Meld).LayOff(card);
+
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    var displayInMeld = meldContainer.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+
+                    if (displayInMeld is null) { GD.Print("USER Layoff display is null"); }
+
+                    var endPos = displayInMeld?.GlobalPosition ?? meldContainer.GlobalPosition;
+                    int? zIndex = displayInMeld?.FindAbsoluteZIndex();
+
+                    displayInMeld?.Hide();
+
+                    var tempDisplay = CreateTempCard(card, PlayerHand.CardSize, startPos);
+                    if (zIndex is not null) { tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex ?? 0; }
+                    await CreateCardMoveScaleTween(CardLayOffDurationPlayer, tempDisplay, meldContainer.CardSize, endPos);
+
+                    displayInMeld?.Show();                                        
+                }
             };
         });
     }
@@ -190,7 +381,50 @@ public partial class GameManager : Node
 
     private void OnReachTurnBoundary(Player nextPlayer) {
         if (!IsNodeReady() || Round is null) { return; }
-        NextTurnButton.Visible = nextPlayer != UserPlayer && !Round.Finished;
+        if (nextPlayer != UserPlayer && !Round.Finished) { NextTurnButton.Visible = true; NextTurnButton.GrabFocus(); }
+    }
+
+    private void OnPlayerHandRebuilt() {
+        if (!IsNodeReady() || Round is null) { return; }
+        var firstCard = PlayerHand.GetChildCount() > 0 ? PlayerHand.GetChild<Control>(0) : null;
+        var firstCardPath = firstCard?.GetPath() ?? new NodePath();
+        DiscardPile.FocusNext = firstCardPath;
+        NextTurnButton.FocusNext = firstCardPath;
+        // These may be overridden later on if a card is directly below the deck
+        Deck.FocusNeighborBottom = firstCardPath; DiscardPile.FocusNeighborBottom = firstCardPath;
+
+        if (firstCard is not null) { firstCard.FocusPrevious = DiscardPile.GetPath(); }
+        NextTurnButton.FocusNeighborBottom =
+            (PlayerHand.GetChildCount() > 0 ? PlayerHand.GetChildren().Last() : null)?.GetPath()?? new NodePath();
+        NodePath deckPath = Deck.GetPath(), discardPath = DiscardPile.GetPath(), nextTurnPath = NextTurnButton.GetPath();
+
+        var deckCentre = Deck.GetGlobalRect().GetCenter();
+
+        Rect2 discardPileRect = DiscardPile.GetChildCount() > 0 ? DiscardPile.GetChildren().Cast<Control>().Last().GetGlobalRect() : new Rect2();
+        var discardPileCentre = discardPileRect.GetCenter();
+        float discardPileLeftBound = discardPileRect.Position.X, discardPileRightBound = discardPileRect.End.X;
+        PlayerHand.GetChildren().Cast<Control>().ToList().ForEach(card => {
+            var cardRect = card.GetGlobalRect();
+            var cardCentre = cardRect.GetCenter();
+
+            if (cardRect.Position.X < deckCentre.X && cardRect.End.X > deckCentre.X) {
+                Deck.FocusNeighborBottom = card.GetPath();
+            }
+            if (cardRect.Position.X < discardPileCentre.X && cardRect.End.X > discardPileCentre.X) {
+                DiscardPile.FocusNeighborBottom = card.GetPath();
+            }
+
+            if (cardCentre.X < discardPileLeftBound && DiscardPile.GetChildCount() > 0) {
+                card.FocusNeighborTop = deckPath;
+            }
+            else if (cardCentre.X < discardPileRightBound + discardPileRect.Size.X * 2f && DiscardPile.GetChildCount() > 0) {
+                card.FocusNeighborTop = discardPath;
+            }
+            else if (cardCentre.X > NextTurnButton.GlobalPosition.X - NextTurnButton.GetGlobalRect().Size.X * 1.5f) {
+                card.FocusNeighborTop = nextTurnPath;
+            }
+            else { card.FocusNeighborTop = new NodePath(); }
+        });
     }
 
     private void OnPlayerSay(object obj, string message) => GD.Print($"{(obj as Player)?.Name}: {message}");
@@ -210,25 +444,118 @@ public partial class GameManager : Node
         });
     }
 
-    private void OnUserDrewFromDeck(int _) => Round.Deck.Draw().Inspect(card => UserPlayer.Hand.Add(card));
-    private void OnUserDrewFromDiscardPile(int count) {
-        var drawnCards = Round.DiscardPile.Draw(count);
-        drawnCards.ForEach(card => UserPlayer.Hand.Add(card));
-        if (count > 1) { PlayerHand.Select(drawnCards.Last()); }
-        // Should display in some way that it was the top card drawn
-        //drawnCards.First();
+    private CardDisplay CreateTempCard(Option<Card> cardOpt, float cardSize, Vector2 pos, Theme theme = null) {
+        var display = CardDisplayScene.Instantiate() as CardDisplay;
+        display.SetAnchorsPreset(Control.LayoutPreset.Center); display.Size = new Vector2(cardSize, 0f);
+        display.FaceDown = cardOpt.IsNone; cardOpt.Inspect(card => display.Card = card);
+        if (theme is not null) { display.Theme = theme; }
+        GetTree().Root.AddChild(display);
+        display.Position = pos;
+        return display;
     }
 
-    private void OnDiscardButtonPressed() {
-        if (!IsNodeReady() || UserPlayer is null || Round is null) { return; }
+    private SignalAwaiter CreateCardMoveTween(double duration, CardDisplay display, Vector2 endPos) {
+        var tween = GetTree().CreateTween();
+        tween.TweenProperty(display, "position", endPos, duration).SetEase(Tween.EaseType.InOut);
+        tween.TweenCallback(Callable.From(display.QueueFree));
+
+        return ToSignal(tween, Tween.SignalName.Finished);
+    }
+
+    private SignalAwaiter CreateCardMoveTween(
+            double duration, Option<Card> cardOpt, float cardSize, Vector2 startPos, Vector2 endPos, Theme theme = null
+        ) => CreateCardMoveTween(duration, CreateTempCard(cardOpt, cardSize, startPos, theme), endPos);
+
+    private SignalAwaiter CreateCardMoveScaleTween(double duration, CardDisplay display, float endSize, Vector2 endPos) {
+        var tween = GetTree().CreateTween();
+        tween.TweenProperty(display, "position", endPos, duration).SetEase(Tween.EaseType.InOut);
+        tween.Parallel().TweenProperty(display, "size", new Vector2(endSize, 0f), duration).SetEase(Tween.EaseType.InOut);
+        tween.TweenCallback(Callable.From(display.QueueFree));
+
+        return ToSignal(tween, Tween.SignalName.Finished);
+    }
+
+    private SignalAwaiter CreateCardMoveScaleTween(
+            double duration, Option<Card> cardOpt, float startSize, float endSize,
+            Vector2 startPos, Vector2 endPos, Theme theme = null
+        ) => CreateCardMoveScaleTween(duration, CreateTempCard(cardOpt, startSize, startPos, theme), endSize, endPos);
+
+    private void OnUserDrewFromDeck(int _) {
+        Vector2 lastCardPos = Deck.GetChildOrNull<Control>(Deck.GetChildCount() - 1)?.GlobalPosition ?? Deck.GlobalPosition;
+        var endPos = PlayerHand.GetChildOrNull<Control>(PlayerHand.GetChildCount() - 1)?.GlobalPosition ?? PlayerHand.GlobalPosition;
+        Round.Deck.Draw().Inspect(async card => {
+            UserPlayer.Hand.Add(card);
+            var display = PlayerHand.FindCard(card);
+            display.Inspect(display => display.Visible = false);
+
+            await CreateCardMoveTween(CardDrawDuration, None, Deck.CardSize, lastCardPos, endPos);
+
+            display.Inspect(display => display.Visible = true);
+            PlayerHand.HoveredCard = card;
+            PlayerHand.SendFocusToCards();
+        });
+    }
+
+    private void OnUserDrewFromDiscardPile(int count) {
+        for (int i = 0; i < count; ++i) {
+            var lastChild = DiscardPile.GetChildCount() > 0 ? DiscardPile.GetChildren().Last() as Control : null;
+            var beginPos = lastChild?.GlobalPosition ?? DiscardPile.GlobalPosition;
+            if (i > 0 && lastChild is not null) {
+                if (DiscardPile.HighlightedIndex == lastChild?.GetIndex()) { beginPos -= DiscardPile.HighlightOffset; }
+            }
+            var drawnCard = Round.DiscardPile.Draw();
+            drawnCard.Inspect(card => UserPlayer.Hand.Add(card));
+            var display = drawnCard.AndThen(card => PlayerHand.FindCard(card));
+
+            drawnCard.AndThen<(Card card, int index)>(card => (card, i)).Inspect(async pair => {
+                display.Inspect(display => display.Visible = false);
+
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                var endPos = display.AndThen(display => Some(display.GlobalPosition)).Or(PlayerHand.GlobalPosition);
+
+                await CreateCardMoveTween(CardDrawDuration, pair.card, DiscardPile.CardSize, beginPos, endPos);
+
+                display.Inspect(display => display.Visible = true);
+                if (pair.index == 0) { PlayerHand.CannotDiscardCard = pair.card; }
+                if (count > 1 && pair.index == count - 1) {
+                    PlayerHand.MustUseCard = pair.card;
+                    PlayerHand.Select(pair.card);
+                    PlayerHand.HoveredCard = pair.card;
+                }
+                
+                if (pair.index == count - 1) { PlayerHand.SendFocusToCards(); }
+            });
+            //await ToSignal(GetTree().CreateTimer(CardMultiDrawDelay), Timer.SignalName.Timeout);
+        }
+    }
+
+    private async void OnDiscardButtonPressed() {
+        if (!IsNodeReady() || UserPlayer is null || Round is null || PlayerHand.SelectedSequence.Count != 1) { return; }
 
         var selected = PlayerHand.SelectedSequence.Single();
+        
+        var startPos = PlayerHand.FindCard(selected).AndThen(card => Some(card.GlobalPosition)).Or(PlayerHand.GlobalPosition);
+        
         (UserPlayer.Hand as IAccessibleCardPile).Cards.Remove(selected);
         Round.DiscardPile.Discard(selected);
-        Round.EndTurn();
+
+        var discardDisplay = DiscardPile.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == selected);
+        discardDisplay?.Hide();
+
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        var endPos = discardDisplay?.GlobalPosition + new Vector2(0f, DiscardPile.CardSeparation / 2f) ?? DiscardPile.GlobalPosition;
+
+        var distance = (endPos - startPos).Length();
+        double duration = CardDiscardDuration / (900.0 / distance);
+
+        await CreateCardMoveTween(duration, selected, PlayerHand.CardSize, startPos, endPos);
+        
+        if (IsInstanceValid(discardDisplay)) { discardDisplay?.Show(); }
+        if (!Round.Finished) { Round?.EndTurn(); }
     }
     
-    private void OnMeldButtonPressed() {
+    private async void OnMeldButtonPressed() {
         if (!IsNodeReady() || UserPlayer is null || Round is null) { return; }
 
         var sequence = PlayerHand.SelectedSequence;
@@ -238,8 +565,30 @@ public partial class GameManager : Node
         if (set.Valid)      { melded = Round.Meld(set).And(set as Meld); }
         else if (run.Valid) { melded = Round.Meld(run).And(run as Meld); }
 
-        melded.Inspect(meld => meld.Cards.ToList().ForEach(card => UserPlayer.Hand.Pop(card)));
-        if (melded.IsOk) { RebuildMelds(); }
+        if (melded.IsOk) {
+            RebuildMelds();
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var newMeld = MeldRoot.GetChildren().Cast<MeldContainer>().ToList().Find(child => child.CardPile as Meld == melded.Value);
+
+            SignalAwaiter finalSignalAwaiter = null;
+            foreach (Card card in melded.Value.Cards) {
+                var cardDisplayInMeld = newMeld.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+
+                var startPos = PlayerHand.FindCard(card).AndThen(card => Some(card.GlobalPosition)).Or(PlayerHand.GlobalPosition);
+                var endPos = cardDisplayInMeld?.GlobalPosition ?? newMeld.GlobalPosition;
+                int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
+                
+                var tempDisplay = CreateTempCard(card, PlayerHand.CardSize, startPos);
+                tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
+
+                UserPlayer.Hand.Pop(card);
+                finalSignalAwaiter =  CreateCardMoveScaleTween(MeldDuration, tempDisplay, newMeld.CardSize, endPos);
+            }
+            newMeld?.Hide();
+            await finalSignalAwaiter;
+            if (IsInstanceValid(newMeld)) { newMeld?.Show(); }
+            PlayerHand.SendFocusToCards();
+        }
     }
 
     private void OnResetButtonPressed() {
@@ -247,5 +596,7 @@ public partial class GameManager : Node
         Round.ResetTurn();
         stateInvalid = false;
         FailureMessage.Hide();
+        PlayerHand.MustUseCard = None;
+        PlayerHand.CannotDiscardCard = None;
     }
 }
