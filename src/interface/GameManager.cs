@@ -109,6 +109,24 @@ public partial class GameManager : Node
         NextTurnButton.Visible = false;
         RebuildMelds();
 
+        var debugHand = new List<Card> {
+            new(Rank.Ace, Suit.Hearts),
+            new(Rank.Ace, Suit.Clubs),
+            new(Rank.Jack, Suit.Spades),
+            new(Rank.Three, Suit.Clubs),
+            new(Rank.Nine, Suit.Spades),
+            new(Rank.Ace, Suit.Spades),
+            new(Rank.Seven, Suit.Spades),
+            new(Rank.Eight, Suit.Spades),
+            new(Rank.Seven, Suit.Hearts),
+            new(Rank.Eight, Suit.Hearts),
+        };
+        var (melds, nearMelds) = PotentialMoves.FindMelds(debugHand);
+        GD.Print($"DEBUG Melds: {melds.ToJoinedString(", ")}");
+        GD.Print($"DEBUG Near Melds: {nearMelds.ToJoinedString(", ")}");
+
+        GD.Print(nearMelds.Select(x => $"{x} : [{x.PotentialCards().ToJoinedString(", ")}]").ToJoinedString("\n"));
+
         BeginNewRound();
     }
 

@@ -13,7 +13,7 @@ public abstract class NearMeld
 {
     public ImmutableList<Card> Cards { get; init; }
     protected NearMeld(IEnumerable<Card> cards) {
-        var cardsTemp = cards.ToList(); cardsTemp.Sort();
+        var cardsTemp = cards.ToList(); cardsTemp.Sort(); cardsTemp.Reverse();
         Cards = cardsTemp.ToImmutableList();
     }
 
@@ -57,7 +57,7 @@ public class NearRun : NearMeld, IEquatable<NearRun>
         var suit = Cards.First().Suit;
 
         if (Cards.First().Rank - 1 >= Rank.Ace) { potentialCards.Add(new Card(Cards.First().Rank - 1, suit)); }
-        if (Cards.Last().Rank + 1 <= Rank.King) { potentialCards.Add(new Card(Cards.First().Rank + 1, suit)); }
+        if (Cards.Last().Rank + 1 <= Rank.King) { potentialCards.Add(new Card(Cards.Last().Rank + 1, suit)); }
 
         Option<Card> prevCard = None;
         foreach (Card card in Cards) {
@@ -67,7 +67,7 @@ public class NearRun : NearMeld, IEquatable<NearRun>
             });
             prevCard = Some(card);
         }
-        return potentialCards;
+        return potentialCards.Distinct().OrderBy(x => x.Rank).ToList();
     }
 
     public override bool Valid => Cards.All(card => card.Suit == Cards.First().Suit);

@@ -49,7 +49,7 @@ public partial class RandomPlayer : ComputerPlayer
 
         Think($"Hand: {string.Join(", ", Hand.Cards)}");
 
-        FindPotentialMelds(out var potentialMelds, out var nearMelds);
+        var (potentialMelds, nearMelds) = FindPotentialMelds();
 
         if (potentialMelds.Any()) { Think($"Potential Melds: {string.Join(", ", potentialMelds)}"); }
         if (nearMelds.Any()) { Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}"); }
