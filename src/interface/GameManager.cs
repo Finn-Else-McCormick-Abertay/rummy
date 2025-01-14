@@ -67,13 +67,30 @@ public partial class GameManager : Node
     private Theme CardInPileTheme = ResourceLoader.Load<Theme>("res://assets/themes/card/in_pile.tres");
 
     [ExportGroup("Animation")]
-    [Export] public float CardDrawDuration { get; set; } = 0.4f;
-    //[Export] public float CardMultiDrawDelay { get; set; } = 0.1f;
-    [Export] public float CardDiscardDuration { get; set; } = 0.4f;
-    [Export] public float MeldDuration { get; set; } = 0.4f;
-    [Export] public float CardLayOffDurationPlayer { get; set; } = 0.15f;
-    [Export] public float CardLayOffDurationBot { get; set; } = 0.4f;
-    [Export] public float DeckTurnOverDuration { get; set; } = 0.3f;
+    [Export] public double AnimationSpeedMultiplier { get; set; } = 1f;
+    [Export] private double _drawDuration = 0.4f;
+    [Export] private double _discardDuration = 0.4f;
+    [Export] private double _meldDuration = 0.4f;
+    [Export] private double _layOffDurationPlayer = 0.15f;
+    [Export] private double _layOffDurationBot = 0.4f;
+    [Export] private double _deckTurnOverDuration = 0.3f;
+    [Export] private double _initialDrawGapDuration = 0.1f;
+    [Export] private double _discardPileStarterDuration = 0.2f;
+    [Export] private double _shuffleDuration = 2f;
+
+    public double DrawDuration => _drawDuration * AnimationSpeedMultiplier;
+    public double DiscardDuration => _discardDuration * AnimationSpeedMultiplier;
+    public double MeldDuration => _meldDuration * AnimationSpeedMultiplier;
+    public double LayOffDurationPlayer => _layOffDurationPlayer * AnimationSpeedMultiplier;
+    public double LayOffDurationBot => _layOffDurationBot * AnimationSpeedMultiplier;
+    public double DeckTurnOverDuration => _deckTurnOverDuration * AnimationSpeedMultiplier;
+    public double InitialDrawGapDuration => _initialDrawGapDuration * AnimationSpeedMultiplier;
+    public double DiscardPileStarterDuration => _discardPileStarterDuration * AnimationSpeedMultiplier;
+    public double ShuffleDuration => _shuffleDuration * AnimationSpeedMultiplier;
+
+    [Signal] public delegate void DeckShuffleCompleteEventHandler();
+    [Signal] public delegate void DeckTurnOverCompleteEventHandler();
+    [Signal] public delegate void InitialDealCompleteEventHandler();
 
     public override void _Ready() {
         if (Engine.IsEditorHint()) {
@@ -87,12 +104,19 @@ public partial class GameManager : Node
         MeldButton.Pressed += OnMeldButtonPressed;
         FailureMessage.Button.Pressed += OnResetButtonPressed;
         PlayerHand.NotifyCardPileRebuilt += OnPlayerHandRebuilt;
+        DiscardButton.Disabled = true;
+        MeldButton.Disabled = true;
+        NextTurnButton.Visible = false;
         RebuildMelds();
 
         BeginNewRound();
     }
 
-    private void BeginNewRound() {
+    Node FindPlayerScoreDisplayRoot(Player player) => ScoreDisplayRoot?.GetChildren().ToList()
+        .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player) as Node;
+    CardPileContainer FindPlayerHandDisplay(Player player) => FindPlayerScoreDisplayRoot(player)?.GetNode<CardPileContainer>("HandDisplay");
+
+    private async void BeginNewRound() {
         if (Engine.IsEditorHint()) { return; }
 
         Round = new Round(players);
@@ -101,16 +125,12 @@ public partial class GameManager : Node
         Round.NotifyMelded += (player, cards) => RebuildMelds();
         Round.NotifyLaidOff += (player, card) => RebuildMelds();
 
-        RebuildMelds();
-        RebuildPlayerDisplays(Round.Players);
-
         Round.NotifyTurnBegan += player => {
             if (player == UserPlayer) {
                 Deck.AllowDraw = true;
                 DiscardPile.AllowDraw = true;
                 SetCanLayOff(false);
                 Deck.GrabFocus();
-                //PlayerHand.SendFocusToCards();
             }
         };
         Round.NotifyTurnEnded += (player, result) => {
@@ -145,29 +165,44 @@ public partial class GameManager : Node
             SetCanLayOff(false);
         };
 
-        Round.NotifyDeckRanOut += async () => {
+        Round.ImmediateDisplayNotifyDeckRanOut += async () => {
             if (DiscardPile.GetChildCount() == 0) { return; }
             var discardPileCards = DiscardPile.GetChildren().Cast<CardDisplay>();
             List<Vector2> startPositions = new();
             discardPileCards.ToList().ForEach(display => startPositions.Add(display.GlobalPosition));
+
             Deck.Hide(); DiscardPile.Hide();
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
             var deckCards = Deck.GetChildren().Cast<Control>();
             var endPos = deckCards.Any() ? deckCards.Last().GlobalPosition : Deck.GlobalPosition;
+            
             SignalAwaiter lastAwaiter = null;
             startPositions.ForEach(startPos => {
                 lastAwaiter = CreateCardMoveTween(DeckTurnOverDuration, None, DiscardPile.CardSize, startPos, endPos, CardInPileTheme);
             });
             await lastAwaiter;
-            Deck.Show(); DiscardPile.Show();
+            Deck.Show(); //DiscardPile.Show();
+            EmitSignal(SignalName.DeckTurnOverComplete);
+        };
+        Round.ImmediateDisplayNotifyInitialCardPlaceOnDiscard += async (card) => {
+            await ToSignal(this, Round.Turn >= 0 ? SignalName.DeckTurnOverComplete : SignalName.InitialDealComplete);
+
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var cardInDeck = Deck.GetChildCount() > 0 ? Deck.GetChildren().Last() as CardDisplay : null;
+            var cardInDiscardPile = DiscardPile.GetChildCount() > 0 ? DiscardPile.GetChildren().Last() as CardDisplay : null;
+
+            var startPos = cardInDeck?.GlobalPosition ?? Deck.GlobalPosition;
+            var endPos = cardInDiscardPile?.GlobalPosition + new Vector2(0f, DiscardPile.CardSeparation) ?? DiscardPile.GlobalPosition;
+
+            await CreateCardMoveTween(DiscardPileStarterDuration, card, Deck.CardSize, startPos, endPos, CardInPileTheme);
+
+            DiscardPile.Show();
         };
 
         Round.ImmediateDisplayNotifyDiscarded += async (player, card) => {
             if (player == UserPlayer) { return; }
-            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
-                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
-                ?.GetNode("HandDisplay") as CardPileContainer;
-            if (handDisplay is null) { return; }
+            var handDisplay = FindPlayerHandDisplay(player); if (handDisplay is null) { return; }
             var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
                 (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
             var startPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
@@ -178,17 +213,15 @@ public partial class GameManager : Node
 
             cardDisplayInDiscard?.Hide();
             
-            await CreateCardMoveScaleTween(CardDiscardDuration, card,
+            await CreateCardMoveScaleTween(DiscardDuration, card,
                 handDisplay.CardSize, DiscardPile.CardSize, startPos, endPos, CardInPileTheme);
             
             if (IsInstanceValid(cardDisplayInDiscard)) { cardDisplayInDiscard?.Show(); }
         };
         Round.ImmediateDisplayNotifyDrewFromDeck += async (player) => {
             if (player == UserPlayer) { return; }
-            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
-                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
-                ?.GetNode("HandDisplay") as CardPileContainer;
-            if (handDisplay is null) { return; }
+            var handDisplay = FindPlayerHandDisplay(player); if (handDisplay is null) { return; }
+
             var cardDisplayInHand = handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null;
             var cardDisplayInDeck = Deck.GetChildCount() > 0 ? Deck.GetChildren().Cast<Control>().Last() : null;
 
@@ -197,16 +230,13 @@ public partial class GameManager : Node
 
             cardDisplayInHand?.Hide();
             
-            await CreateCardMoveScaleTween(CardDrawDuration, None, Deck.CardSize, handDisplay.CardSize, startPos, endPos, CardInPileTheme);
+            await CreateCardMoveScaleTween(DrawDuration, None, Deck.CardSize, handDisplay.CardSize, startPos, endPos, CardInPileTheme);
                 
             if (IsInstanceValid(cardDisplayInHand)) { cardDisplayInHand?.Show(); }
         };
         Round.ImmediateDisplayNotifyDrewFromDiscardPile += async (player, card) => {
             if (player == UserPlayer) { return; }
-            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
-                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
-                ?.GetNode("HandDisplay") as CardPileContainer;
-            if (handDisplay is null) { return; }
+            var handDisplay = FindPlayerHandDisplay(player); if (handDisplay is null) { return; }
             var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
                 (handDisplay.GetChildCount() > 0 ? handDisplay.GetChild<CardDisplay>(0) : null);
             var cardDisplayInDiscardPile = DiscardPile.GetChildCount() > 0 ? DiscardPile.GetChildren().Cast<Control>().Last() : null;
@@ -216,18 +246,14 @@ public partial class GameManager : Node
 
             cardDisplayInHand?.Hide();
             
-            await CreateCardMoveScaleTween(CardDrawDuration, None,
+            await CreateCardMoveScaleTween(DrawDuration, None,
                 DiscardPile.CardSize, handDisplay.CardSize, startPos, endPos, CardInPileTheme);
 
             if (IsInstanceValid(cardDisplayInHand)) { cardDisplayInHand?.Show(); }
-
         };
         Round.ImmediateDisplayNotifyLaidOff += async (player, meld, card) => {
             if (player == UserPlayer) { return; }
-            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
-                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
-                ?.GetNode("HandDisplay") as CardPileContainer;
-            if (handDisplay is null) { return; }
+            var handDisplay = FindPlayerHandDisplay(player); if (handDisplay is null) { return; }
             var handDisplayCardSize = handDisplay.CardSize;
             
             var cardDisplayInHand = handDisplay.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card) ??
@@ -240,7 +266,6 @@ public partial class GameManager : Node
             if (meldContainer is null) { return; }
 
             var cardDisplayInMeld = meldContainer.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
-            if (cardDisplayInMeld is null) { GD.Print("BOT Layoff display is null"); }
 
             var endPos = cardDisplayInMeld?.GlobalPosition ?? meldContainer.GlobalPosition;
             int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
@@ -249,7 +274,7 @@ public partial class GameManager : Node
             
             var tempDisplay = CreateTempCard(card, handDisplayCardSize, startPos, CardInPileTheme);
             tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
-            await CreateCardMoveScaleTween(CardLayOffDurationBot, tempDisplay, meldContainer.CardSize, endPos);
+            await CreateCardMoveScaleTween(LayOffDurationBot, tempDisplay, meldContainer.CardSize, endPos);
 
             if (IsInstanceValid(cardDisplayInMeld)) { cardDisplayInMeld?.Show(); }
             RebuildMelds();
@@ -257,11 +282,7 @@ public partial class GameManager : Node
         Round.ImmediateDisplayNotifyMelded += async (player, meld) => {
             RebuildMelds();
             if (player == UserPlayer) { return; }
-
-            var handDisplay = ScoreDisplayRoot.GetChildren().ToList()
-                .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player)
-                ?.GetNode("HandDisplay") as CardPileContainer;
-            if (handDisplay is null) { return; }
+            var handDisplay = FindPlayerHandDisplay(player); if (handDisplay is null) { return; }
 
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             var newMeld = MeldRoot.GetChildren().Cast<MeldContainer>().ToList().Find(child => child.CardPile as Meld == meld);
@@ -284,6 +305,9 @@ public partial class GameManager : Node
             await finalSignalAwaiter;
             if (IsInstanceValid(newMeld)) { newMeld?.Show(); }
         };
+
+        RebuildMelds();
+        RebuildPlayerDisplays(Round.Players);
         
         DiscardButton.Visible = UserPlayer is not null;
         MeldButton.Visible = UserPlayer is not null;
@@ -296,7 +320,91 @@ public partial class GameManager : Node
         Deck.AllowDraw = false;
         DiscardPile.AllowDraw = false;
 
-        CallDeferred("OnPlayerHandRebuilt");
+        Round.ImmediateDisplayNotifyDeckShuffled += async () => {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            List<Tween> tweens = new();
+            List<int> usedTargetIndices = new();
+            foreach (CardDisplay display in Deck.GetChildren()) {
+                var initialPosition = display.Position;
+                var tween = GetTree().CreateTween();
+
+                int nextIndex;
+                do { nextIndex = Random.Shared.Next(Deck.GetChildCount()); } while (usedTargetIndices.Contains(nextIndex));
+                usedTargetIndices.Add(nextIndex);
+                int indexChange = display.GetIndex() - nextIndex;
+                var endPosition = Deck.GetChild<Control>(nextIndex).Position;
+                
+                double waitTimeFront = Random.Shared.NextDouble() * ShuffleDuration;
+                double moveTime = Math.Min(0.1 * ShuffleDuration, ShuffleDuration - waitTimeFront);
+                double waitTimeBack = Math.Max(ShuffleDuration - waitTimeFront - moveTime, 0d);
+
+                tween.TweenInterval(waitTimeFront);
+                tween.TweenProperty(display, "position:x", display.Size.X * 1.1f, moveTime / 3d);
+                tween.TweenProperty(display, "position:y", endPosition.Y, moveTime / 3d);
+                tween.TweenProperty(display, "z_index", nextIndex, 0f);
+                tween.TweenProperty(display, "position:x", initialPosition.X, moveTime / 3d);
+                tween.TweenInterval(waitTimeBack);
+                tween.SetTrans(Tween.TransitionType.Cubic);
+                tweens.Add(tween);
+            }
+            await ToSignal(tweens.Last(), Tween.SignalName.Finished);
+            await ToSignal(GetTree().CreateTimer(0.01f), Timer.SignalName.Timeout);
+            EmitSignal(SignalName.DeckShuffleComplete);
+        };
+        Round.ImmediateDisplayNotifyDrewDuringInitialisation += async (player, cardIndex, handSize) => {
+            int playerIndex = Round.Players.ToList().FindIndex(player);
+
+            await ToSignal(GetTree().CreateTimer((Round.Players.Count * cardIndex + playerIndex) * InitialDrawGapDuration), Timer.SignalName.Timeout);
+
+            var handDisplay = FindPlayerHandDisplay(player);
+            var cardDisplayInHand = handDisplay.GetChild<CardDisplay>(cardIndex);
+            var cardDisplayInPlayerHand = player == UserPlayer ? PlayerHand.GetChild<CardDisplay>(cardIndex) : null;
+
+            var deckLastCard = Deck.GetChildCount() > 0 ? Deck.GetChildren().Cast<Control>().Last() : null;
+            var startPos = deckLastCard?.GlobalPosition ?? Deck.GlobalPosition;
+            var endPos = cardDisplayInPlayerHand?.GlobalPosition ?? cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
+
+            float endSize = player == UserPlayer ? PlayerHand.CardSize : handDisplay.CardSize;
+
+            if (deckLastCard is not null) { Deck.RemoveChild(deckLastCard); deckLastCard.QueueFree(); }
+
+            await CreateCardMoveScaleTween(DrawDuration, None, Deck.CardSize, endSize, startPos, endPos, CardInPileTheme);
+            cardDisplayInHand.Show();
+            cardDisplayInPlayerHand?.Show();
+
+            if (playerIndex == Round.Players.Count - 1 && cardIndex == handSize - 1) { EmitSignal(SignalName.InitialDealComplete); }
+        };
+
+        // Create deck
+        Round.CreateAndShuffleDeck();
+
+        await ToSignal(this, SignalName.DeckShuffleComplete);
+
+        // Deal cards
+        Round.DealCardsAndInitialiseRound();
+        
+        stateInvalid = true;
+        Players.ForEach(player =>
+            FindPlayerHandDisplay(player)
+                .GetChildren().Cast<Control>().ToList()
+                .ForEach(child => child.Hide()));
+        PlayerHand.GetChildren().Cast<Control>().ToList().ForEach(child => child.Hide());
+
+        Util.Range.FromTo(Deck.GetChildCount(), 52).ForEach(_ => {
+            var tempCard = CardDisplayScene.Instantiate() as CardDisplay;
+            tempCard.Theme = CardInPileTheme;
+            Deck.AddChild(tempCard); tempCard.Owner = Deck;
+        });
+        DiscardPile.Hide();
+
+        await ToSignal(this, SignalName.InitialDealComplete);
+        
+        stateInvalid = false;
+        // Make sure there are no temp cards left. (There shouldn't be, but just to be sure)
+        Deck.CardPile = null;
+        Deck.CardPile = Round.Deck;
+
+        Callable.From(OnPlayerHandRebuilt).CallDeferred();
         OnReachTurnBoundary(Round.CurrentPlayer);
     }
 
@@ -310,7 +418,7 @@ public partial class GameManager : Node
         if (!DiscardButton.Disabled && Input.IsActionJustPressed(ActionName.Discard)) { OnDiscardButtonPressed(); }
         if (!MeldButton.Disabled && Input.IsActionJustPressed(ActionName.Meld)) { OnMeldButtonPressed(); }
 
-        if (Round.CurrentPlayer == UserPlayer && !Round.MidTurn && !Round.Finished) {
+        if (Round.CurrentPlayer == UserPlayer && !Round.MidTurn && !Round.Finished && Round.Turn >= 0) {
             Round.BeginTurn();
         }
         if (Round.CurrentPlayer == UserPlayer && Round.MidTurn) {
@@ -360,13 +468,13 @@ public partial class GameManager : Node
                     if (displayInMeld is null) { GD.Print("USER Layoff display is null"); }
 
                     var endPos = displayInMeld?.GlobalPosition ?? meldContainer.GlobalPosition;
-                    int? zIndex = displayInMeld?.FindAbsoluteZIndex();
+                    //int? zIndex = displayInMeld?.FindAbsoluteZIndex();
 
                     displayInMeld?.Hide();
 
                     var tempDisplay = CreateTempCard(card, PlayerHand.CardSize, startPos);
-                    if (zIndex is not null) { tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex ?? 0; }
-                    await CreateCardMoveScaleTween(CardLayOffDurationPlayer, tempDisplay, meldContainer.CardSize, endPos);
+                    //if (zIndex is not null) { tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex ?? 0; }
+                    await CreateCardMoveScaleTween(LayOffDurationPlayer, tempDisplay, meldContainer.CardSize, endPos);
 
                     displayInMeld?.Show();                                        
                 }
@@ -488,7 +596,7 @@ public partial class GameManager : Node
             var display = PlayerHand.FindCard(card);
             display.Inspect(display => display.Visible = false);
 
-            await CreateCardMoveTween(CardDrawDuration, None, Deck.CardSize, lastCardPos, endPos);
+            await CreateCardMoveTween(DrawDuration, None, Deck.CardSize, lastCardPos, endPos);
 
             display.Inspect(display => display.Visible = true);
             PlayerHand.HoveredCard = card;
@@ -513,7 +621,7 @@ public partial class GameManager : Node
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 var endPos = display.AndThen(display => Some(display.GlobalPosition)).Or(PlayerHand.GlobalPosition);
 
-                await CreateCardMoveTween(CardDrawDuration, pair.card, DiscardPile.CardSize, beginPos, endPos);
+                await CreateCardMoveTween(DrawDuration, pair.card, DiscardPile.CardSize, beginPos, endPos);
 
                 display.Inspect(display => display.Visible = true);
                 if (pair.index == 0) { PlayerHand.CannotDiscardCard = pair.card; }
@@ -525,7 +633,6 @@ public partial class GameManager : Node
                 
                 if (pair.index == count - 1) { PlayerHand.SendFocusToCards(); }
             });
-            //await ToSignal(GetTree().CreateTimer(CardMultiDrawDelay), Timer.SignalName.Timeout);
         }
     }
 
@@ -547,7 +654,7 @@ public partial class GameManager : Node
         var endPos = discardDisplay?.GlobalPosition + new Vector2(0f, DiscardPile.CardSeparation / 2f) ?? DiscardPile.GlobalPosition;
 
         var distance = (endPos - startPos).Length();
-        double duration = CardDiscardDuration / (900.0 / distance);
+        double duration = DiscardDuration / (900.0 / distance);
 
         await CreateCardMoveTween(duration, selected, PlayerHand.CardSize, startPos, endPos);
         
@@ -576,10 +683,10 @@ public partial class GameManager : Node
 
                 var startPos = PlayerHand.FindCard(card).AndThen(card => Some(card.GlobalPosition)).Or(PlayerHand.GlobalPosition);
                 var endPos = cardDisplayInMeld?.GlobalPosition ?? newMeld.GlobalPosition;
-                int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
+                //int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
                 
                 var tempDisplay = CreateTempCard(card, PlayerHand.CardSize, startPos);
-                tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
+                //tempDisplay.ZAsRelative = false; tempDisplay.ZIndex = zIndex;
 
                 UserPlayer.Hand.Pop(card);
                 finalSignalAwaiter =  CreateCardMoveScaleTween(MeldDuration, tempDisplay, newMeld.CardSize, endPos);

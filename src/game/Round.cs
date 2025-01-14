@@ -8,6 +8,7 @@ using static Rummy.Util.Result;
 using Godot;
 using System.Collections.Immutable;
 using System;
+using Rummy.Interface;
 
 namespace Rummy.Game;
 
@@ -114,25 +115,23 @@ public class Round
 		public readonly ImmutableArray<Meld> Melds;
 		public readonly ImmutableArray<Card> LaidOffCards;
 	}
-	
-	public delegate void NotifyTurnBeganAction(Player player);
-	public delegate void NotifyTurnEndedAction(Player player, Result<TurnRecord, string> result);
-	public delegate void NotifyTurnResetAction();
-	public delegate void NotifyGameEndedAction(Player winner, int roundScore, bool wasRummy);
 
 	// These events are mainly for the frontend, and fire exactly when it happens
-	public event NotifyTurnBeganAction NotifyTurnBegan;
-	public event NotifyTurnEndedAction NotifyTurnEnded;
-	public event NotifyTurnResetAction NotifyTurnReset;
-	public event NotifyGameEndedAction NotifyGameEnded;
+	public event Action<Player>								NotifyTurnBegan;
+	public event Action<Player, Result<TurnRecord, string>> NotifyTurnEnded;
+	public event Action 									NotifyTurnReset;
+	public event Action<Player, int, bool> 					NotifyGameEnded;
 	
-	public event Action NotifyDeckRanOut;
+	public event Action 									ImmediateDisplayNotifyDeckRanOut;
+	public event Action										ImmediateDisplayNotifyDeckShuffled;
+	public event Action<Player, int, int> 					ImmediateDisplayNotifyDrewDuringInitialisation;
+	public event Action<Card> 								ImmediateDisplayNotifyInitialCardPlaceOnDiscard;
 	
-	public event Action<Player> 			ImmediateDisplayNotifyDrewFromDeck;
-	public event Action<Player, Card> 		ImmediateDisplayNotifyDrewFromDiscardPile;
-	public event Action<Player, Meld> 		ImmediateDisplayNotifyMelded;
-	public event Action<Player, Meld, Card> ImmediateDisplayNotifyLaidOff;
-	public event Action<Player, Card> 		ImmediateDisplayNotifyDiscarded;
+	public event Action<Player> 							ImmediateDisplayNotifyDrewFromDeck;
+	public event Action<Player, Card> 						ImmediateDisplayNotifyDrewFromDiscardPile;
+	public event Action<Player, Meld> 						ImmediateDisplayNotifyMelded;
+	public event Action<Player, Meld, Card> 				ImmediateDisplayNotifyLaidOff;
+	public event Action<Player, Card> 						ImmediateDisplayNotifyDiscarded;
 
 	// These events are intended for computer players and fire on turn end rather than when the event happens
 	// so as to avoid having to deal with actions which are undone by turn resetting
@@ -145,9 +144,9 @@ public class Round
 	private readonly List<Player> _players;
 	public ReadOnlyCollection<Player> Players { get => _players.AsReadOnly(); }
 
-	public int Turn { get; private set; } = 0;
+	public int Turn { get; private set; } = -1;
 	public bool MidTurn { get; private set; } = false;
-	public Player CurrentPlayer => Players[Turn % Players.Count];
+	public Player CurrentPlayer => Turn >= 0 ? Players[Turn % Players.Count] : null;
 	public Player NextPlayer => Players[(Turn + 1) % Players.Count];
 	
 	public bool Finished { get; private set; } = false;
@@ -162,7 +161,7 @@ public class Round
 
 	private readonly Dictionary<(Player, int), int> _meldOrder = new();
 	public ReadOnlyCollection<Meld> Melds => Players.ToList()
-		.Aggregate(new List<(Player, Meld)>(), (melds, player) => melds.Concat(player.Melds.ConvertAll(x => (player, x))).ToList())
+		.Aggregate(new List<(Player, Meld)>(), (melds, player) => melds.Concat(player.Melds.ConvertAll(melds => (player, melds))).ToList())
 		.OrderBy(pair => _meldOrder[(pair.Item1, pair.Item1.Melds.FindIndex(x => x == pair.Item2))]).ToList()
 		.ConvertAll(pair => pair.Item2).AsReadOnly();
 	
@@ -187,58 +186,42 @@ public class Round
 		return Err($"{meld} is not a valid meld.");
 	}
 
-	public Round(List<Player> players, int numPacks = 1) : this(players, Random.Shared, numPacks) {}
-
-	public Round(List<Player> players, Random random, int numPacks = 1) {
+	public Round(List<Player> players) {
 		_players = players;
 		foreach (Player player in Players) {
 			player.Hand.Reset();
 			player.Melds.Clear();
-			player.OnAddedToRound(this);
 		}
-		
-		// Set up deck
-		for (int i = 0; i < numPacks; ++i) { Deck.AddPack(); }
-		Deck.Shuffle(random);
-		
-		// Deal to players
-		int handSize = 10;
-		if (Players.Count >= 4) { handSize = 7; }
-		else if (Players.Count >= 6) { handSize = 6; }
-		
-		for (int i = 0; i < handSize; ++i) {
-			foreach (Player player in Players) {
-				Deck.Draw().Inspect(card => player.Hand.Add(card));
-			}
-		}
-
-		// Put one card into discard pile
-		Deck.Draw().Inspect(card => DiscardPile.Discard(card));
+		turnData = new(players.First());
+		Players.ForEach(player => player.OnAddedToRound(this));
 		
 		// Add required callbacks
 		DiscardPile.OnCardAdded += (card) => {
-			if (_currentlyFlippingOverDiscard) { return; }
+			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.Discards.Add(card);
 			ImmediateDisplayNotifyDiscarded?.Invoke(CurrentPlayer, card);
 		};
 		Deck.OnCardDrawn += (card) => {
-			if (_currentlyFlippingOverDiscard) { return; }
+			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.DrawnCardsDeck.Add(card);
 			ImmediateDisplayNotifyDrewFromDeck?.Invoke(CurrentPlayer);
 		};
 		DiscardPile.OnCardDrawn += (card) => {
-			if (_currentlyFlippingOverDiscard) { return; }
+			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.DrawnCardsDiscardPile.Add(card);
 			ImmediateDisplayNotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, card);
 		};
 
 		Deck.OnEmptied += () => {
-			NotifyDeckRanOut?.Invoke();
+			ImmediateDisplayNotifyDeckRanOut?.Invoke();
 			_currentlyFlippingOverDiscard = true;
 			Deck.Append(DiscardPile);
 			Deck.Flip();
 			DiscardPile.Clear();
-			Deck.Draw().Inspect(card => DiscardPile.Discard(card));
+			Deck.Draw().Inspect(card => {
+				DiscardPile.Discard(card);
+				ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card);
+			});
 			_currentlyFlippingOverDiscard = false;
 		};
 	}
@@ -249,8 +232,40 @@ public class Round
 		}
 	}
 
+	public void CreateAndShuffleDeck(Random random) {
+		Deck.AddPack();
+		Deck.Shuffle(random);
+		ImmediateDisplayNotifyDeckShuffled?.Invoke();
+	}
+	public void CreateAndShuffleDeck() => CreateAndShuffleDeck(Random.Shared);
+
+	public void DealCardsAndInitialiseRound() {
+		if (Turn >= 0) { return; }
+		
+		int handSize = Players.Count switch {
+			< 4 => 10,
+			< 6 => 7,
+			_ => 6
+		};
+		
+		foreach (int i in Util.Range.To(handSize)) {
+			Players.ForEach(player => {
+				Deck.Draw().Inspect(card => player.Hand.Add(card));
+				ImmediateDisplayNotifyDrewDuringInitialisation?.Invoke(player, i, handSize);
+			});
+		}
+
+		// Put one card into discard pile
+		Deck.Draw().Inspect(card => {
+			DiscardPile.Discard(card);
+			ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card);
+		});
+
+		Turn = 0;
+	}
+
 	public void BeginTurn() {
-		if (Finished) { return; }
+		if (Finished || Turn == -1) { return; }
         turnData = new TurnData(CurrentPlayer);
 		MidTurn = true;
 		CurrentPlayer.BeginTurn(this);

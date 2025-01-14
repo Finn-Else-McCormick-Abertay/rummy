@@ -13,7 +13,7 @@ public readonly struct Unit : IEquatable<Unit> {
     public override readonly string ToString() => "()";
 }
 
-public static class ExtensionMethods
+public static class UnitExtensions
 {
     public static async Task<Unit> AsUnitTask(this Task task) {
         await task;

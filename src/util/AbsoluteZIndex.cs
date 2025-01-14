@@ -3,7 +3,7 @@ using Godot;
 
 namespace Rummy.Util;
 
-static class AbsoluteZIndexExtensionMethods
+static class AbsoluteZIndexExtensions
 {
     public static int FindAbsoluteZIndex(this CanvasItem self) {
         var zIndex = 0;

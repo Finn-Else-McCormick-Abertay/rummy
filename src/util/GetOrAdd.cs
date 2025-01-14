@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Rummy.Util;
 
-public static class AddOrGetExtensionMethods
+public static class GetOrAddExtensions
 {
     public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue valDefault)
     {
