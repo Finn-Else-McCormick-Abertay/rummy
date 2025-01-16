@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using Rummy.Game;
@@ -25,50 +26,150 @@ public partial class RandomPlayer : ComputerPlayer
 
     [Export] private double TakeMeldChance = 1.0;//0.85;
     [Export] private double TakeLayOffChance = 1.0;//0.6;
+    [Export] private double TakeMultipleChance = 1.0;
+    [Export] private double TakeMultipleChanceLossPerGainedCard = 0.0;
     
     public override void OnAddedToRound(Round round) {}
     public override void OnRemovedFromRound(Round round) {}
 
-    public override void BeginTurn(Round round) {
-        List<Card> drawnCards = new();
-        Option<Card> topFromDiscardPile = None;
+    public override void BeginTurn() {
 
-        // Draw from deck
-        int drawSelection = random.Next(2);
-        if (drawSelection == 0) {
-            var card = round.Deck.Draw().Inspect(card => drawnCards.Add(card));
-            Say($"Drew from deck.");
-            Think($"Drew {card.Value} from deck.");
+        var (potentialMelds, nearMelds) = FindPotentialMelds();
+
+        HashSet<Card> usableDrawDownToCardsMeld = new(), usableDrawDownToCardsLayoff = new();
+        Round.DiscardPile.Cards.ForEach(card => {
+            var allCardsToBeTaken = Round.DiscardPile.Cards.Take(Round.DiscardPile.Cards.FindIndex(card) + 1);
+            /*// ! Does not currently find melds entirely within pile !
+            nearMelds.ForEach(nearMeld => {
+                var potentialCards = nearMeld.PotentialCards();
+                potentialCards.ForEach(card => {
+                    var resultingMeld = nearMeld.With(potentialCards.Intersect(allCardsToBeTaken));
+                    if (resultingMeld.ContainsValidMeld()) { usableDrawDownToCardsMeld.Add(card); }
+                });
+            });*/
+            var potentialMeldsWith =
+                PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken)).Melds
+                .Where(meld => meld.Cards.Contains(card));
+            if (potentialMeldsWith.Any()) { usableDrawDownToCardsMeld.Add(card); }
+
+            var potentialCardLayoffs = FindPotentialLayOffs(card);
+            if (potentialCardLayoffs.Any()) {
+                if (
+                    Melds.Count > 0 || potentialMelds.Any() ||
+                    PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken.SkipLast(1))).Melds.Any()
+                ) { usableDrawDownToCardsLayoff.Add(card); }
+            }
+        });
+
+        var usableDrawDownToCardsAll = usableDrawDownToCardsMeld.Concat(usableDrawDownToCardsLayoff);
+
+        if (usableDrawDownToCardsAll.Any()) { Think($"Possible cards to draw down to: {usableDrawDownToCardsAll.Select(card => $"[{Round.DiscardPile.Cards.TakeWhile(x => !x.Equals(card)).ToJoinedString(", ")}]({card})").ToJoinedString(", ")}"); }
+
+        List<Card> drawnCards = new();
+        Option<Card> topFromDiscardPile = None, bottomFromDiscardPile = None;
+
+        bool mustMeldThisTurn = false;
+        if (usableDrawDownToCardsAll.Any()) {
+            int drawDownSelection = random.Next(usableDrawDownToCardsAll.Count());
+            var card = usableDrawDownToCardsAll.ElementAt(drawDownSelection);
+
+            var indexInDiscardPile = Round.DiscardPile.Cards.FindIndex(card);
+            if (random.NextDouble() < (TakeMultipleChance - TakeMultipleChanceLossPerGainedCard * indexInDiscardPile)) {
+                var cards = Round.DiscardPile.Draw(indexInDiscardPile + 1);
+                drawnCards.AddRange(cards);
+                topFromDiscardPile = cards.First();
+                bottomFromDiscardPile = cards.Last();
+                bool forMeld = usableDrawDownToCardsMeld.Contains(card), forLayoff = usableDrawDownToCardsLayoff.Contains(card);
+                mustMeldThisTurn = (forMeld && !forLayoff) || (forLayoff && !Melds.Any());
+                Say($"Drew {cards.ToJoinedString(", ")} from discard pile. ({bottomFromDiscardPile.Value})");
+            }
         }
-        // Draw from discard
-        if (drawSelection == 1 || drawnCards.Count == 0) {
-            topFromDiscardPile = round.DiscardPile.Draw().Inspect(card => drawnCards.Add(card));
-            Say($"Drew {topFromDiscardPile.Value} from discard pile.");
+
+        if (drawnCards.Count == 0) {
+            // Draw from deck
+            int drawSelection = random.Next(2);
+            if (drawSelection == 0) {
+                var card = Round.Deck.Draw().Inspect(card => drawnCards.Add(card));
+                Say("Drew from deck.");
+                Think($"Drew {card.Value} from deck.");
+            }
+            // Draw from discard
+            if (drawSelection == 1 || drawnCards.Count == 0) {
+                topFromDiscardPile = Round.DiscardPile.Draw().Inspect(card => drawnCards.Add(card));
+                Say($"Drew {topFromDiscardPile.Value} from discard pile.");
+            }
         }
+
         drawnCards.ForEach(card => Hand.Add(card));
 
         Think($"Hand: {string.Join(", ", Hand.Cards)}");
 
-        var (potentialMelds, nearMelds) = FindPotentialMelds();
+        // Update potential melds with respect to the card you just drew
+        (potentialMelds, nearMelds) = FindPotentialMelds();
+
+        var potentialLayOffs = FindPotentialLayOffs();
 
         if (potentialMelds.Any()) { Think($"Potential Melds: {string.Join(", ", potentialMelds)}"); }
         if (nearMelds.Any()) { Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}"); }
+        if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
 
-        if (potentialMelds.Count > 0 && random.NextDouble() <= TakeMeldChance) {
-            var meld = potentialMelds.ElementAt(random.Next(potentialMelds.Count));
-            round.Meld(meld).Inspect(_ => {
-                meld.Cards.ToList().ForEach(card => Hand.Pop(card));
-                Think($"Melded {meld}");
-            }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
+        var validPotentialMelds = bottomFromDiscardPile
+            .AndThen(bottomCard =>
+                usableDrawDownToCardsLayoff.Contains(bottomCard) ? None :
+                    Some(potentialMelds.Where(meld => meld.Cards.Contains(bottomCard))))
+            .Or(potentialMelds);
+        
+        if (bottomFromDiscardPile.IsSome) { Think($"Valid Melds: {string.Join(", ", validPotentialMelds)}"); }
+
+        Dictionary<Meld, HashSet<Meld>> meldConfigurations = new();
+        foreach (var meld in validPotentialMelds) {
+            meldConfigurations.Add(meld, new());
+            foreach (var otherMeld in validPotentialMelds) {
+                if (!ReferenceEquals(meld, otherMeld)) { meldConfigurations[meld].Add(otherMeld); }
+            }
         }
 
-        Dictionary<Card, List<Meld>> potentialLayOffs = FindPotentialLayOffs(round);
+        List<List<Meld>> rummyConfigurations = new();
+        foreach (var (meld, others) in meldConfigurations) {
+            var exclusiveMelds = others.Append(meld);
+            var cardsTemp = Hand.Cards;
+            exclusiveMelds.ForEach(meld => meld.Cards.ForEach(card => cardsTemp.Remove(card)));
+            foreach (var (card, _) in potentialLayOffs) { cardsTemp.Remove(card); }
+            if (cardsTemp.Count <= 1) {
+                // Can rummy
+                rummyConfigurations.Add(exclusiveMelds.ToList());
+            }
+        }
 
-        if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
+        bool isRummying = false;
+        if (rummyConfigurations.Any()) {
+            isRummying = true;
+            var configuration = rummyConfigurations.ElementAt(random.Next(rummyConfigurations.Count));
+            configuration.ForEach(meld => {
+                Round.Meld(meld).Inspect(_ => {
+                    meld.Cards.ForEach(card => Hand.Pop(card));
+                    Think($"Melded {meld} (rummying)");
+                }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
+            });
+            // Update layoffs with respect to the new melds
+            potentialLayOffs = FindPotentialLayOffs();
+        }
+        else if (validPotentialMelds.Any() && (mustMeldThisTurn || random.NextDouble() <= TakeMeldChance)) {
+            var meld = validPotentialMelds.ElementAt(random.Next(validPotentialMelds.Count()));
+            Round.Meld(meld).Inspect(_ => {
+                meld.Cards.ForEach(card => Hand.Pop(card));
+                Think($"Melded {meld}");
+            }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
+            
+            // Update layoffs with respect to the new meld
+            potentialLayOffs = FindPotentialLayOffs();
+        }
+
         // Can only lay off after having melded at least once
-        if (Melds.Count > 0) {
+        if (Melds.Any()) {
             foreach (var (card, list) in potentialLayOffs) {
-                if (random.NextDouble() <= TakeLayOffChance) {
+                if (random.NextDouble() <= TakeLayOffChance || isRummying ||
+                        bottomFromDiscardPile.IsSomeAnd(bottomCard => bottomCard.Equals(card))) {
                     var meld = list.Count == 1 ? list.First() : list.ElementAt(random.Next(list.Count));
                     Think($"Laid off {card} to {meld}");
                     Hand.Pop(card).Inspect(card => meld.LayOff(card));
@@ -76,16 +177,16 @@ public partial class RandomPlayer : ComputerPlayer
             }
         }
 
-        if (Hand.Cards.Count > 0) {
+        if (Hand.Cards.Any()) {
             Card cardToDiscard;
             do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
-            } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard == topCard));
+            } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
 
-            Hand.Pop(cardToDiscard).Inspect(card => round.DiscardPile.Discard(card));
+            Hand.Pop(cardToDiscard).Inspect(card => Round.DiscardPile.Discard(card));
 
             Say($"Discarding {cardToDiscard}");
         }
 
-        round.EndTurn();
+        Round.EndTurn();
     }
 }

@@ -29,10 +29,6 @@ public abstract partial class Player : Resource
         _name = name;
     }
 
-    public override bool _Set(StringName property, Variant value) {
-        return base._Set(property, value);
-    }
-
     public override bool _PropertyCanRevert(StringName property) => property.ToString() switch {
         "Name" => true,
         _ => base._PropertyCanRevert(property)
@@ -75,14 +71,24 @@ public abstract partial class Player : Resource
         public IEnumerable<Card> Where(Func<Card, bool> pred) => Cards.Where(pred);
         public void ForEach(Action<Card> action) => Cards.ToList().ForEach(action);
     }
+    
+    private Round _round = null;
+    public Round Round {
+        get => _round;
+        set {
+            if (_round is not null) { OnRemovedFromRound(_round); }
+            _round = value;
+            if (_round is not null) { OnAddedToRound(_round); }
+        }
+    }
 
     protected HandInternal _hand = new();
     public IHand Hand => _hand;
 
 	public List<Meld> Melds { get; set; } = new();
 
-    public abstract void OnAddedToRound(Round round);
-    public abstract void OnRemovedFromRound(Round round);
+    public virtual void OnAddedToRound(Round round) {}
+    public virtual void OnRemovedFromRound(Round round) {}
 
-    public abstract void BeginTurn(Round game);
+    public abstract void BeginTurn();
 }

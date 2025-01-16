@@ -10,20 +10,14 @@ namespace Rummy.AI;
 
 static class PotentialMoves {
     public static (List<Meld> Melds, List<NearMeld> NearMelds) FindMelds(IEnumerable<Card> hand) {
-        HashSet<Meld> potentialMelds = new();
-        HashSet<NearMeld> potentialNearMelds = new();
+        HashSet<Meld> melds = new(); HashSet<NearMeld> nearMelds = new();
         hand.ForEach(card => {
             // Sets
             var sameRank = hand.Where(card.MatchesRank);
-            if (sameRank.Count() == 2) {
-                potentialNearMelds.Add(new NearSet(sameRank));
-            }
+            if (sameRank.Count() == 2) { nearMelds.Add(new NearSet(sameRank)); }
             while (sameRank.Count() >= 3) {
-                if (sameRank.Count() > 4) {
-                    var firstFour = sameRank.SkipLast(sameRank.Count() - 4);
-                    potentialMelds.Add(new Set(firstFour));
-                }
-                else { potentialMelds.Add(new Set(sameRank)); }
+                if (sameRank.Count() > 4)   { melds.Add(new Set(sameRank.SkipLast(sameRank.Count() - 4))); }
+                else                        { melds.Add(new Set(sameRank)); }
                 sameRank = sameRank.Skip(Math.Min(sameRank.Count(), 4));
             }
 
@@ -42,21 +36,15 @@ static class PotentialMoves {
                 highCard = adj.Any() ? adj.First() : None;
             }
 
-            if (potentialRun.Count >= 3) {
-                potentialMelds.Add(new Run(potentialRun));
-            }
-            else if (potentialRun.Count == 2) {
-                potentialNearMelds.Add(new NearRun(potentialRun));
-            }
+            if (potentialRun.Count >= 3)        { melds.Add(new Run(potentialRun)); }
+            else if (potentialRun.Count == 2)   { nearMelds.Add(new NearRun(potentialRun)); }
             
             if (sameSuit.Count() > 1) {
                 int rankDiff = sameSuit.Last().Rank - sameSuit.First().Rank + 1;
-                if (rankDiff >= 3) {
-                    potentialNearMelds.Add(new NearRun(sameSuit));
-                }
+                if (rankDiff >= 3) { nearMelds.Add(new NearRun(sameSuit)); }
             }
         });
-        return (potentialMelds.Distinct().ToList(), potentialNearMelds.Distinct().ToList());
+        return (melds.ToList(), nearMelds.ToList());
     }
     
     public static Dictionary<Card, List<Meld>> FindLayOffs(IEnumerable<Card> hand, Round round) {
@@ -68,5 +56,9 @@ static class PotentialMoves {
             });
         });
         return potentialLayOffs;
+    }
+    public static List<Meld> FindLayOffs(Card card, Round round) {
+        var layoffs = FindLayOffs(new List<Card>{ card }, round);
+        return layoffs.ContainsKey(card) ? layoffs[card] : new();
     }
 }

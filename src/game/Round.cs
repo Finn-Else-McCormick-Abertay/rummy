@@ -137,6 +137,7 @@ public class Round
 	// so as to avoid having to deal with actions which are undone by turn resetting
 	public event Action<Player> 							NotifyDrewFromDeck;
 	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyDrewFromDiscardPile;
+	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyDrew;
 	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyMelded;
 	public event Action<Player, Card> 						NotifyLaidOff;
 	public event Action<Player, Card> 						NotifyDiscarded;
@@ -188,12 +189,10 @@ public class Round
 
 	public Round(List<Player> players) {
 		_players = players;
-		foreach (Player player in Players) {
-			player.Hand.Reset();
-			player.Melds.Clear();
-		}
+		foreach (Player player in Players) { player.Hand.Reset(); player.Melds.Clear(); }
 		turnData = new(players.First());
-		Players.ForEach(player => player.OnAddedToRound(this));
+		// This is done as a second step because it triggers logic on the players, where they may inspect other players
+		foreach (Player player in Players) { player.Round = this; }
 		
 		// Add required callbacks
 		DiscardPile.OnCardAdded += (card) => {
@@ -268,7 +267,7 @@ public class Round
 		if (Finished || Turn == -1) { return; }
         turnData = new TurnData(CurrentPlayer);
 		MidTurn = true;
-		CurrentPlayer.BeginTurn(this);
+		CurrentPlayer.BeginTurn();
 		NotifyTurnBegan?.Invoke(CurrentPlayer);
 	}
 
@@ -283,8 +282,14 @@ public class Round
 		if (turnRecordResult.IsErr) { return Err(turnRecordResult.Error); }
 
 		// Turn action events (we're after the validity check so we can assume this is a valid turn)
-		if (turnData.DrawnCardsDeck.Count > 0) { NotifyDrewFromDeck?.Invoke(CurrentPlayer); }
-		else { NotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, turnData.DrawnCardsDiscardPile.AsReadOnly()); }
+		if (turnData.DrawnCardsDeck.Count > 0) {
+			NotifyDrewFromDeck?.Invoke(CurrentPlayer);
+			NotifyDrew?.Invoke(CurrentPlayer, new List<Card>().AsReadOnly());
+		}
+		else {
+			NotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, turnData.DrawnCardsDiscardPile.AsReadOnly());
+			NotifyDrew?.Invoke(CurrentPlayer, turnData.DrawnCardsDiscardPile.AsReadOnly());
+		}
 
 		turnData.Melds.ForEach(meld => NotifyMelded?.Invoke(CurrentPlayer, meld.Cards));
 		turnData.LaidOffCards.ForEach(card => NotifyLaidOff?.Invoke(CurrentPlayer, card));

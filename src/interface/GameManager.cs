@@ -109,24 +109,6 @@ public partial class GameManager : Node
         NextTurnButton.Visible = false;
         RebuildMelds();
 
-        var debugHand = new List<Card> {
-            new(Rank.Ace, Suit.Hearts),
-            new(Rank.Ace, Suit.Clubs),
-            new(Rank.Jack, Suit.Spades),
-            new(Rank.Three, Suit.Clubs),
-            new(Rank.Nine, Suit.Spades),
-            new(Rank.Ace, Suit.Spades),
-            new(Rank.Seven, Suit.Spades),
-            new(Rank.Eight, Suit.Spades),
-            new(Rank.Seven, Suit.Hearts),
-            new(Rank.Eight, Suit.Hearts),
-        };
-        var (melds, nearMelds) = PotentialMoves.FindMelds(debugHand);
-        GD.Print($"DEBUG Melds: {melds.ToJoinedString(", ")}");
-        GD.Print($"DEBUG Near Melds: {nearMelds.ToJoinedString(", ")}");
-
-        GD.Print(nearMelds.Select(x => $"{x} : [{x.PotentialCards().ToJoinedString(", ")}]").ToJoinedString("\n"));
-
         BeginNewRound();
     }
 
@@ -353,11 +335,11 @@ public partial class GameManager : Node
                 var endPosition = Deck.GetChild<Control>(nextIndex).Position;
                 
                 double waitTimeFront = Random.Shared.NextDouble() * ShuffleDuration;
-                double moveTime = Math.Min(0.1 * ShuffleDuration, ShuffleDuration - waitTimeFront);
-                double waitTimeBack = Math.Max(ShuffleDuration - waitTimeFront - moveTime, 0d);
+                double moveTime = 0.1 * ShuffleDuration;
+                double waitTimeBack = Math.Max(ShuffleDuration * 1.1 - waitTimeFront - moveTime, 0d);
 
                 tween.TweenInterval(waitTimeFront);
-                tween.TweenProperty(display, "position:x", display.Size.X * 1.1f, moveTime / 3d);
+                tween.TweenProperty(display, "position:x", display.Size.X * 1.15f, moveTime / 3d);
                 tween.TweenProperty(display, "position:y", endPosition.Y, moveTime / 3d);
                 tween.TweenProperty(display, "z_index", nextIndex, 0f);
                 tween.TweenProperty(display, "position:x", initialPosition.X, moveTime / 3d);
