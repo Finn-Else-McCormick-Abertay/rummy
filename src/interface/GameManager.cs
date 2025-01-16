@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Rummy.AI;
 using System;
+using System.Threading.Tasks;
 
 namespace Rummy.Interface;
 
@@ -110,11 +111,30 @@ public partial class GameManager : Node
         RebuildMelds();
 
         BeginNewRound();
+        //SimulateRoundWithoutDisplay();
     }
 
     Node FindPlayerScoreDisplayRoot(Player player) => ScoreDisplayRoot?.GetChildren().ToList()
         .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player) as Node;
     CardPileContainer FindPlayerHandDisplay(Player player) => FindPlayerScoreDisplayRoot(player)?.GetNode<CardPileContainer>("HandDisplay");
+
+    private void SimulateRoundWithoutDisplay() {
+        if (Engine.IsEditorHint() || players.Any(player => player is UserPlayer)) { return; }
+
+        Round = new Round(players);
+        var result = Round.Simulate();
+        result.InspectErr(GD.Print);
+        result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " by rummying" : "")}, scoring {x.Win.Score}"))
+            .Inspect(msg => {
+                GD.Print(msg);
+                FailureMessage.DisplayMessage(msg);
+            });
+        
+        result.AndThen(x => Ok(x.History)).Inspect(history => {
+            GD.Print("\n --------------------- \n");
+            history.ForEach(turn => GD.Print(turn));
+        });
+    }
 
     private async void BeginNewRound() {
         if (Engine.IsEditorHint()) { return; }
@@ -155,7 +175,11 @@ public partial class GameManager : Node
         };
         Round.NotifyTurnReset += () => OnReachTurnBoundary(Round.CurrentPlayer);
 
-        NextTurnButton.Pressed += () => { NextTurnButton.Visible = false; Round.BeginTurn(); };
+        NextTurnButton.Pressed += () => {
+            NextTurnButton.Visible = false;
+            Round.BeginTurn().Wait();
+            Round.EndTurn();
+        };
 
         Round.NotifyGameEnded += (winner, score, isRummy) => {
             FailureMessage.Message = $"{Round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
@@ -413,13 +437,14 @@ public partial class GameManager : Node
 
         if (NextTurnButton.Visible && !NextTurnButton.Disabled && Input.IsActionJustPressed(ActionName.Skip)) {
             NextTurnButton.Visible = false;
-            Round.BeginTurn();
+            Round.BeginTurn().Wait();
+            Round.EndTurn();
         }
         if (!DiscardButton.Disabled && Input.IsActionJustPressed(ActionName.Discard)) { OnDiscardButtonPressed(); }
         if (!MeldButton.Disabled && Input.IsActionJustPressed(ActionName.Meld)) { OnMeldButtonPressed(); }
 
         if (Round.CurrentPlayer == UserPlayer && !Round.MidTurn && !Round.Finished && Round.Turn >= 0) {
-            Round.BeginTurn();
+            Round.BeginTurn().Wait();
         }
         if (Round.CurrentPlayer == UserPlayer && Round.MidTurn) {
             if (Round.HasDrawn) {

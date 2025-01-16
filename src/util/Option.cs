@@ -49,4 +49,9 @@ public readonly struct Option<T> {
     }
 
     public bool IsSomeAnd(Func<T, bool> predicate) => IsSome ? predicate(Value) : false;
+
+    public T Unwrap() {
+        if (IsNone) throw new Exception($"Attempted to unwrap Option<{typeof(T).FullName}> which was in None state.");
+        return Value;
+    }
 }

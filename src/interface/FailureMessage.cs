@@ -20,6 +20,11 @@ public partial class FailureMessage : PanelContainer
     [Export] private Button button;
     public Button Button => button;
 
+    public void DisplayMessage(string msg, bool useButton = false) {
+        Message = msg; UseButton = useButton;
+        Show();
+    }
+
     public override void _Ready() {
         if (!Engine.IsEditorHint()) { Visible = false; }
         buttonRoot.Visible = _useButton;

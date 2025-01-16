@@ -1,9 +1,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 using Rummy.Game;
 using Rummy.Util;
@@ -15,38 +14,22 @@ namespace Rummy.AI;
 [GlobalClass]
 public partial class RandomPlayer : ComputerPlayer 
 {
-    public RandomPlayer() : base("RandomPlayer") {
-        random = new Random();
-    }
-    public RandomPlayer(int seed) : base($"RandomPlayer<{seed}>") {
-        random = new Random(seed);
-    }
+    public RandomPlayer() : base("RandomPlayer") { random = new Random(); }
+    public RandomPlayer(int seed) : base($"RandomPlayer<{seed}>") { random = new Random(seed); }
 
     private readonly Random random;
 
-    [Export] private double TakeMeldChance = 1.0;//0.85;
-    [Export] private double TakeLayOffChance = 1.0;//0.6;
+    [Export] private double TakeMeldChance = 1.0;
+    [Export] private double TakeLayOffChance = 1.0;
     [Export] private double TakeMultipleChance = 1.0;
     [Export] private double TakeMultipleChanceLossPerGainedCard = 0.0;
-    
-    public override void OnAddedToRound(Round round) {}
-    public override void OnRemovedFromRound(Round round) {}
 
-    public override void BeginTurn() {
-
+    public override Task TakeTurn() {
         var (potentialMelds, nearMelds) = FindPotentialMelds();
 
         HashSet<Card> usableDrawDownToCardsMeld = new(), usableDrawDownToCardsLayoff = new();
         Round.DiscardPile.Cards.ForEach(card => {
             var allCardsToBeTaken = Round.DiscardPile.Cards.Take(Round.DiscardPile.Cards.FindIndex(card) + 1);
-            /*// ! Does not currently find melds entirely within pile !
-            nearMelds.ForEach(nearMeld => {
-                var potentialCards = nearMeld.PotentialCards();
-                potentialCards.ForEach(card => {
-                    var resultingMeld = nearMeld.With(potentialCards.Intersect(allCardsToBeTaken));
-                    if (resultingMeld.ContainsValidMeld()) { usableDrawDownToCardsMeld.Add(card); }
-                });
-            });*/
             var potentialMeldsWith =
                 PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken)).Melds
                 .Where(meld => meld.Cards.Contains(card));
@@ -74,7 +57,7 @@ public partial class RandomPlayer : ComputerPlayer
             var card = usableDrawDownToCardsAll.ElementAt(drawDownSelection);
 
             var indexInDiscardPile = Round.DiscardPile.Cards.FindIndex(card);
-            if (random.NextDouble() < (TakeMultipleChance - TakeMultipleChanceLossPerGainedCard * indexInDiscardPile)) {
+            if (random.NextDouble() < Math.Max(TakeMultipleChance - TakeMultipleChanceLossPerGainedCard * indexInDiscardPile, 0d)) {
                 var cards = Round.DiscardPile.Draw(indexInDiscardPile + 1);
                 drawnCards.AddRange(cards);
                 topFromDiscardPile = cards.First();
@@ -121,23 +104,23 @@ public partial class RandomPlayer : ComputerPlayer
         
         if (bottomFromDiscardPile.IsSome) { Think($"Valid Melds: {string.Join(", ", validPotentialMelds)}"); }
 
-        Dictionary<Meld, HashSet<Meld>> meldConfigurations = new();
-        foreach (var meld in validPotentialMelds) {
-            meldConfigurations.Add(meld, new());
-            foreach (var otherMeld in validPotentialMelds) {
-                if (!ReferenceEquals(meld, otherMeld)) { meldConfigurations[meld].Add(otherMeld); }
-            }
-        }
-
         List<List<Meld>> rummyConfigurations = new();
-        foreach (var (meld, others) in meldConfigurations) {
-            var exclusiveMelds = others.Append(meld);
-            var cardsTemp = Hand.Cards;
-            exclusiveMelds.ForEach(meld => meld.Cards.ForEach(card => cardsTemp.Remove(card)));
-            foreach (var (card, _) in potentialLayOffs) { cardsTemp.Remove(card); }
-            if (cardsTemp.Count <= 1) {
-                // Can rummy
-                rummyConfigurations.Add(exclusiveMelds.ToList());
+        if (!Melds.Any()) {
+            Dictionary<Meld, HashSet<Meld>> meldConfigurations = new();
+            foreach (var meld in validPotentialMelds) {
+                meldConfigurations.Add(meld, new());
+                foreach (var otherMeld in validPotentialMelds) {
+                    if (!ReferenceEquals(meld, otherMeld)) { meldConfigurations[meld].Add(otherMeld); }
+                }
+            }
+            foreach (var (meld, others) in meldConfigurations) {
+                var exclusiveMelds = others.Append(meld);
+                var cardsTemp = Hand.Cards.DeepClone().ToList();
+                exclusiveMelds.ForEach(meld => meld.Cards.ForEach(card => cardsTemp.Remove(card)));
+                foreach (var (card, _) in potentialLayOffs) { cardsTemp.Remove(card); }
+                if (cardsTemp.Count <= 1) {
+                    rummyConfigurations.Add(exclusiveMelds.ToList());
+                }
             }
         }
 
@@ -180,13 +163,13 @@ public partial class RandomPlayer : ComputerPlayer
         if (Hand.Cards.Any()) {
             Card cardToDiscard;
             do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
-            } while(topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
+            } while(!isRummying && topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
 
             Hand.Pop(cardToDiscard).Inspect(card => Round.DiscardPile.Discard(card));
 
             Say($"Discarding {cardToDiscard}");
         }
 
-        Round.EndTurn();
+        return Task.CompletedTask;
     }
 }

@@ -6,6 +6,7 @@ using Rummy.Util;
 using static Rummy.Util.Result;
 using static Rummy.Util.Option;
 using Godot;
+using System.Threading.Tasks;
 
 namespace Rummy.Game;
 
@@ -13,12 +14,28 @@ namespace Rummy.Game;
 [GlobalClass]
 public abstract partial class Player : Resource
 {
+    protected virtual void OnAddedToRound(Round round) {}
+    protected virtual void OnRemovedFromRound(Round round) {}
+
+    public abstract Task TakeTurn();
+
+    private Round _round = null;
+    public Round Round {
+        get => _round;
+        set {
+            if (_round is not null) { OnRemovedFromRound(_round); }
+            _round = value;
+            if (_round is not null) { OnAddedToRound(_round); }
+        }
+    }
+
+	public List<Meld> Melds { get; set; } = new();
+
     public event Action NotifyNameChanged;
     public event Action NotifyScoreChanged;
     
-    public event EventHandler<string> OnSayingMessage, OnThinkingMessage;
-    protected void Say(string message) => OnSayingMessage?.Invoke(this, message);
-    protected void Think(string message) => OnThinkingMessage?.Invoke(this, message);
+    private int _score;
+    public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
 
     private readonly string _defaultName;
     private string _name;
@@ -37,10 +54,13 @@ public abstract partial class Player : Resource
         "Name" => _defaultName,
         _ => base._PropertyGetRevert(property)
     };
-
-    private int _score;
-    public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
-
+    
+    public event EventHandler<string> OnSayingMessage, OnThinkingMessage;
+    protected void Say(string message) => OnSayingMessage?.Invoke(this, message);
+    protected void Think(string message) => OnThinkingMessage?.Invoke(this, message);
+    
+    protected HandInternal _hand = new();
+    public IHand Hand => _hand;
     public interface IHand : ICountable {
         public void Add(Card card);
         public void Add(List<Card> cards);
@@ -71,24 +91,4 @@ public abstract partial class Player : Resource
         public IEnumerable<Card> Where(Func<Card, bool> pred) => Cards.Where(pred);
         public void ForEach(Action<Card> action) => Cards.ToList().ForEach(action);
     }
-    
-    private Round _round = null;
-    public Round Round {
-        get => _round;
-        set {
-            if (_round is not null) { OnRemovedFromRound(_round); }
-            _round = value;
-            if (_round is not null) { OnAddedToRound(_round); }
-        }
-    }
-
-    protected HandInternal _hand = new();
-    public IHand Hand => _hand;
-
-	public List<Meld> Melds { get; set; } = new();
-
-    public virtual void OnAddedToRound(Round round) {}
-    public virtual void OnRemovedFromRound(Round round) {}
-
-    public abstract void BeginTurn();
 }

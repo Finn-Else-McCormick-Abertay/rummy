@@ -64,4 +64,9 @@ public readonly struct Result<T, E> {
 
     public bool IsOkAnd(Func<T, bool> predicate) => IsOk ? predicate(Value) : false;
     public bool IsErrAnd(Func<E, bool> predicate) => IsErr ? predicate(Error) : false;
+    
+    public T Unwrap() {
+        if (IsErr) throw new Exception($"Attempted to unwrap Result<{typeof(T).FullName}, {typeof(E).FullName}> which was in Err state ({Err}).");
+        return Value;
+    }
 }

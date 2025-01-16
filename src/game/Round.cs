@@ -9,6 +9,8 @@ using Godot;
 using System.Collections.Immutable;
 using System;
 using Rummy.Interface;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Rummy.Game;
 
@@ -50,7 +52,7 @@ public class Round
 			if (LaidOffCards.Count > 0) { info.Add($"Laid Off: {string.Join(", ", LaidOffCards)}"); }
 			if (Melds.Count > 1) { info.Add($"Prior Melds: {PriorMelds}"); }
 
-			if (Player.Hand.Count == 0) { info.Add($"Went out{(Melds.Count > 0 ? " with rummy" : "")}"); }
+			if (Player.Hand.Count == 0) { info.Add($"Went out{(PriorMelds == 0 ? " with rummy" : "")}"); }
 			else { info.Add($"{Player.Hand.Count} left in hand"); }
 
 			IsValid().InspectErr(err => info.Add($"Invalid: {err}"));
@@ -114,6 +116,30 @@ public class Round
 		public readonly ImmutableArray<Option<Card>> DrawnCards; // 'None' in this instance is an unknown card, ie: a card drawn from the deck
 		public readonly ImmutableArray<Meld> Melds;
 		public readonly ImmutableArray<Card> LaidOffCards;
+		
+        public override string ToString() {
+			StringBuilder builder = new();
+			builder.Append($"({Player.Name}) ");
+			builder.Append($"Drew {DrawnCards.Length} card{(DrawnCards.Length > 1 ? "s" : "")}");
+			if (DrawnCards.Any(x => x.IsSome)) {
+				builder.Append(": [");
+				builder.AppendJoin(", ", DrawnCards.Select(x => x.AndThen(x => Some(x.ToString())).Or("?")));
+				builder.Append("]. ");
+			}
+			else { builder.Append(". "); }
+			if (Melds.Any()) {
+				builder.Append("Melded: [");
+				builder.AppendJoin(", ", Melds);
+				builder.Append("]. ");
+			}
+			if (LaidOffCards.Any()) {
+				builder.Append("Laid off: [");
+				builder.AppendJoin(", ", LaidOffCards);
+				builder.Append("]. ");
+			}
+			builder.Append(DiscardedCard.IsSome ? "Discarded." : "Did not discard.");
+			return builder.ToString();
+		}
 	}
 
 	// These events are mainly for the frontend, and fire exactly when it happens
@@ -149,6 +175,8 @@ public class Round
 	public bool MidTurn { get; private set; } = false;
 	public Player CurrentPlayer => Turn >= 0 ? Players[Turn % Players.Count] : null;
 	public Player NextPlayer => Players[(Turn + 1) % Players.Count];
+
+	private Task _currentTurnTask = null;
 	
 	public bool Finished { get; private set; } = false;
 	public Player Winner { get; private set; }
@@ -225,11 +253,45 @@ public class Round
 		};
 	}
 
-	~Round() {
-		foreach (Player player in Players) {
-			player.OnRemovedFromRound(this);
-		}
+	~Round() { foreach (Player player in Players) { player.Round = null; } }
+
+	// Run round start to finish in one go
+	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), string> Simulate(Random random, int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) {
+		if (Turn >= 0) return Err("Round has already begun.");
+		if (Players.Any(player => player is UserPlayer)) return Err("Round contains UserPlayer.");
+
+		List<TurnRecord> turnHistory = new();
+		void onTurnEndedAction(Player player, Result<TurnRecord, string> result) => result.Inspect(x => turnHistory.Add(x));
+
+		(Player Winner, int Score, bool WasRummy) winData = (null, -1, false);
+        void onGameEndedAction(Player winner, int score, bool wasRummy) => winData = (winner, score, wasRummy);
+
+		NotifyTurnEnded += onTurnEndedAction;
+        NotifyGameEnded += onGameEndedAction;
+
+		CreateAndShuffleDeck();
+		DealCardsAndInitialiseRound();
+        while (!Finished && Turn < turnCutoff) {
+			Result<Unit, string> turnResult; int tryAtThisTurn = 0; string lastErr = null;
+			do {
+            	BeginTurn().Wait();
+				turnResult = EndTurn();
+				turnResult.InspectErr(err => { lastErr = err; ResetTurn(); });
+				tryAtThisTurn++;
+			} while (turnResult.IsErr && tryAtThisTurn < repeatInvalidTurnCutoff);
+			if (tryAtThisTurn >= repeatInvalidTurnCutoff) {
+				NotifyTurnEnded -= onTurnEndedAction;
+				NotifyGameEnded -= onGameEndedAction;
+				return Err($"Overran turn failure limit of {repeatInvalidTurnCutoff} ({CurrentPlayer.Name}, Turn {Turn}). Last err: {lastErr}");
+			}
+        }
+
+		NotifyTurnEnded -= onTurnEndedAction;
+		NotifyGameEnded -= onGameEndedAction;
+		if (!Finished) { return Err($"Overran turn limit of {turnCutoff}."); }
+		return Ok((turnHistory, winData));
 	}
+	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), string> Simulate(int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) => Simulate(Random.Shared, turnCutoff, repeatInvalidTurnCutoff);
 
 	public void CreateAndShuffleDeck(Random random) {
 		Deck.AddPack();
@@ -263,16 +325,17 @@ public class Round
 		Turn = 0;
 	}
 
-	public void BeginTurn() {
-		if (Finished || Turn == -1) { return; }
+	public Task BeginTurn() {
+		if (Finished || Turn == -1) throw new Exception("Attempted to begin turn when round either uninitialised or finished");
         turnData = new TurnData(CurrentPlayer);
 		MidTurn = true;
-		CurrentPlayer.BeginTurn();
 		NotifyTurnBegan?.Invoke(CurrentPlayer);
+		_currentTurnTask = CurrentPlayer.TakeTurn();
+		return _currentTurnTask;
 	}
 
 	public Result<Unit, string> EndTurn() {
-		string playerIndexString = $"[{Players.ToList().FindIndex(x => x == CurrentPlayer)}]";
+		string playerIndexString = $"[{Players.FindIndex(x => x == CurrentPlayer)}]";
 		int nameWidth = 20 - playerIndexString.Length;
 		string name = CurrentPlayer.Name.Length > nameWidth ? $"{CurrentPlayer.Name[..(nameWidth - 1)]}…" : CurrentPlayer.Name;
 		GD.Print($"{Turn} {$"{name}{playerIndexString}".PadRight(nameWidth + playerIndexString.Length, '.')}{turnData}");
@@ -306,7 +369,7 @@ public class Round
 				roundScore += player.Hand.Score();
 			}
 			// Rummied, score doubled
-			bool wasRummy = turnData.Melds.Count > 1;
+			bool wasRummy = turnData.PriorMelds == 0;
 			if (wasRummy) { roundScore *= 2; }
 			Winner.Score += roundScore;
 			NotifyGameEnded?.Invoke(Winner, roundScore, wasRummy);
