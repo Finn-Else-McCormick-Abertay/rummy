@@ -18,8 +18,32 @@ public partial class DrawableCardPileContainer : CardPileContainer
     private Vector2 _highlightBelowOffset = new (0f, 0f);
     [Export] public Vector2 HighlightBelowOffset { get => _highlightBelowOffset; set { _highlightBelowOffset = value; QueueSort(); } }
 
+    private NodePath _prevFocusBottom = null;
+
     private int? _highlightedIndex = null;
-    public int? HighlightedIndex { get => _highlightedIndex; set { _highlightedIndex = value; QueueSort(); } }
+    public int? HighlightedIndex {
+        get => _highlightedIndex;
+        set {
+            if (CardPile is IDrawableMulti && _highlightedIndex == GetChildCount() - 1) { _prevFocusBottom = FocusNeighborBottom; }
+            _highlightedIndex = value;
+            if (CardPile is IDrawableMulti && _prevFocusBottom is not null) {
+                if (_highlightedIndex is null || _highlightedIndex == GetChildCount() - 1) { FocusNeighborBottom = _prevFocusBottom; }
+                else { FocusNeighborBottom = null; }
+            }
+            QueueSort();
+        }
+    }
+    public void UpdatePrevFocus() {
+        if (CardPile is not IDrawableMulti) { return; }
+        if (_highlightedIndex is not null) {
+            if (FocusNeighborBottom is not null) {
+                _prevFocusBottom = FocusNeighborBottom;
+                if (_highlightedIndex != GetChildCount() - 1) {
+                    FocusNeighborBottom = null;
+                }
+            }
+        }
+    }
 
     private bool _allowDraw = false;
     public bool AllowDraw {
@@ -54,17 +78,6 @@ public partial class DrawableCardPileContainer : CardPileContainer
         }
     }
 
-    protected override void OnCardScroll(CardDisplay display, MouseButton buttonIndex) {
-        if (CardPile is null || CardPile is not IDrawableMulti) { return; }
-
-        if (buttonIndex == MouseButton.WheelUp) {
-            if (HighlightedIndex + 1 < CardPile.Count) { HighlightedIndex++; }
-        }
-        else if (buttonIndex == MouseButton.WheelDown) {
-            if (HighlightedIndex - 1 >= 0) { HighlightedIndex--; }
-        }
-    }
-
     public event Action<int> NotifyDrew;
 
     private void OnPressConfirmed() {
@@ -82,14 +95,18 @@ public partial class DrawableCardPileContainer : CardPileContainer
 
         if (HasFocus() && CardPile is IDrawableMulti) {
             if (_didFocusJustEnter) { _didFocusJustEnter = false; }
-            else {
-                if (Input.IsActionJustPressed(ActionName.UI.Up)) {
-                    if (HighlightedIndex + 1 < CardPile.Count) { HighlightedIndex++; }
-                }
-                if (Input.IsActionJustPressed(ActionName.UI.Down)) {
-                    if (HighlightedIndex - 1 >= 0) { HighlightedIndex--; }
-                }
-            }
+        }
+    }
+
+    public override void _GuiInput(InputEvent @event) {
+        if (Engine.IsEditorHint() || CardPile is null || GetChildCount() == 0 || CardPile is not IDrawable || !AllowDraw) { return; }
+        if (_didFocusJustEnter) { return; }
+
+        if (@event.IsAction(Direction == DirectionEnum.Vertical ? ActionName.UI.Up : ActionName.UI.Left) && @event.IsPressed()) {
+            if (HighlightedIndex + 1 < CardPile.Count) { HighlightedIndex++; }
+        }
+        if (@event.IsAction(Direction == DirectionEnum.Vertical ? ActionName.UI.Down : ActionName.UI.Right) && @event.IsPressed()) {
+            if (HighlightedIndex - 1 >= 0) { HighlightedIndex--; }
         }
     }
 
@@ -98,6 +115,15 @@ public partial class DrawableCardPileContainer : CardPileContainer
 
         if (@event is InputEventMouseButton) {
             var mouseButtonEvent = @event as InputEventMouseButton;
+
+            if (_isMousedOver && mouseButtonEvent.Pressed) {
+                if (mouseButtonEvent.ButtonIndex == MouseButton.WheelUp) {
+                    if (HighlightedIndex + 1 < CardPile.Count) { HighlightedIndex++; }
+                }
+                else if (mouseButtonEvent.ButtonIndex == MouseButton.WheelDown) {
+                    if (HighlightedIndex - 1 >= 0) { HighlightedIndex--; }
+                }
+            }
 
             // Left mouse button released
             if (HighlightedIndex is not null && mouseButtonEvent.ButtonIndex == MouseButton.Left && !mouseButtonEvent.Pressed) {

@@ -1,7 +1,8 @@
-[gd_scene load_steps=18 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=20 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
+[ext_resource type="Script" path="res://src/interface/UserPlayer.cs" id="2_e1vv7"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="Script" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
@@ -12,6 +13,10 @@
 [ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/score_display.tscn" id="7_nrs5b"]
 [ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
+
+[sub_resource type="Resource" id="Resource_skhqg"]
+script = ExtResource("2_e1vv7")
+Name = "User"
 
 [sub_resource type="Resource" id="Resource_41ehq"]
 script = ExtResource("3_1clis")
@@ -50,7 +55,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
-Players = [SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")]
+Players = [SubResource("Resource_skhqg"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")]
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")

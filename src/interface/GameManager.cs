@@ -348,7 +348,7 @@ public partial class GameManager : Node
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             List<Tween> tweens = new();
             List<int> usedTargetIndices = new();
-            foreach (CardDisplay display in Deck.GetChildren()) {
+            foreach (CardDisplay display in Deck.GetChildren().Cast<CardDisplay>()) {
                 var initialPosition = display.Position;
                 var tween = GetTree().CreateTween();
 
@@ -525,6 +525,7 @@ public partial class GameManager : Node
         NextTurnButton.FocusNext = firstCardPath;
         // These may be overridden later on if a card is directly below the deck
         Deck.FocusNeighborBottom = firstCardPath; DiscardPile.FocusNeighborBottom = firstCardPath;
+        DiscardPile.UpdatePrevFocus();
 
         if (firstCard is not null) { firstCard.FocusPrevious = DiscardPile.GetPath(); }
         NextTurnButton.FocusNeighborBottom =
@@ -545,6 +546,7 @@ public partial class GameManager : Node
             }
             if (cardRect.Position.X < discardPileCentre.X && cardRect.End.X > discardPileCentre.X) {
                 DiscardPile.FocusNeighborBottom = card.GetPath();
+                DiscardPile.UpdatePrevFocus();
             }
 
             if (cardCentre.X < discardPileLeftBound && DiscardPile.GetChildCount() > 0) {
