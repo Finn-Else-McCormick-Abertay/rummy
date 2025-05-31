@@ -33,20 +33,19 @@ public partial class RandomPlayer : ComputerPlayer
             var potentialMeldsWith =
                 PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken)).Melds
                 .Where(meld => meld.Cards.Contains(card));
-            if (potentialMeldsWith.Any()) { usableDrawDownToCardsMeld.Add(card); }
+            if (potentialMeldsWith.Any()) usableDrawDownToCardsMeld.Add(card);
 
             var potentialCardLayoffs = FindPotentialLayOffs(card);
-            if (potentialCardLayoffs.Any()) {
-                if (
-                    Melds.Count > 0 || potentialMelds.Any() ||
-                    PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken.SkipLast(1))).Melds.Any()
-                ) { usableDrawDownToCardsLayoff.Add(card); }
+            if (potentialCardLayoffs.Count > 0) {
+                if (Melds.Count > 0 || potentialMelds.Count > 0 ||
+                    PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken.SkipLast(1))).Melds.Count > 0
+                ) usableDrawDownToCardsLayoff.Add(card);
             }
         });
 
         var usableDrawDownToCardsAll = usableDrawDownToCardsMeld.Concat(usableDrawDownToCardsLayoff);
 
-        if (usableDrawDownToCardsAll.Any()) { Think($"Possible cards to draw down to: {usableDrawDownToCardsAll.Select(card => $"[{Round.DiscardPile.Cards.TakeWhile(x => !x.Equals(card)).ToJoinedString(", ")}]({card})").ToJoinedString(", ")}"); }
+        if (usableDrawDownToCardsAll.Any()) Think($"Possible cards to draw down to: {usableDrawDownToCardsAll.Select(card => $"[{Round.DiscardPile.Cards.TakeWhile(x => !x.Equals(card)).ToJoinedString(", ")}]({card})").ToJoinedString(", ")}");
 
         List<Card> drawnCards = [];
         Option<Card> topFromDiscardPile = None, bottomFromDiscardPile = None;
@@ -63,7 +62,7 @@ public partial class RandomPlayer : ComputerPlayer
                 topFromDiscardPile = cards.First();
                 bottomFromDiscardPile = cards.Last();
                 bool forMeld = usableDrawDownToCardsMeld.Contains(card), forLayoff = usableDrawDownToCardsLayoff.Contains(card);
-                mustMeldThisTurn = (forMeld && !forLayoff) || (forLayoff && !Melds.Any());
+                mustMeldThisTurn = (forMeld && !forLayoff) || (forLayoff && Melds.Count == 0);
                 Say($"Drew {cards.ToJoinedString(", ")} from discard pile. ({bottomFromDiscardPile.Value})");
             }
         }
