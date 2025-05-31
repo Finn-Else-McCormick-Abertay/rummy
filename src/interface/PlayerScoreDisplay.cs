@@ -16,64 +16,45 @@ public partial class PlayerScoreDisplay : PanelContainer
     private static readonly StringName HighlightedTypeVariationName = "ScoreDisplayHighlighted";
     private static readonly StringName InvalidTypeVariationName = "ScoreDisplayInvalid";
 
-    private bool _highlighted = false;
-    public bool Highlighted { get => _highlighted; set { _highlighted = value; if (IsNodeReady()) { UpdateStyle(); } } }
+    public bool Highlighted { get; set { field = value; if (IsNodeReady()) UpdateStyle(); } } = false;
+    public bool Invalid { get; set { field = value; if (IsNodeReady()) UpdateStyle(); } } = false;
 
-    private bool _invalid = false;
-    public bool Invalid { get => _invalid; set { _invalid = value; if (IsNodeReady()) { UpdateStyle(); } } }
-
-    private Player _player;
     public Player Player {
-        get => _player;
+        get;
         set {
-            if (Player is not null) {
-                Player.NotifyScoreChanged -= UpdateText;
-                Player.NotifyNameChanged -= UpdateText;
-            }
-            _player = value;
+            if (Player is not null) { Player.NotifyScoreChanged -= UpdateText; Player.NotifyNameChanged -= UpdateText; }
+            field = value;
             if (IsNodeReady() && Player is not null) {
-                UpdateText();
-                Player.NotifyScoreChanged += UpdateText;
-                Player.NotifyNameChanged += UpdateText;
+                UpdateText(); Player.NotifyScoreChanged += UpdateText; Player.NotifyNameChanged += UpdateText;
             }
         }
     }
 
-    private Round _round;
     public Round Round {
-        get => _round;
+        get;
         set {
-            if (Round is not null) {
-                Round.NotifyTurnBegan -= OnTurnBegan;
-                Round.NotifyTurnEnded -= OnTurnEnded;
-                Round.NotifyTurnReset -= OnTurnReset;
-            }
-            _round = value;
+            if (Round is not null) { Round.NotifyTurnBegan -= OnTurnBegan; Round.NotifyTurnEnded -= OnTurnEnded; Round.NotifyTurnReset -= OnTurnReset; }
+            field = value;
             if (IsNodeReady() && Round is not null) {
                 Highlighted = Player == Round.CurrentPlayer;
-                Round.NotifyTurnBegan += OnTurnBegan;
-                Round.NotifyTurnEnded += OnTurnEnded;
-                Round.NotifyTurnReset += OnTurnReset;
+                Round.NotifyTurnBegan += OnTurnBegan; Round.NotifyTurnEnded += OnTurnEnded; Round.NotifyTurnReset += OnTurnReset;
             }
         }
     }
 
     public override void _Ready() {
-        Player = _player;
-        Round = _round;
-        Highlighted = _highlighted;
+        Player = Player; Round = Round; Highlighted = Highlighted;
     }
 
     private void UpdateText() {
-        if (!IsInstanceValid(nameLabel) || !nameLabel.IsNodeReady() || !IsInstanceValid(scoreLabel) || !scoreLabel.IsNodeReady()
-        || !IsInstanceValid(Player)) { return; }
+        if (!nameLabel.IsValid() || !nameLabel.IsNodeReady() || !scoreLabel.IsValid() || !scoreLabel.IsNodeReady() || !Player.IsValid()) return;
 
         nameLabel.Text = Player.Name;
         scoreLabel.Text = Player.Score.ToString();
     }
 
     private void UpdateStyle() {
-        if (Player is null || Round is null) { return; }
+        if (Player is null || Round is null) return;
 
         ThemeTypeVariation = Invalid ? InvalidTypeVariationName : Highlighted ? HighlightedTypeVariationName : EmptyTypeVariationName;
     }

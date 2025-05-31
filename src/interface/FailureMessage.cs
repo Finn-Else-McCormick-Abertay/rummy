@@ -7,13 +7,9 @@ namespace Rummy.Interface;
 public partial class FailureMessage : PanelContainer
 {
     [Export(PropertyHint.MultilineText)]
-    public string Message {
-        get => label is not null ? label.Text : "";
-        set { if (label is not null) { label.Text = value; } }
-    }
+    public string Message { get => label?.Text ?? ""; set { label?.Set(Label.PropertyName.Text, value); } }
 
-    private bool _useButton = false;
-    public bool UseButton { get => _useButton; set { _useButton = value; if (buttonRoot is not null) { buttonRoot.Visible = value; } } }
+    public bool UseButton { get; set { field = value; buttonRoot?.Set(CanvasItem.PropertyName.Visible, value); } } = false;
 
     [Export] private Label label;
     [Export] private Control buttonRoot;
@@ -21,12 +17,11 @@ public partial class FailureMessage : PanelContainer
     public Button Button => button;
 
     public void DisplayMessage(string msg, bool useButton = false) {
-        Message = msg; UseButton = useButton;
-        Show();
+        Message = msg; UseButton = useButton; Show();
     }
 
     public override void _Ready() {
-        if (!Engine.IsEditorHint()) { Visible = false; }
-        buttonRoot.Visible = _useButton;
+        if (!Engine.IsEditorHint()) Hide();
+        buttonRoot.Visible = UseButton;
     }
 }

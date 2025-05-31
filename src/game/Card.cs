@@ -12,10 +12,9 @@ public enum Rank {
 }
 public enum Suit { Clubs, Hearts, Spades, Diamonds }
 
-public readonly record struct Card(Rank Rank, Suit Suit) : IEquatable<Card>, IComparable<Card> {
-	public override string ToString() {
-		return $"{Enum.GetName(Rank)} of {Enum.GetName(Suit)}";
-	}
+public readonly record struct Card(Rank Rank, Suit Suit) : IEquatable<Card>, IComparable<Card>
+{
+	public override string ToString() => $"{Enum.GetName(Rank)} of {Enum.GetName(Suit)}";
 
 	public readonly bool Equals(Card other) => MatchesRank(other) && MatchesSuit(other);
 	public override readonly int GetHashCode() => HashCode.Combine(Rank.GetHashCode(), Suit.GetHashCode());

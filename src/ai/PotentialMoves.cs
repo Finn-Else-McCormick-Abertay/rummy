@@ -10,8 +10,8 @@ namespace Rummy.AI;
 
 static class PotentialMoves {
     public static (List<Meld> Melds, List<NearMeld> NearMelds) FindMelds(IEnumerable<Card> hand) {
-        HashSet<Meld> melds = new(); HashSet<NearMeld> nearMelds = new();
-        hand.ForEach(card => {
+        HashSet<Meld> melds = []; HashSet<NearMeld> nearMelds = [];
+        foreach (var card in hand) {
             // Sets
             var sameRank = hand.Where(card.MatchesRank);
             if (sameRank.Count() == 2) { nearMelds.Add(new NearSet(sameRank)); }
@@ -23,7 +23,7 @@ static class PotentialMoves {
 
             // Runs
             var sameSuit = hand.Where(card.MatchesSuit);
-            HashSet<Card> potentialRun = new() { card };
+            HashSet<Card> potentialRun = [card];
             Option<Card> lowCard = card, highCard = card;
             while (lowCard.IsSome) {
                 potentialRun.Add(lowCard.Value);
@@ -43,22 +43,15 @@ static class PotentialMoves {
                 int rankDiff = sameSuit.Last().Rank - sameSuit.First().Rank + 1;
                 if (rankDiff >= 3) { nearMelds.Add(new NearRun(sameSuit)); }
             }
-        });
-        return (melds.ToList(), nearMelds.ToList());
+        }
+        return ([..melds], [..nearMelds]);
     }
     
     public static Dictionary<Card, List<Meld>> FindLayOffs(IEnumerable<Card> hand, Round round) {
-        Dictionary<Card, List<Meld>> potentialLayOffs = new();
-
-        round.Players.ToList().ForEach(player => {
-            player.Melds.ForEach(meld => {
-                hand.ForEach(card => { if (meld.CouldLayOff(card)) { potentialLayOffs.GetOrCreate(card).Add(meld); } });
-            });
-        });
+        Dictionary<Card, List<Meld>> potentialLayOffs = [];
+        foreach (var player in round.Players) foreach (var meld in player.Melds)
+            foreach (var card in hand) if (meld.CouldLayOff(card)) potentialLayOffs.GetOrCreate(card).Add(meld);
         return potentialLayOffs;
     }
-    public static List<Meld> FindLayOffs(Card card, Round round) {
-        var layoffs = FindLayOffs(new List<Card>{ card }, round);
-        return layoffs.ContainsKey(card) ? layoffs[card] : new();
-    }
+    public static List<Meld> FindLayOffs(Card card, Round round) => FindLayOffs([card], round).TryGetValue(card, out var melds) ? melds : [];
 }

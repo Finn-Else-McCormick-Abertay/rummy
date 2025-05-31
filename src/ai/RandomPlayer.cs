@@ -27,7 +27,7 @@ public partial class RandomPlayer : ComputerPlayer
     public override Task TakeTurn() {
         var (potentialMelds, nearMelds) = FindPotentialMelds();
 
-        HashSet<Card> usableDrawDownToCardsMeld = new(), usableDrawDownToCardsLayoff = new();
+        HashSet<Card> usableDrawDownToCardsMeld = [], usableDrawDownToCardsLayoff = [];
         Round.DiscardPile.Cards.ForEach(card => {
             var allCardsToBeTaken = Round.DiscardPile.Cards.Take(Round.DiscardPile.Cards.FindIndex(card) + 1);
             var potentialMeldsWith =
@@ -48,7 +48,7 @@ public partial class RandomPlayer : ComputerPlayer
 
         if (usableDrawDownToCardsAll.Any()) { Think($"Possible cards to draw down to: {usableDrawDownToCardsAll.Select(card => $"[{Round.DiscardPile.Cards.TakeWhile(x => !x.Equals(card)).ToJoinedString(", ")}]({card})").ToJoinedString(", ")}"); }
 
-        List<Card> drawnCards = new();
+        List<Card> drawnCards = [];
         Option<Card> topFromDiscardPile = None, bottomFromDiscardPile = None;
 
         bool mustMeldThisTurn = false;
@@ -83,7 +83,7 @@ public partial class RandomPlayer : ComputerPlayer
             }
         }
 
-        drawnCards.ForEach(card => Hand.Add(card));
+        drawnCards.ForEach(Hand.Add);
 
         Think($"Hand: {string.Join(", ", Hand.Cards)}");
 
@@ -92,23 +92,21 @@ public partial class RandomPlayer : ComputerPlayer
 
         var potentialLayOffs = FindPotentialLayOffs();
 
-        if (potentialMelds.Any()) { Think($"Potential Melds: {string.Join(", ", potentialMelds)}"); }
-        if (nearMelds.Any()) { Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}"); }
-        if (potentialLayOffs.Any()) { Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");  }
+        if (potentialMelds.Count > 0) Think($"Potential Melds: {string.Join(", ", potentialMelds)}");
+        if (nearMelds.Count > 0) Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}");
+        if (potentialLayOffs.Count > 0) Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");
 
         var validPotentialMelds = bottomFromDiscardPile
-            .AndThen(bottomCard =>
-                usableDrawDownToCardsLayoff.Contains(bottomCard) ? None :
-                    Some(potentialMelds.Where(meld => meld.Cards.Contains(bottomCard))))
+            .AndThen(bottomCard => usableDrawDownToCardsLayoff.Contains(bottomCard) ? None : Some(potentialMelds.Where(meld => meld.Cards.Contains(bottomCard))))
             .Or(potentialMelds);
         
-        if (bottomFromDiscardPile.IsSome) { Think($"Valid Melds: {string.Join(", ", validPotentialMelds)}"); }
+        if (bottomFromDiscardPile.IsSome) Think($"Valid Melds: {string.Join(", ", validPotentialMelds)}");
 
-        List<List<Meld>> rummyConfigurations = new();
-        if (!Melds.Any()) {
-            Dictionary<Meld, HashSet<Meld>> meldConfigurations = new();
+        List<List<Meld>> rummyConfigurations = [];
+        if (Melds.Count == 0) {
+            Dictionary<Meld, HashSet<Meld>> meldConfigurations = [];
             foreach (var meld in validPotentialMelds) {
-                meldConfigurations.Add(meld, new());
+                meldConfigurations.Add(meld, []);
                 foreach (var otherMeld in validPotentialMelds) {
                     if (!ReferenceEquals(meld, otherMeld)) { meldConfigurations[meld].Add(otherMeld); }
                 }
@@ -119,13 +117,13 @@ public partial class RandomPlayer : ComputerPlayer
                 exclusiveMelds.ForEach(meld => meld.Cards.ForEach(card => cardsTemp.Remove(card)));
                 foreach (var (card, _) in potentialLayOffs) { cardsTemp.Remove(card); }
                 if (cardsTemp.Count <= 1) {
-                    rummyConfigurations.Add(exclusiveMelds.ToList());
+                    rummyConfigurations.Add([..exclusiveMelds]);
                 }
             }
         }
 
         bool isRummying = false;
-        if (rummyConfigurations.Any()) {
+        if (rummyConfigurations.Count > 0) {
             isRummying = true;
             var configuration = rummyConfigurations.ElementAt(random.Next(rummyConfigurations.Count));
             configuration.ForEach(meld => {
@@ -149,7 +147,7 @@ public partial class RandomPlayer : ComputerPlayer
         }
 
         // Can only lay off after having melded at least once
-        if (Melds.Any()) {
+        if (Melds.Count == 0) {
             foreach (var (card, list) in potentialLayOffs) {
                 if (random.NextDouble() <= TakeLayOffChance || isRummying ||
                         bottomFromDiscardPile.IsSomeAnd(bottomCard => bottomCard.Equals(card))) {
@@ -165,7 +163,7 @@ public partial class RandomPlayer : ComputerPlayer
             do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
             } while(!isRummying && topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
 
-            Hand.Pop(cardToDiscard).Inspect(card => Round.DiscardPile.Discard(card));
+            Hand.Pop(cardToDiscard).Inspect(Round.DiscardPile.Discard);
 
             Say($"Discarding {cardToDiscard}");
         }

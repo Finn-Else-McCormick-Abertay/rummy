@@ -12,12 +12,9 @@ namespace Rummy.AI;
 
 [Tool]
 [GlobalClass]
-public abstract partial class ComputerPlayer : Player 
+public abstract partial class ComputerPlayer(string name = "ComputerPlayer") : Player(name) 
 {
     protected new HandInternal Hand => _hand;
-    
-    public ComputerPlayer() : this("ComputerPlayer") {}
-    public ComputerPlayer(string name) : base(name) {}
 
     protected (List<Meld> Melds, List<NearMeld> NearMelds) FindPotentialMelds() => PotentialMoves.FindMelds(Hand.Cards);
     protected Dictionary<Card, List<Meld>> FindPotentialLayOffs() => PotentialMoves.FindLayOffs(Hand.Cards, Round);

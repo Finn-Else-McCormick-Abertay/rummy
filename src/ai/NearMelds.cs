@@ -63,20 +63,18 @@ public class NearSet : NearMeld, IEquatable<NearSet>
     public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
 }
 
-public class NearRun : NearMeld, IEquatable<NearRun>
+public class NearRun(IEnumerable<Card> cards) : NearMeld(cards), IEquatable<NearRun>
 {
-    public NearRun(IEnumerable<Card> cards) : base(cards) {}
-
     private List<Card> _potentialCards = null;
     public override List<Card> PotentialCards() {
         // Cache result - the list of cards in NearMeld is immutable, so this won't change between invocations
-        if (_potentialCards is not null) { return _potentialCards; }
+        if (_potentialCards is not null) return _potentialCards;
 
-        _potentialCards = new();
+        _potentialCards = [];
         var suit = Cards.First().Suit;
 
-        if (Cards.First().Rank - 1 >= Rank.Ace) { _potentialCards.Add(new Card(Cards.First().Rank - 1, suit)); }
-        if (Cards.Last().Rank + 1 <= Rank.King) { _potentialCards.Add(new Card(Cards.Last().Rank + 1, suit)); }
+        if (Cards.First().Rank - 1 >= Rank.Ace) _potentialCards.Add(new Card(Cards.First().Rank - 1, suit));
+        if (Cards.Last().Rank + 1 <= Rank.King) _potentialCards.Add(new Card(Cards.Last().Rank + 1, suit));
 
         Option<Card> prevCard = None;
         foreach (Card card in Cards) {
@@ -102,12 +100,10 @@ public class NearRun : NearMeld, IEquatable<NearRun>
         while (cardsTemp.Any()) {
             List<Card> contiguousRun = new();
             foreach (int i in Util.Range.Over(cardsTemp)) {
-                if (i == 0 || cardsTemp.ElementAt(i).Rank == cardsTemp.ElementAt(i - 1).Rank + 1) {
-                    contiguousRun.Add(cardsTemp.ElementAt(i));
-                }
-                else { break; }
+                if (i == 0 || cardsTemp.ElementAt(i).Rank == cardsTemp.ElementAt(i - 1).Rank + 1) contiguousRun.Add(cardsTemp.ElementAt(i));
+                else break;
             }
-            if (contiguousRun.Any()) { contiguousRuns.Add(contiguousRun); }
+            if (contiguousRun.Count > 0) contiguousRuns.Add(contiguousRun);
             cardsTemp = cardsTemp.Where((card, index) => index > contiguousRun.Count);
         }
         return contiguousRuns.Any(run => run.Count() >= 3);
@@ -115,7 +111,7 @@ public class NearRun : NearMeld, IEquatable<NearRun>
 
     public override string ToString() => $"Near Run [{string.Join(", ", Cards)}]";
     
-    public override bool Equals(object obj) => obj is NearRun ? Equals(obj as NearRun) : false;
-    public bool Equals(NearRun other) => other.Cards.All(card => Cards.Contains(card));
+    public override bool Equals(object obj) => obj is NearRun && Equals(obj as NearRun);
+    public bool Equals(NearRun other) => other.Cards.All(Cards.Contains);
     public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
 }

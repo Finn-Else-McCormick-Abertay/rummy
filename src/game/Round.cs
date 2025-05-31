@@ -17,43 +17,34 @@ namespace Rummy.Game;
 public class Round
 {
 	private class TurnData {
-		public TurnData(Player player) {
-			Player = player;
-			PriorMelds = Player.Melds.Count;
-		}
+		public TurnData(Player player) { Player = player; PriorMelds = Player.Melds.Count; }
 
 		public readonly Player Player;
 		public readonly int PriorMelds;
-		public List<Card> DrawnCardsDeck = new(), DrawnCardsDiscardPile = new();
-		public List<Card> Discards = new();
-		public List<Meld> Melds = new();
-		public Dictionary<Player, Dictionary<int, List<Card>>> LayOffs = new();
+		public List<Card> DrawnCardsDeck = [], DrawnCardsDiscardPile = [];
+		public List<Card> Discards = [];
+		public List<Meld> Melds = [];
+		public Dictionary<Player, Dictionary<int, List<Card>>> LayOffs = [];
 
-		public List<Card> LaidOffCards => LayOffs.SelectMany(kvp => kvp.Value.SelectMany(kvp => kvp.Value)).ToList();
+		public List<Card> LaidOffCards => [..LayOffs.SelectMany(kvp => kvp.Value.SelectMany(kvp => kvp.Value))];
 
         public override string ToString() {
 			var info = new List<string>();
 			var drawnCardsDeckString = string.Join(", ", DrawnCardsDeck);
 			var drawnCardsDiscardPileString = string.Join(", ", DrawnCardsDiscardPile);
-			if (DrawnCardsDeck.Count > 0 && DrawnCardsDiscardPile.Count > 0) {
-				info.Add($"Drawn: [Deck: ({drawnCardsDeckString}), Discard Pile: ({drawnCardsDiscardPileString})]");
-			}
-			else if (DrawnCardsDeck.Count > 0) {
-				info.Add($"Drawn (Deck): {(DrawnCardsDeck.Count > 1 ? $"({drawnCardsDeckString})" : $"{drawnCardsDeckString}")}");
-			}
-			else if (DrawnCardsDiscardPile.Count > 0) {
-				info.Add($"Drawn (Discard Pile): {(DrawnCardsDiscardPile.Count > 1 ? $"({drawnCardsDiscardPileString})" : $"{drawnCardsDiscardPileString}")}");
-			}
+			if (DrawnCardsDeck.Count > 0 && DrawnCardsDiscardPile.Count > 0) info.Add($"Drawn: [Deck: ({drawnCardsDeckString}), Discard Pile: ({drawnCardsDiscardPileString})]");
+			else if (DrawnCardsDeck.Count > 0) info.Add($"Drawn (Deck): {(DrawnCardsDeck.Count > 1 ? $"({drawnCardsDeckString})" : $"{drawnCardsDeckString}")}");
+			else if (DrawnCardsDiscardPile.Count > 0) info.Add($"Drawn (Discard Pile): {(DrawnCardsDiscardPile.Count > 1 ? $"({drawnCardsDiscardPileString})" : $"{drawnCardsDiscardPileString}")}");
 
 			var discardsString = string.Join(", ", Discards);
 			info.Add($"Discarded: {(Discards.Count == 0 ? "None" : Discards.Count == 1 ? $"{discardsString}" : $"({discardsString})")}");
 
-			if (Melds.Count > 0) { info.Add($"Melded: {string.Join(", ", Melds)}"); }
-			if (LaidOffCards.Count > 0) { info.Add($"Laid Off: {string.Join(", ", LaidOffCards)}"); }
-			if (Melds.Count > 1) { info.Add($"Prior Melds: {PriorMelds}"); }
+			if (Melds.Count > 0) info.Add($"Melded: {string.Join(", ", Melds)}");
+			if (LaidOffCards.Count > 0) info.Add($"Laid Off: {string.Join(", ", LaidOffCards)}");
+			if (Melds.Count > 1) info.Add($"Prior Melds: {PriorMelds}");
 
-			if (Player.Hand.Count == 0) { info.Add($"Went out{(PriorMelds == 0 ? " with rummy" : "")}"); }
-			else { info.Add($"{Player.Hand.Count} left in hand"); }
+			if (Player.Hand.Count == 0) info.Add($"Went out{(PriorMelds == 0 ? " with rummy" : "")}");
+			else info.Add($"{Player.Hand.Count} left in hand");
 
 			IsValid().InspectErr(err => info.Add($"Invalid: {err}"));
 
@@ -63,30 +54,28 @@ public class Round
 		// Is valid (completed) turn?
 		public Result<Unit, string> IsValid() {
 			var errs = new List<string>();
-			if (DrawnCardsDeck.Count == 0 && DrawnCardsDiscardPile.Count == 0) { errs.Add("Did not draw."); }
-			if (DrawnCardsDeck.Count > 0 && DrawnCardsDiscardPile.Count > 0) { errs.Add($"Drew from both deck and discard pile."); }
-			if (DrawnCardsDeck.Count > 1) { errs.Add($"Drew {DrawnCardsDeck.Count} cards from deck."); }
+			if (DrawnCardsDeck.Count == 0 && DrawnCardsDiscardPile.Count == 0) errs.Add("Did not draw.");
+			if (DrawnCardsDeck.Count > 0 && DrawnCardsDiscardPile.Count > 0) errs.Add($"Drew from both deck and discard pile.");
+			if (DrawnCardsDeck.Count > 1) errs.Add($"Drew {DrawnCardsDeck.Count} cards from deck.");
 
-			if (DrawnCardsDiscardPile.Count > 0 && Discards.Count > 0 && Discards.Last() == DrawnCardsDiscardPile.First() && !Player.Hand.Empty) {
+			if (DrawnCardsDiscardPile.Count > 0 && Discards.Count > 0 && Discards.Last() == DrawnCardsDiscardPile.First() && !Player.Hand.Empty)
 				errs.Add($"Discarded top card drawn from discard pile without going out.");
-			}
+			
 			if (DrawnCardsDiscardPile.Count > 1) {
 				var meldedLast = Melds.Any(meld => meld.Cards.Contains(DrawnCardsDiscardPile.Last()));
 				var laidOffLast = LaidOffCards.Contains(DrawnCardsDiscardPile.Last());
-				if (!meldedLast && !laidOffLast) {
-					errs.Add($"Drew {DrawnCardsDiscardPile.Count} cards but did not use bottommost card ({DrawnCardsDiscardPile.Last()}).");
-				}
+				if (!meldedLast && !laidOffLast) errs.Add($"Drew {DrawnCardsDiscardPile.Count} cards but did not use bottommost card ({DrawnCardsDiscardPile.Last()}).");
 			}
 
-			if (LayOffs.Count > 0 && Player.Melds.Count == 0) { errs.Add($"Laid off before having melded."); }
+			if (LayOffs.Count > 0 && Player.Melds.Count == 0) errs.Add($"Laid off before having melded.");
 			
-			if (Melds.Count > 1 && !Player.Hand.Empty) { errs.Add($"Melded {Melds.Count} times in one turn without going out."); }
-			if (Melds.Count > 1 && PriorMelds != 0) { errs.Add($"Attempted to rummy with a meld already down."); }
+			if (Melds.Count > 1 && !Player.Hand.Empty) errs.Add($"Melded {Melds.Count} times in one turn without going out.");
+			if (Melds.Count > 1 && PriorMelds != 0) errs.Add($"Attempted to rummy with a meld already down.");
 
-			if (Discards.Count > 1) { errs.Add($"Discarded more than once."); }
-			if (Discards.Count == 0 && !Player.Hand.Empty) { errs.Add($"Ended turn without discarding or going out."); }
+			if (Discards.Count > 1) errs.Add($"Discarded more than once.");
+			if (Discards.Count == 0 && !Player.Hand.Empty) errs.Add($"Ended turn without discarding or going out.");
 
-			if (errs.Count > 0) { return Err(string.Join(" ", errs)); } 
+			if (errs.Count > 0) return Err(string.Join(" ", errs));
 			return Ok();
 		}
 
@@ -105,17 +94,12 @@ public class Round
 	private TurnData turnData;
 
 	// Record of a (valid) turn
-	public class TurnRecord {
-		public TurnRecord(Player player, Option<Card> discardedCard,
-							ImmutableArray<Option<Card>> drawnCards, ImmutableArray<Meld> melds, ImmutableArray<Card> laidOffCards) {
-			Player = player; DiscardedCard = discardedCard; DrawnCards = drawnCards; Melds = melds; LaidOffCards = laidOffCards;
-		}
-
-		public readonly Player Player;
-		public readonly Option<Card> DiscardedCard; // It is valid for the final turn to end without a discard
-		public readonly ImmutableArray<Option<Card>> DrawnCards; // 'None' in this instance is an unknown card, ie: a card drawn from the deck
-		public readonly ImmutableArray<Meld> Melds;
-		public readonly ImmutableArray<Card> LaidOffCards;
+	public class TurnRecord(Player player, Option<Card> discardedCard, ImmutableArray<Option<Card>> drawnCards, ImmutableArray<Meld> melds, ImmutableArray<Card> laidOffCards) {
+        public readonly Player Player = player;
+		public readonly Option<Card> DiscardedCard = discardedCard; // It is valid for the final turn to end without a discard
+		public readonly ImmutableArray<Option<Card>> DrawnCards = drawnCards; // 'None' in this instance is an unknown card, ie: a card drawn from the deck
+		public readonly ImmutableArray<Meld> Melds = melds;
+		public readonly ImmutableArray<Card> LaidOffCards = laidOffCards;
 		
         public override string ToString() {
 			StringBuilder builder = new();
@@ -169,7 +153,7 @@ public class Round
 	public event Action<Player, Card> 						NotifyDiscarded;
 
 	private readonly List<Player> _players;
-	public ReadOnlyCollection<Player> Players { get => _players.AsReadOnly(); }
+	public ReadOnlyCollection<Player> Players => _players.AsReadOnly();
 
 	public int Turn { get; private set; } = -1;
 	public bool MidTurn { get; private set; } = false;
@@ -220,23 +204,20 @@ public class Round
 		foreach (Player player in Players) { player.Hand.Reset(); player.Melds.Clear(); }
 		turnData = new(players.First());
 		// This is done as a second step because it triggers logic on the players, where they may inspect other players
-		foreach (Player player in Players) { player.Round = this; }
+		foreach (Player player in Players) player.Round = this;
 		
 		// Add required callbacks
 		DiscardPile.OnCardAdded += (card) => {
 			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
-			turnData.Discards.Add(card);
-			ImmediateDisplayNotifyDiscarded?.Invoke(CurrentPlayer, card);
+			turnData.Discards.Add(card); ImmediateDisplayNotifyDiscarded?.Invoke(CurrentPlayer, card);
 		};
 		Deck.OnCardDrawn += (card) => {
 			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
-			turnData.DrawnCardsDeck.Add(card);
-			ImmediateDisplayNotifyDrewFromDeck?.Invoke(CurrentPlayer);
+			turnData.DrawnCardsDeck.Add(card); ImmediateDisplayNotifyDrewFromDeck?.Invoke(CurrentPlayer);
 		};
 		DiscardPile.OnCardDrawn += (card) => {
 			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
-			turnData.DrawnCardsDiscardPile.Add(card);
-			ImmediateDisplayNotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, card);
+			turnData.DrawnCardsDiscardPile.Add(card); ImmediateDisplayNotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, card);
 		};
 
 		Deck.OnEmptied += () => {
@@ -245,10 +226,7 @@ public class Round
 			Deck.Append(DiscardPile);
 			Deck.Flip();
 			DiscardPile.Clear();
-			Deck.Draw().Inspect(card => {
-				DiscardPile.Discard(card);
-				ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card);
-			});
+			Deck.Draw().Inspect(card => { DiscardPile.Discard(card); ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card); });
 			_currentlyFlippingOverDiscard = false;
 		};
 	}
@@ -301,26 +279,21 @@ public class Round
 	public void CreateAndShuffleDeck() => CreateAndShuffleDeck(Random.Shared);
 
 	public void DealCardsAndInitialiseRound() {
-		if (Turn >= 0) { return; }
+		if (Turn >= 0) return;
 		
 		int handSize = Players.Count switch {
 			< 4 => 10,
 			< 6 => 7,
 			_ => 6
 		};
-		
-		foreach (int i in Util.Range.To(handSize)) {
-			Players.ForEach(player => {
-				Deck.Draw().Inspect(card => player.Hand.Add(card));
-				ImmediateDisplayNotifyDrewDuringInitialisation?.Invoke(player, i, handSize);
-			});
+
+		foreach (int i in Util.Range.To(handSize)) foreach (var player in Players) {
+			Deck.Draw().Inspect(player.Hand.Add);
+			ImmediateDisplayNotifyDrewDuringInitialisation?.Invoke(player, i, handSize);	
 		}
 
 		// Put one card into discard pile
-		Deck.Draw().Inspect(card => {
-			DiscardPile.Discard(card);
-			ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card);
-		});
+		Deck.Draw().Inspect(card => { DiscardPile.Discard(card); ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card); });
 
 		Turn = 0;
 	}
@@ -357,7 +330,7 @@ public class Round
 		turnData.Melds.ForEach(meld => NotifyMelded?.Invoke(CurrentPlayer, meld.Cards));
 		turnData.LaidOffCards.ForEach(card => NotifyLaidOff?.Invoke(CurrentPlayer, card));
 
-		if (turnData.Discards.Count > 0) { NotifyDiscarded?.Invoke(CurrentPlayer, turnData.Discards.Last()); }
+		if (turnData.Discards.Count > 0) NotifyDiscarded?.Invoke(CurrentPlayer, turnData.Discards.Last());
 
 		// Game End
 		if (CurrentPlayer.Hand.Empty) {
@@ -365,12 +338,12 @@ public class Round
 			Winner = CurrentPlayer;
 			int roundScore = 0;
 			foreach (Player player in Players) {
-				if (player == Winner) { continue; }
+				if (player == Winner) continue;
 				roundScore += player.Hand.Score();
 			}
 			// Rummied, score doubled
 			bool wasRummy = turnData.PriorMelds == 0;
-			if (wasRummy) { roundScore *= 2; }
+			if (wasRummy) roundScore *= 2;
 			Winner.Score += roundScore;
 			NotifyGameEnded?.Invoke(Winner, roundScore, wasRummy);
 		}
@@ -380,45 +353,30 @@ public class Round
 
 	public void ResetTurn() {
 		// Undo discards
-		turnData.Discards.ForEach(card => {
-			DiscardPile.InternalUndoDiscard(card);
-			CurrentPlayer.Hand.Add(card);
-		});
+		foreach (var card in turnData.Discards) { DiscardPile.InternalUndoDiscard(card); CurrentPlayer.Hand.Add(card); }
 		turnData.Discards.Clear();
-		
+
 		// Undo layoffs
-		turnData.LayOffs.Keys.ToList().ForEach(player => {
-			turnData.LayOffs[player].Keys.ToList().ForEach(index => {
-				turnData.LayOffs[player][index].ForEach(card => {
-					player.Melds.ElementAt(index).InternalUndoLayOff(card);
-					CurrentPlayer.Hand.Add(card);
-				});
-			});
-		});
+		foreach (var (player, layoffs) in turnData.LayOffs) foreach (var (index, cards) in layoffs) foreach (var card in cards) {
+			player.Melds.ElementAt(index).InternalUndoLayOff(card); player.Hand.Add(card);
+		}
 		turnData.LayOffs.Clear();
 
 		// Undo melds
-		turnData.Melds.ForEach(meld => {
-			meld.Cards.ToList().ForEach(card => {
-				CurrentPlayer.Hand.Add(card);
-			});
+		foreach (var meld in turnData.Melds) {
+			foreach (var card in meld.Cards) CurrentPlayer.Hand.Add(card);
 			_meldOrder.Remove((CurrentPlayer, CurrentPlayer.Melds.FindIndex(x => x == meld)));
+
 			int index = CurrentPlayer.Melds.FindIndex(x => x.Equals(meld));
-			if (index == -1) { GD.PushWarning($"Tried to reset nonexistent meld {meld}."); }
-			else { CurrentPlayer.Melds.RemoveAt(index); }
-		});
+			if (index != -1) CurrentPlayer.Melds.RemoveAt(index); else GD.PushWarning($"Tried to reset nonexistent meld {meld}.");
+		}
 		turnData.Melds.Clear();
 
 		// Undo draws
-		turnData.DrawnCardsDeck.Reverse();
-		turnData.DrawnCardsDeck.ForEach(card => {
-			Deck.InternalUndoDraw(card); (CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
-		});
+		foreach (var card in turnData.DrawnCardsDeck.Reversed()) { Deck.InternalUndoDraw(card); (CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card); }
 		turnData.DrawnCardsDeck.Clear();
-		turnData.DrawnCardsDiscardPile.Reverse();
-		turnData.DrawnCardsDiscardPile.ForEach(card => {
-			DiscardPile.InternalUndoDraw(card); (CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card);
-		});
+
+		foreach (var card in turnData.DrawnCardsDiscardPile.Reversed()) { DiscardPile.InternalUndoDraw(card); (CurrentPlayer.Hand as IAccessibleCardPile).Cards.Remove(card); }
 		turnData.DrawnCardsDiscardPile.Clear();
 
 		NotifyTurnReset?.Invoke();

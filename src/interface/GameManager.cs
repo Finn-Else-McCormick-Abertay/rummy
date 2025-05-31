@@ -17,12 +17,11 @@ public partial class GameManager : Node
     public Round Round { get; private set; }
     private bool stateInvalid = false;
 
-    private List<Player> players = new();
-    private UserPlayer _userPlayer;
+    private List<Player> players = [];
     public UserPlayer UserPlayer {
-        get => _userPlayer;
+        get;
         private set {
-            _userPlayer = value;
+            field = value;
             if (IsNodeReady() && DiscardButton is not null && MeldButton is not null && PlayerHand is not null) {
                 DiscardButton.Visible = UserPlayer is not null;
                 MeldButton.Visible = UserPlayer is not null;
@@ -32,20 +31,12 @@ public partial class GameManager : Node
     }
 
     [Export] public Godot.Collections.Array<Player> Players {
-        get => new(players);
+        get => [..players];
         set {
-            players.ForEach(player => {
-                if (player is null) { return; }
-                player.OnSayingMessage -= OnPlayerSay;
-                player.OnThinkingMessage -= OnPlayerThink;
-            });
-            players = value.Cast<Player>().ToList();
-            players.ForEach(player => {
-                if (player is null) { return; }
-                player.OnSayingMessage += OnPlayerSay;
-                player.OnThinkingMessage += OnPlayerThink;
-            });
-            _userPlayer = (UserPlayer)players.Find(x => x is UserPlayer);
+            foreach (var player in players) if (player is not null) { player.OnSayingMessage -= OnPlayerSay; player.OnThinkingMessage -= OnPlayerThink; }
+            players = [..value.Cast<Player>()];
+            foreach (var player in players) if (player is not null) { player.OnSayingMessage += OnPlayerSay; player.OnThinkingMessage += OnPlayerThink; }
+            UserPlayer = (UserPlayer)players.Find(x => x is UserPlayer);
             RebuildPlayerDisplays(players);
         }
     }
@@ -79,15 +70,15 @@ public partial class GameManager : Node
     [Export] private double _discardPileStarterDuration = 0.2f;
     [Export] private double _shuffleDuration = 2f;
 
-    public double DrawDuration => _drawDuration * AnimationSpeedMultiplier;
-    public double DiscardDuration => _discardDuration * AnimationSpeedMultiplier;
-    public double MeldDuration => _meldDuration * AnimationSpeedMultiplier;
-    public double LayOffDurationPlayer => _layOffDurationPlayer * AnimationSpeedMultiplier;
-    public double LayOffDurationBot => _layOffDurationBot * AnimationSpeedMultiplier;
-    public double DeckTurnOverDuration => _deckTurnOverDuration * AnimationSpeedMultiplier;
-    public double InitialDrawGapDuration => _initialDrawGapDuration * AnimationSpeedMultiplier;
+    public double DrawDuration               => _drawDuration * AnimationSpeedMultiplier;
+    public double DiscardDuration            => _discardDuration * AnimationSpeedMultiplier;
+    public double MeldDuration               => _meldDuration * AnimationSpeedMultiplier;
+    public double LayOffDurationPlayer       => _layOffDurationPlayer * AnimationSpeedMultiplier;
+    public double LayOffDurationBot          => _layOffDurationBot * AnimationSpeedMultiplier;
+    public double DeckTurnOverDuration       => _deckTurnOverDuration * AnimationSpeedMultiplier;
+    public double InitialDrawGapDuration     => _initialDrawGapDuration * AnimationSpeedMultiplier;
     public double DiscardPileStarterDuration => _discardPileStarterDuration * AnimationSpeedMultiplier;
-    public double ShuffleDuration => _shuffleDuration * AnimationSpeedMultiplier;
+    public double ShuffleDuration            => _shuffleDuration * AnimationSpeedMultiplier;
 
     [Signal] public delegate void DeckShuffleCompleteEventHandler();
     [Signal] public delegate void DeckTurnOverCompleteEventHandler();
@@ -286,10 +277,8 @@ public partial class GameManager : Node
             var startPos = cardDisplayInHand?.GlobalPosition ?? handDisplay.GlobalPosition;
 
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            var meldContainer = MeldRoot.GetChildren().Cast<MeldContainer>().ToList().Find(child => child.CardPile as Meld == meld);
-            if (meldContainer is null) { return; }
-
-            var cardDisplayInMeld = meldContainer.GetChildren().Cast<CardDisplay>().ToList().Find(display => display.Card == card);
+            if (MeldRoot.FindChildWhere<MeldContainer>(x => x.CardPile as Meld == meld) is not MeldContainer meldContainer) return;
+            var cardDisplayInMeld = meldContainer.FindChildWhere<CardDisplay>(x => x.Card == card);
 
             var endPos = cardDisplayInMeld?.GlobalPosition ?? meldContainer.GlobalPosition;
             int zIndex = cardDisplayInMeld.FindAbsoluteZIndex();
@@ -327,7 +316,7 @@ public partial class GameManager : Node
             }
             newMeld?.Hide();
             await finalSignalAwaiter;
-            if (IsInstanceValid(newMeld)) { newMeld?.Show(); }
+            if (IsInstanceValid(newMeld)) newMeld?.Show();
         };
 
         RebuildMelds();
@@ -346,8 +335,8 @@ public partial class GameManager : Node
 
         Round.ImmediateDisplayNotifyDeckShuffled += async () => {
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            List<Tween> tweens = new();
-            List<int> usedTargetIndices = new();
+            List<Tween> tweens = [];
+            List<int> usedTargetIndices = [];
             foreach (CardDisplay display in Deck.GetChildren().Cast<CardDisplay>()) {
                 var initialPosition = display.Position;
                 var tween = GetTree().CreateTween();
@@ -433,7 +422,7 @@ public partial class GameManager : Node
     }
 
     public override void _Process(double delta) {
-        if (Engine.IsEditorHint() || Round is null || stateInvalid) { return; }
+        if (Engine.IsEditorHint() || Round is null || stateInvalid) return;
 
         if (NextTurnButton.Visible && !NextTurnButton.Disabled && Input.IsActionJustPressed(ActionName.Skip)) {
             NextTurnButton.Visible = false;
@@ -664,7 +653,7 @@ public partial class GameManager : Node
     }
 
     private async void OnDiscardButtonPressed() {
-        if (!IsNodeReady() || UserPlayer is null || Round is null || PlayerHand.SelectedSequence.Count != 1) { return; }
+        if (!IsNodeReady() || UserPlayer is null || Round is null || PlayerHand.SelectedSequence.Count != 1) return;
 
         var selected = PlayerHand.SelectedSequence.Single();
         
@@ -690,7 +679,7 @@ public partial class GameManager : Node
     }
     
     private async void OnMeldButtonPressed() {
-        if (!IsNodeReady() || UserPlayer is null || Round is null) { return; }
+        if (!IsNodeReady() || UserPlayer is null || Round is null) return;
 
         var sequence = PlayerHand.SelectedSequence;
         var set = new Set(sequence); var run = new Run(sequence);
@@ -726,7 +715,7 @@ public partial class GameManager : Node
     }
 
     private void OnResetButtonPressed() {
-        if (Round is null || !IsNodeReady()) { return; }
+        if (Round is null || !IsNodeReady()) return;
         Round.ResetTurn();
         stateInvalid = false;
         FailureMessage.Hide();

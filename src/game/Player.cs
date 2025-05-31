@@ -14,37 +14,27 @@ namespace Rummy.Game;
 [GlobalClass]
 public abstract partial class Player : Resource
 {
-    protected virtual void OnAddedToRound(Round round) {}
+    protected Player(string name) {
+        _defaultName = name;
+        Name = name;
+    }
+
+    protected virtual void OnAddedToRound(Round round) { }
     protected virtual void OnRemovedFromRound(Round round) {}
 
     public abstract Task TakeTurn();
 
-    private Round _round = null;
-    public Round Round {
-        get => _round;
-        set {
-            if (_round is not null) { OnRemovedFromRound(_round); }
-            _round = value;
-            if (_round is not null) { OnAddedToRound(_round); }
-        }
-    }
+    public Round Round { get; set { if (Round is not null) OnRemovedFromRound(Round); field = value; if (Round is not null) OnAddedToRound(Round); } }
 
-	public List<Meld> Melds { get; set; } = new();
+    public List<Meld> Melds { get; set; } = [];
 
     public event Action NotifyNameChanged;
     public event Action NotifyScoreChanged;
     
-    private int _score;
-    public int Score { get => _score; set { _score = value; NotifyScoreChanged?.Invoke(); } }
+    public int Score { get; set { field = value; NotifyScoreChanged?.Invoke(); } }
 
     private readonly string _defaultName;
-    private string _name;
-    [Export] public string Name { get => _name; private set { _name = value; NotifyNameChanged?.Invoke(); } }
-    
-    protected Player(string name) {
-        _defaultName = name;
-        _name = name;
-    }
+    [Export] public string Name { get; private set { field = value; NotifyNameChanged?.Invoke(); } }
 
     public override bool _PropertyCanRevert(StringName property) => property.ToString() switch {
         "Name" => true,

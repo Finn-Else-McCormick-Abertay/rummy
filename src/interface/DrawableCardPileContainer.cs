@@ -12,48 +12,37 @@ public partial class DrawableCardPileContainer : CardPileContainer
     private bool _isMousedOver = false;
     private bool _didFocusJustEnter = false;
 
-    private Vector2 _highlightOffset = new (0f, 30f);
-    [Export] public Vector2 HighlightOffset { get => _highlightOffset; set { _highlightOffset = value; QueueSort(); } }
-
-    private Vector2 _highlightBelowOffset = new (0f, 0f);
-    [Export] public Vector2 HighlightBelowOffset { get => _highlightBelowOffset; set { _highlightBelowOffset = value; QueueSort(); } }
+    [Export] public Vector2 HighlightOffset { get; set { field = value; QueueSort(); } } = new (0f, 30f);
+    [Export] public Vector2 HighlightBelowOffset { get; set { field = value; QueueSort(); } } = new (0f, 0f);
 
     private NodePath _prevFocusBottom = null;
 
-    private int? _highlightedIndex = null;
     public int? HighlightedIndex {
-        get => _highlightedIndex;
+        get;
         set {
-            if (CardPile is IDrawableMulti && _highlightedIndex == GetChildCount() - 1) { _prevFocusBottom = FocusNeighborBottom; }
-            _highlightedIndex = value;
+            if (CardPile is IDrawableMulti && HighlightedIndex == GetChildCount() - 1) { _prevFocusBottom = FocusNeighborBottom; }
+            field = value;
             if (CardPile is IDrawableMulti && _prevFocusBottom is not null) {
-                if (_highlightedIndex is null || _highlightedIndex == GetChildCount() - 1) { FocusNeighborBottom = _prevFocusBottom; }
+                if (HighlightedIndex is null || HighlightedIndex == GetChildCount() - 1) { FocusNeighborBottom = _prevFocusBottom; }
                 else { FocusNeighborBottom = null; }
             }
             QueueSort();
         }
-    }
+    } = null;
+
     public void UpdatePrevFocus() {
         if (CardPile is not IDrawableMulti) { return; }
-        if (_highlightedIndex is not null) {
+        if (HighlightedIndex is not null) {
             if (FocusNeighborBottom is not null) {
                 _prevFocusBottom = FocusNeighborBottom;
-                if (_highlightedIndex != GetChildCount() - 1) {
+                if (HighlightedIndex != GetChildCount() - 1) {
                     FocusNeighborBottom = null;
                 }
             }
         }
     }
 
-    private bool _allowDraw = false;
-    public bool AllowDraw {
-        get => _allowDraw;
-        set {
-            _allowDraw = value;
-            if (!AllowDraw) { HighlightedIndex = null; }
-            FocusMode = AllowDraw ? FocusModeEnum.All : FocusModeEnum.None;
-        }
-    }
+    public bool AllowDraw { get; set { field = value; if (!AllowDraw) HighlightedIndex = null; FocusMode = AllowDraw ? FocusModeEnum.All : FocusModeEnum.None; } }
 
     protected override void PostChildSorted(CardDisplay child) {
         int index = GetChildCount() - child.GetIndex() - 1;
