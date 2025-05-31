@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bc36fdeec5ywx"]
 
-[ext_resource type="Script" path="res://src/interface/DrawableCardPileContainer.cs" id="1_of4q2"]
+[ext_resource type="Script" uid="uid://b5yfotddl6bqx" path="res://src/interface/DrawableCardPileContainer.cs" id="1_of4q2"]
 
 [node name="Deck" type="Container"]
 size_flags_horizontal = 3

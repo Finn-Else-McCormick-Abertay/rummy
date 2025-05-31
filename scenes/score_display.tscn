@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://kfbio5hmt6oa"]
 
 [ext_resource type="Theme" uid="uid://crq0lnoomolm1" path="res://assets/themes/player_score_display.tres" id="1_3j3pa"]
-[ext_resource type="Script" path="res://src/interface/PlayerScoreDisplay.cs" id="1_ctddr"]
+[ext_resource type="Script" uid="uid://l55wx1nepv6t" path="res://src/interface/PlayerScoreDisplay.cs" id="1_ctddr"]
 
 [node name="PlayerScoreDisplay" type="PanelContainer" node_paths=PackedStringArray("nameLabel", "scoreLabel")]
 anchors_preset = 15

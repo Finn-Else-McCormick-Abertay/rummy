@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://i64idti40js4"]
 
-[ext_resource type="Script" path="res://src/interface/CardPileContainer.cs" id="1_60wra"]
+[ext_resource type="Script" uid="uid://rqsgsbmqjabv" path="res://src/interface/CardPileContainer.cs" id="1_60wra"]
 
 [node name="EnemyHand" type="Container"]
 anchors_preset = 15

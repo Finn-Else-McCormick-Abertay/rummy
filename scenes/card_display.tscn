@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://chtiqc5ff2ojj"]
 
-[ext_resource type="Script" path="res://src/interface/CardDisplay.cs" id="1_lftpe"]
+[ext_resource type="Script" uid="uid://h5evjlphyirl" path="res://src/interface/CardDisplay.cs" id="1_lftpe"]
 [ext_resource type="Theme" uid="uid://b6ib4r2fbdif" path="res://assets/themes/card/dropshadow.tres" id="2_1iw2q"]
 [ext_resource type="Texture2D" uid="uid://dmtkl13c56p5i" path="res://assets/textures/Card Back.png" id="2_4fb5p"]
 [ext_resource type="Texture2D" uid="uid://bhykfv3q6b5im" path="res://assets/textures/PlayingCards Edited.png" id="3_bew4a"]

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://di3h81vxsl8dh"]
 
-[ext_resource type="Script" path="res://src/interface/MeldContainer.cs" id="1_s5gio"]
+[ext_resource type="Script" uid="uid://c3iall1y2vjsi" path="res://src/interface/MeldContainer.cs" id="1_s5gio"]
 
 [node name="Meld" type="Container"]
 custom_minimum_size = Vector2(170, 105)

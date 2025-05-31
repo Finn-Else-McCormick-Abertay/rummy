@@ -1,10 +1,11 @@
-[gd_scene load_steps=20 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=21 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
-[ext_resource type="Script" path="res://src/interface/GameManager.cs" id="1_aylxn"]
-[ext_resource type="Script" path="res://src/interface/UserPlayer.cs" id="2_e1vv7"]
+[ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
+[ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
+[ext_resource type="Script" uid="uid://lhp3y2yboluj" path="res://src/interface/UserPlayer.cs" id="2_e1vv7"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
-[ext_resource type="Script" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
+[ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
@@ -55,7 +56,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
-Players = [SubResource("Resource_skhqg"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")]
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_skhqg"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")])
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")
