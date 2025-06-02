@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "dotnet: build",
-            "program": "${env:GODOT4}",
+            "program": "godot4dotnet",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,

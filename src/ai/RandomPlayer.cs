@@ -14,7 +14,7 @@ namespace Rummy.AI;
 [GlobalClass]
 public partial class RandomPlayer : ComputerPlayer 
 {
-    public RandomPlayer() : base("RandomPlayer") { random = new Random(); }
+    public RandomPlayer() : base(nameof(RandomPlayer)) { random = new Random(); }
     public RandomPlayer(int seed) : base($"RandomPlayer<{seed}>") { random = new Random(seed); }
 
     private readonly Random random;
@@ -159,8 +159,8 @@ public partial class RandomPlayer : ComputerPlayer
 
         if (Hand.Cards.Any()) {
             Card cardToDiscard;
-            do { cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
-            } while(!isRummying && topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
+            do cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
+            while(!isRummying && topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
 
             Hand.Pop(cardToDiscard).Inspect(Round.DiscardPile.Discard);
 

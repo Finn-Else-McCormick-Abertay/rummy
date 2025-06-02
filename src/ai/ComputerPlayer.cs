@@ -12,7 +12,7 @@ namespace Rummy.AI;
 
 [Tool]
 [GlobalClass]
-public abstract partial class ComputerPlayer(string name = "ComputerPlayer") : Player(name) 
+public abstract partial class ComputerPlayer(string name = nameof(ComputerPlayer)) : Player(name) 
 {
     protected new HandInternal Hand => _hand;
 
