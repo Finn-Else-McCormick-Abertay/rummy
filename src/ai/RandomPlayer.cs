@@ -7,15 +7,20 @@ using Godot;
 using Rummy.Game;
 using Rummy.Util;
 using static Rummy.Util.Option;
+using static Rummy.AI.DecisionTree;
+using Rummy.Util.Nullable;
+using System.Text;
 
 namespace Rummy.AI;
 
 [Tool]
 [GlobalClass]
-public partial class RandomPlayer : ComputerPlayer 
+public partial class RandomPlayer : ComputerPlayer
 {
-    public RandomPlayer() : base(nameof(RandomPlayer)) { random = new Random(); }
-    public RandomPlayer(int seed) : base($"RandomPlayer<{seed}>") { random = new Random(seed); }
+    public RandomPlayer(int? seed) : base($"{nameof(RandomPlayer)}{(seed is not null ? $"<{seed}>" : "")}") {
+        random = seed is not null ? new Random((int)seed) : new Random();
+    }
+    public RandomPlayer() : this(null) {}
 
     private readonly Random random;
 
@@ -25,146 +30,119 @@ public partial class RandomPlayer : ComputerPlayer
     [Export] private double TakeMultipleChanceLossPerGainedCard = 0.0;
 
     public override Task TakeTurn() {
-        var (potentialMelds, nearMelds) = FindPotentialMelds();
+        // Find usable cards in the discard pile
+        Dictionary<(Card Card, int Index),
+            (IEnumerable<Meld> Melds, IEnumerable<Meld> Layoffs, IEnumerable<(List<Meld> Melds, List<(Card, Meld)> Layoffs, Card? Discard)> RummyConfigs, IEnumerable<Card> CardsTaken)>
+            usableDrawDownCards = [];
+        foreach (var (index, card) in Round.DiscardPile.Cards.Index()) {
+            var cardsTaken = Round.DiscardPile.Cards.Take(index + 1);
+            var potentialMeldsWith = PotentialMoves.FindMelds(Hand.Cards.Concat(cardsTaken)).Melds.Where(meld => meld.Cards.Contains(card));
+            var potentialLayoffs = Melds.Any() || PotentialMoves.FindMelds(Hand.Cards.Concat(cardsTaken.SkipLast())).Melds.Any() ? FindPotentialLayOffs(card) : [];
 
-        HashSet<Card> usableDrawDownToCardsMeld = [], usableDrawDownToCardsLayoff = [];
-        Round.DiscardPile.Cards.ForEach(card => {
-            var allCardsToBeTaken = Round.DiscardPile.Cards.Take(Round.DiscardPile.Cards.FindIndex(card) + 1);
-            var potentialMeldsWith =
-                PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken)).Melds
-                .Where(meld => meld.Cards.Contains(card));
-            if (potentialMeldsWith.Any()) usableDrawDownToCardsMeld.Add(card);
+            var rummyConfigsWith = PotentialMoves.FindRummyConfigurations(Hand.Cards.Concat(cardsTaken), this, Round);
 
-            var potentialCardLayoffs = FindPotentialLayOffs(card);
-            if (potentialCardLayoffs.Count > 0) {
-                if (Melds.Count > 0 || potentialMelds.Count > 0 ||
-                    PotentialMoves.FindMelds(Hand.Cards.Concat(allCardsToBeTaken.SkipLast(1))).Melds.Count > 0
-                ) usableDrawDownToCardsLayoff.Add(card);
-            }
-        });
+            // TK - May need to add logic for cards which fit with a partial meld, but don't complete it
+            if (potentialMeldsWith.Any() || potentialLayoffs.Any() || rummyConfigsWith.Any()) usableDrawDownCards[(card, index)] = (potentialMeldsWith, potentialLayoffs, rummyConfigsWith, cardsTaken);
+        }
 
-        var usableDrawDownToCardsAll = usableDrawDownToCardsMeld.Concat(usableDrawDownToCardsLayoff);
+        if (usableDrawDownCards.Any()) Think("Possible cards to draw down to: ".ToBuilder().AppendJoin(", ",
+            usableDrawDownCards.Select((index, info) => "".ToBuilder().AppendJoinWrapped(info.CardsTaken.Count() > 1 ? "[]" : "", ", ",
+                info.CardsTaken.SkipLast().AsStrings().Concat(info.CardsTaken.TakeLast().Select(x => $"({x})"))))));
 
-        if (usableDrawDownToCardsAll.Any()) Think($"Possible cards to draw down to: {usableDrawDownToCardsAll.Select(card => $"[{Round.DiscardPile.Cards.TakeWhile(x => !x.Equals(card)).ToJoinedString(", ")}]({card})").ToJoinedString(", ")}");
+        // Default to drawing from deck
+        (IDrawable Pile, int Index) drawSelection = (Round.Deck, 0);
 
-        List<Card> drawnCards = [];
-        Option<Card> topFromDiscardPile = None, bottomFromDiscardPile = None;
-
-        bool mustMeldThisTurn = false;
-        if (usableDrawDownToCardsAll.Any()) {
-            int drawDownSelection = random.Next(usableDrawDownToCardsAll.Count());
-            var card = usableDrawDownToCardsAll.ElementAt(drawDownSelection);
-
-            var indexInDiscardPile = Round.DiscardPile.Cards.FindIndex(card);
-            if (random.NextDouble() < Math.Max(TakeMultipleChance - TakeMultipleChanceLossPerGainedCard * indexInDiscardPile, 0d)) {
-                var cards = Round.DiscardPile.Draw(indexInDiscardPile + 1);
-                drawnCards.AddRange(cards);
-                topFromDiscardPile = cards.First();
-                bottomFromDiscardPile = cards.Last();
-                bool forMeld = usableDrawDownToCardsMeld.Contains(card), forLayoff = usableDrawDownToCardsLayoff.Contains(card);
-                mustMeldThisTurn = (forMeld && !forLayoff) || (forLayoff && Melds.Count == 0);
-                Say($"Drew {cards.ToJoinedString(", ")} from discard pile. ({bottomFromDiscardPile.Value})");
+        // If a card in the discard pile would allow for a rummy, take that
+        if (usableDrawDownCards.FirstOrDefault(x => x.Value.RummyConfigs.Any()) is var drawDownCardForRummy)
+            drawSelection = (Round.DiscardPile, drawDownCardForRummy.Key.Index);
+        else if (usableDrawDownCards.Any()) {
+            foreach (var ((card, index), info) in usableDrawDownCards) {
+                if (random.NextDouble() <= TakeMultipleChance - TakeMultipleChanceLossPerGainedCard * info.CardsTaken.Count()) {
+                    drawSelection = (Round.DiscardPile, index); break;
+                }
             }
         }
 
-        if (drawnCards.Count == 0) {
-            // Draw from deck
-            int drawSelection = random.Next(2);
-            if (drawSelection == 0) {
-                var card = Round.Deck.Draw().Inspect(card => drawnCards.Add(card));
-                Say("Drew from deck.");
-                Think($"Drew {card.Value} from deck.");
-            }
-            // Draw from discard
-            if (drawSelection == 1 || drawnCards.Count == 0) {
-                topFromDiscardPile = Round.DiscardPile.Draw().Inspect(card => drawnCards.Add(card));
-                Say($"Drew {topFromDiscardPile.Value} from discard pile.");
-            }
-        }
-
+        var drawnCards = drawSelection.Pile.Draw(drawSelection.Index + 1);
         drawnCards.ForEach(Hand.Add);
 
-        Think($"Hand: {string.Join(", ", Hand.Cards)}");
+        Card? cannotDiscard = drawSelection.Pile == Round.DiscardPile ? drawnCards.First() : null;
+        Card? mustUse = drawSelection.Pile == Round.DiscardPile && drawnCards.Count > 1 ? drawnCards.Last() : null;
 
-        // Update potential melds with respect to the card you just drew
-        (potentialMelds, nearMelds) = FindPotentialMelds();
+        if (drawSelection.Pile == Round.DiscardPile)
+            Say("Drew ".ToBuilder().AppendJoin(", ", drawnCards).Append(" from discard pile.")
+                .AppendIf(mustUse is not null, $" Must use {mustUse}.")
+                .AppendIf(cannotDiscard is not null, $" Cannot discard {cannotDiscard}."));
+        else SayAndThink("Drew from deck.", $"Drew {drawnCards.SingleOrDefault()} from deck.");
 
+        Think("Hand: ".ToBuilder().AppendJoin(", ", Hand.Cards));
+
+        // Update potential melds and layoffs with respect to the card you just drew
+        var (potentialMelds, nearMelds) = FindPotentialMelds();
         var potentialLayOffs = FindPotentialLayOffs();
 
-        if (potentialMelds.Count > 0) Think($"Potential Melds: {string.Join(", ", potentialMelds)}");
-        if (nearMelds.Count > 0) Think($"Near Melds: {string.Join(", ", nearMelds.Select(x => string.Join(", ", x)))}");
-        if (potentialLayOffs.Count > 0) Think($"Potential Layoffs: {(Melds.Count == 0 ? "(cannot lay off)" : "")} {string.Join(", ", potentialLayOffs.Select(kvp => $"{kvp.Key} -> {(kvp.Value.Count > 1 ? "{" : "")}{string.Join(", ", kvp.Value)}{(kvp.Value.Count > 1 ? "}" : "")}"))}");
+        if (potentialMelds.Count > 0)   Think("Potential Melds: ".ToBuilder().AppendJoin(", ", potentialMelds));
+        if (nearMelds.Count > 0)        Think("Near Melds: ".ToBuilder().AppendJoin(", ", nearMelds));
 
-        var validPotentialMelds = bottomFromDiscardPile
-            .AndThen(bottomCard => usableDrawDownToCardsLayoff.Contains(bottomCard) ? None : Some(potentialMelds.Where(meld => meld.Cards.Contains(bottomCard))))
-            .Or(potentialMelds);
-        
-        if (bottomFromDiscardPile.IsSome) Think($"Valid Melds: {string.Join(", ", validPotentialMelds)}");
+        if (potentialLayOffs.Count > 0) Think("Potential Layoffs".ToBuilder().AppendIf(Melds.None(), " (cannot lay off)").Append(": ")
+                                        .AppendJoin(", ", potentialLayOffs.Select((card, melds) =>
+                                            $"{card} -> ".ToBuilder().AppendIf(melds.Count > 1, '{').AppendJoin(", ", melds).AppendIf(melds.Count > 1, '}'))));
 
-        List<List<Meld>> rummyConfigurations = [];
-        if (Melds.Count == 0) {
-            Dictionary<Meld, HashSet<Meld>> meldConfigurations = [];
-            foreach (var meld in validPotentialMelds) {
-                meldConfigurations.Add(meld, []);
-                foreach (var otherMeld in validPotentialMelds) {
-                    if (!ReferenceEquals(meld, otherMeld)) { meldConfigurations[meld].Add(otherMeld); }
+        var rummyConfigurations = PotentialMoves.FindRummyConfigurations(Hand.Cards, this, Round, potentialMelds, potentialLayOffs);
+
+        // If rummying
+        if (Melds.Count == 0 && rummyConfigurations.Any()) {
+            var config = rummyConfigurations.First();
+
+            foreach (var meld in config.Melds) Meld(meld);
+            foreach (var layoff in config.Layoffs) LayOff(layoff.Card, layoff.Meld);
+            if (config.Discard is Card cardToDiscard) Discard(cardToDiscard);
+
+            Say($"Rummying! ".ToBuilder()
+                .AppendIf(config.Melds.Any(), $"Melding: [{config.Melds.ToJoinedString(", ")}]")
+                .AppendIf(config.Melds.Any() && config.Layoffs.Any(), ", ")
+                .AppendIf(config.Layoffs.Any(), $"Laying off: [{config.Layoffs.Select(x => $"{x.Card} to {x.Meld}").ToJoinedString(", ")}]")
+                .AppendIf((config.Melds.Any() || config.Layoffs.Any()) && config.Discard is not null, ", ")
+                .AppendIf(config.Discard is not null, $"Discarding {config.Discard}")
+            );
+        }
+        // If not rummying
+        else {
+            // If can meld
+            if (potentialMelds.Any()) {
+                bool mustMeld = mustUse is not null && (!potentialLayOffs.Any(x => x.Key == mustUse) || Melds.None());
+
+                // Should we start melding if able
+                bool wantToMeld = random.NextDouble() <= TakeMeldChance;
+
+                if (wantToMeld || mustMeld) {
+                    // Valid melds to select from if not rummying (all potential melds, constrained to those containing the bottomost picked up card if you picked up multiple)
+                    var validMelds = mustUse is Card mustUseCard && !potentialLayOffs.Any(x => x.Key == mustUse) ?
+                        potentialMelds.Where(x => x.Cards.Contains(mustUseCard)) : potentialMelds;
+
+                    // Select meld randomly
+                    Meld(validMelds.ElementAt(random.Next(validMelds.Count())));
                 }
             }
-            foreach (var (meld, others) in meldConfigurations) {
-                var exclusiveMelds = others.Append(meld);
-                var cardsTemp = Hand.Cards.DeepClone().ToList();
-                exclusiveMelds.ForEach(meld => meld.Cards.ForEach(card => cardsTemp.Remove(card)));
-                foreach (var (card, _) in potentialLayOffs) { cardsTemp.Remove(card); }
-                if (cardsTemp.Count <= 1) {
-                    rummyConfigurations.Add([..exclusiveMelds]);
+
+            // If can lay off
+            if (Melds.Any()) {
+                foreach (var (card, melds) in potentialLayOffs) {
+                    // Decide on whether to take layoff
+                    if (random.NextDouble() <= TakeLayOffChance) {
+                        // Select meld randomly
+                        LayOff(card, melds.ElementAt(random.Next(melds.Count)));
+                    }
                 }
             }
-        }
 
-        bool isRummying = false;
-        if (rummyConfigurations.Count > 0) {
-            isRummying = true;
-            var configuration = rummyConfigurations.ElementAt(random.Next(rummyConfigurations.Count));
-            configuration.ForEach(meld => {
-                Round.Meld(meld).Inspect(_ => {
-                    meld.Cards.ForEach(card => Hand.Pop(card));
-                    Think($"Melded {meld} (rummying)");
-                }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
-            });
-            // Update layoffs with respect to the new melds
-            potentialLayOffs = FindPotentialLayOffs();
-        }
-        else if (validPotentialMelds.Any() && (mustMeldThisTurn || random.NextDouble() <= TakeMeldChance)) {
-            var meld = validPotentialMelds.ElementAt(random.Next(validPotentialMelds.Count()));
-            Round.Meld(meld).Inspect(_ => {
-                meld.Cards.ForEach(card => Hand.Pop(card));
-                Think($"Melded {meld}");
-            }).InspectErr(err => Think($"Failed to meld {meld}: {err}"));
-            
-            // Update layoffs with respect to the new meld
-            potentialLayOffs = FindPotentialLayOffs();
-        }
-
-        // Can only lay off after having melded at least once
-        if (Melds.Count == 0) {
-            foreach (var (card, list) in potentialLayOffs) {
-                if (random.NextDouble() <= TakeLayOffChance || isRummying ||
-                        bottomFromDiscardPile.IsSomeAnd(bottomCard => bottomCard.Equals(card))) {
-                    var meld = list.Count == 1 ? list.First() : list.ElementAt(random.Next(list.Count));
-                    Think($"Laid off {card} to {meld}");
-                    Hand.Pop(card).Inspect(card => meld.LayOff(card));
-                }
+            // Discard a card if able
+            if (Hand.Cards.Any()) {
+                // The cannot discard rule does not apply to the final card in your hand
+                var validCardsToDiscard = Hand.Cards.Count > 1 ? Hand.Cards.Where(x => x != cannotDiscard) : Hand.Cards;
+                // Select discard randomly
+                Discard(validCardsToDiscard.ElementAt(random.Next(validCardsToDiscard.Count())));
             }
-        }
-
-        if (Hand.Cards.Any()) {
-            Card cardToDiscard;
-            do cardToDiscard = Hand.Cards.ElementAt(random.Next(Hand.Count));
-            while(!isRummying && topFromDiscardPile.IsSomeAnd(topCard => cardToDiscard.Equals(topCard)));
-
-            Hand.Pop(cardToDiscard).Inspect(Round.DiscardPile.Discard);
-
-            Say($"Discarding {cardToDiscard}");
         }
 
         return Task.CompletedTask;

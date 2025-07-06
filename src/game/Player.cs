@@ -7,6 +7,7 @@ using static Rummy.Util.Result;
 using static Rummy.Util.Option;
 using Godot;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace Rummy.Game;
 
@@ -46,8 +47,9 @@ public abstract partial class Player : Resource
     };
     
     public event EventHandler<string> OnSayingMessage, OnThinkingMessage;
-    protected void Say(string message) => OnSayingMessage?.Invoke(this, message);
-    protected void Think(string message) => OnThinkingMessage?.Invoke(this, message);
+    protected void Say(object message) => OnSayingMessage?.Invoke(this, message?.ToString());
+    protected void Think(object message) => OnThinkingMessage?.Invoke(this, message?.ToString());
+    protected void SayAndThink(object say, object think) { Say(say); Think(think); }
     
     protected HandInternal _hand = new();
     public IHand Hand => _hand;

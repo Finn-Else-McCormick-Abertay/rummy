@@ -15,7 +15,7 @@ public abstract class NearMeld
     public ImmutableList<Card> Cards { get; init; }
     protected NearMeld(IEnumerable<Card> cards) {
         var cardsTemp = cards.ToList(); cardsTemp.Sort(); cardsTemp.Reverse();
-        Cards = cardsTemp.ToImmutableList();
+        Cards = [.. cardsTemp];
     }
 
     public abstract NearMeld With(IEnumerable<Card> cards);
@@ -32,10 +32,8 @@ public abstract class NearMeld
     public abstract Meld AsMeld();
 }
 
-public class NearSet : NearMeld, IEquatable<NearSet>
+public class NearSet(IEnumerable<Card> cards) : NearMeld(cards), IEquatable<NearSet>
 {
-    public NearSet(IEnumerable<Card> cards) : base(cards) {}
-
     private List<Card> _potentialCards = null;
     public override List<Card> PotentialCards() {
         // Cache result - the list of cards in NearMeld is immutable, so this won't change between invocations
@@ -58,8 +56,8 @@ public class NearSet : NearMeld, IEquatable<NearSet>
 
     public override string ToString() => $"Near Set [{string.Join(", ", Cards)}]";
     
-    public override bool Equals(object obj) => obj is NearSet ? Equals(obj as NearSet) : false;
-    public bool Equals(NearSet other) => other.Cards.All(card => Cards.Contains(card));
+    public override bool Equals(object obj) => obj is NearSet && Equals(obj as NearSet);
+    public bool Equals(NearSet other) => other.Cards.All(Cards.Contains);
     public override int GetHashCode() => Cards.ToList().ConvertAll(x => x.GetHashCode()).Aggregate(HashCode.Combine);
 }
 
@@ -84,7 +82,7 @@ public class NearRun(IEnumerable<Card> cards) : NearMeld(cards), IEquatable<Near
             });
             prevCard = Some(card);
         }
-        _potentialCards = _potentialCards.Distinct().OrderBy(x => x.Rank).ToList();
+        _potentialCards = [.._potentialCards.Distinct().OrderBy(x => x.Rank)];
         return _potentialCards;
     }
     public override NearMeld With(IEnumerable<Card> cards) => new NearRun(Cards.ToList().Concat(cards));

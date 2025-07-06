@@ -1,7 +1,7 @@
 
 using System;
 
-namespace Rummy.Util;
+namespace Rummy.Util.Nullable;
 
 // Implementation by Garrett van Wageningen (https://www.coffeebreakcoder.com/csharp-heresy-nullable-extension-methods/)
 

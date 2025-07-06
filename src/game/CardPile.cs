@@ -61,6 +61,10 @@ public delegate void OnEmptied();
 
 public interface IDrawable {
     public Option<Card> Draw();
+	public List<Card> Draw(int count) {
+		if (count != 1) throw new IndexOutOfRangeException("Attempted to draw multiple cards from a single-draw pile.");
+		var card = Draw(); return card.IsSome ? [card.Value] : [];
+	}
 	public void InternalUndoDraw(Card card);
 
     public abstract event OnCardDrawn OnCardDrawn;
@@ -68,7 +72,7 @@ public interface IDrawable {
 }
 
 public interface IDrawableMulti : IDrawable {
-    public List<Card> Draw(int count);
+    public new List<Card> Draw(int count);
 }
 
 public class Deck : CardPile, IDrawable
