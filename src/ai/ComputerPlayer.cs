@@ -44,12 +44,12 @@ public abstract partial class ComputerPlayer : Player
         Card? mustUse = pile == Round.DiscardPile && drawnCards.Count > 1 ? drawnCards.Last() : null;
 
         if (pile == Round.DiscardPile)
-            Say("Drew ".ToBuilder().AppendJoin(", ", drawnCards).Append(" from discard pile.")
+            Say("Drew ".ToBuilder().AppendJoin('\u200B', drawnCards).Append(" from discard pile.")
                 .AppendIf(mustUse is not null, $" Must use {mustUse}.")
                 .AppendIf(cannotDiscard is not null, $" Cannot discard {cannotDiscard}."));
         else SayAndThink("Drew from deck.", $"Drew {drawnCards.SingleOrDefault()} from deck.");
 
-        Think("Hand: ".ToBuilder().AppendJoin(", ", Hand.Cards));
+        Think("Hand: ".ToBuilder().AppendJoin('\u200B', Hand.Cards));
 
         return (drawnCards, cannotDiscard, mustUse);
     }

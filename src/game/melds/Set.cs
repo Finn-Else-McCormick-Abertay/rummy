@@ -35,10 +35,10 @@ public class Set : Meld, IEquatable<Set>
     
     public override bool CouldLayOff(Card card) => new Set(_cards.DeepClone().Concat(new List<Card>{ card })).Valid;
     public override int IndexIfLaidOff(Card card) =>
-        new Set(_cards.DeepClone().Concat(new List<Card>{ card })).Cards
+        new Set(_cards.DeepClone().Concat([card])).Cards
         .ToList().FindLastIndex(x => x == card);
     
-    public override string ToString() => $"Set [{string.Join(", ", Cards)}]";
+    public override string ToString() => $"Set [{string.Join('\u200B', Cards)}]";
 
     public override bool Equals(object obj) => obj is Set ? Equals(obj as Set) : false;
     public bool Equals(Set other) => other.Cards.All(card => Cards.Contains(card));

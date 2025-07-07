@@ -48,7 +48,7 @@ public class Round
 
 			IsValid().InspectErr(err => info.Add($"Invalid: {err}"));
 
-			return $"{{{string.Join(", ", info)}}}";
+			return $"{string.Join(", ", info)}";
 		}
 
 		// Is valid (completed) turn?
@@ -151,6 +151,8 @@ public class Round
 	public event Action<Player, ReadOnlyCollection<Card>> 	NotifyMelded;
 	public event Action<Player, Card> 						NotifyLaidOff;
 	public event Action<Player, Card> 						NotifyDiscarded;
+
+	public Output Output { get; set; }
 
 	private readonly List<Player> _players;
 	public ReadOnlyCollection<Player> Players => _players.AsReadOnly();
@@ -308,10 +310,9 @@ public class Round
 	}
 
 	public Result<Unit, string> EndTurn() {
-		string playerIndexString = $"[{Players.FindIndex(x => x == CurrentPlayer)}]";
-		int nameWidth = 20 - playerIndexString.Length;
-		string name = CurrentPlayer.Name.Length > nameWidth ? $"{CurrentPlayer.Name[..(nameWidth - 1)]}…" : CurrentPlayer.Name;
-		GD.Print($"{Turn} {$"{name}{playerIndexString}".PadRight(nameWidth + playerIndexString.Length, '.')}{turnData}");
+		Output?.WriteLine("-----------", "game");
+		Output?.WriteLine($"Turn {Turn} ({CurrentPlayer.Name}):\n{turnData}", "game");
+		Output?.WriteLine("-----------", "game");
 
 		var turnRecordResult = turnData.AsTurnRecord();
 		NotifyTurnEnded?.Invoke(CurrentPlayer, turnRecordResult);

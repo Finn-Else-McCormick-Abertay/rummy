@@ -1,0 +1,33 @@
+[gd_resource type="Theme" load_steps=7 format=3 uid="uid://c0fsu70cy5yug"]
+
+[ext_resource type="FontFile" uid="uid://bwyycyjkfef3d" path="res://assets/fonts/FiraMono-Bold.otf" id="1_h85c3"]
+[ext_resource type="FontFile" uid="uid://ciljkjqgpn0wu" path="res://assets/fonts/FiraMono-BoldItalic.otf" id="2_as2jf"]
+[ext_resource type="FontFile" uid="uid://cyxvdegcypuev" path="res://assets/fonts/FiraMono-RegularItalic.otf" id="3_c38at"]
+[ext_resource type="FontFile" uid="uid://6pxh6xsqdi2q" path="res://assets/fonts/FiraMono-Regular.otf" id="4_letw1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_susgn"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.27, 0.27, 0.27, 1)
+shadow_size = 3
+shadow_offset = Vector2(1.44, 2.645)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_twshi"]
+content_margin_left = 10.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+bg_color = Color(0.1, 0.1, 0.1, 0.901961)
+
+[resource]
+HeaderPanel/base_type = &"PanelContainer"
+HeaderPanel/styles/panel = SubResource("StyleBoxFlat_susgn")
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_twshi")
+RichTextLabel/constants/line_separation = 2
+RichTextLabel/fonts/bold_font = ExtResource("1_h85c3")
+RichTextLabel/fonts/bold_italics_font = ExtResource("2_as2jf")
+RichTextLabel/fonts/italics_font = ExtResource("3_c38at")
+RichTextLabel/fonts/mono_font = ExtResource("4_letw1")
+RichTextLabel/fonts/normal_font = ExtResource("4_letw1")
+SplitContainer/icons/grabber = null

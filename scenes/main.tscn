@@ -1,11 +1,10 @@
-[gd_scene load_steps=25 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=24 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
 [ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
-[ext_resource type="Script" uid="uid://lhp3y2yboluj" path="res://src/interface/UserPlayer.cs" id="3_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
 [ext_resource type="Script" uid="uid://cxnp8c4xbgled" path="res://src/ai/IntelligentPlayer.cs" id="5_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
@@ -17,11 +16,7 @@
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
 [ext_resource type="PackedScene" uid="uid://jvan2pjoxdds" path="res://scenes/config/new_game_menu.tscn" id="15_jkv2x"]
 [ext_resource type="Script" uid="uid://qbu3glevqlj8" path="res://src/interface/config/ConfigMenuManager.cs" id="16_muem4"]
-
-[sub_resource type="Resource" id="Resource_jkv2x"]
-script = ExtResource("3_a8y0u")
-Name = "User"
-metadata/_custom_type_script = "uid://lhp3y2yboluj"
+[ext_resource type="PackedScene" uid="uid://bsapp2lqyt43v" path="res://scenes/output/output.tscn" id="18_dp3eg"]
 
 [sub_resource type="Resource" id="Resource_41ehq"]
 script = ExtResource("3_1clis")
@@ -71,9 +66,9 @@ fill_to = Vector2(0, 0)
 
 [node name="Main" type="Node"]
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jkv2x"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd"), SubResource("Resource_muem4")])
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd"), SubResource("Resource_muem4")])
 AutoStart = true
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
@@ -84,6 +79,7 @@ DiscardButton = NodePath("../Hand UI/HBoxContainer/Discard")
 MeldButton = NodePath("../Hand UI/HBoxContainer/Meld")
 NextTurnButton = NodePath("../Next Turn")
 FailureMessage = NodePath("../FailureMessage")
+_output = NodePath("../Output")
 CardDisplayScene = ExtResource("4_7pgj3")
 MeldScene = ExtResource("6_13xch")
 ScoreDisplayScene = ExtResource("7_66nw7")
@@ -210,6 +206,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Discard" type="Button" parent="Hand UI/HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("7_aj8hm")
@@ -223,6 +220,7 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
 [node name="Meld" type="Button" parent="Hand UI/HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("8_kok28")
@@ -305,3 +303,5 @@ offset_left = 66.0
 offset_top = 64.0
 offset_right = -66.0
 offset_bottom = -64.0
+
+[node name="Output" parent="." instance=ExtResource("18_dp3eg")]

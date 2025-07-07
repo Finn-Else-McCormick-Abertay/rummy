@@ -51,6 +51,8 @@ public partial class GameManager : Node
     [Export] private Button MeldButton { get; set; }
     [Export] private Button NextTurnButton { get; set; }
     [Export] private FailureMessage FailureMessage { get; set; }
+    [Export] private Node _output;
+    private Output Output => _output as Output; // Getting around a weird technicality with tool classes
 
     [ExportGroup("Scenes")]
     [Export] private PackedScene CardDisplayScene { get; set; }
@@ -108,25 +110,25 @@ public partial class GameManager : Node
     private void SimulateRoundWithoutDisplay() {
         if (Engine.IsEditorHint() || players.Any(player => player is UserPlayer)) { return; }
 
-        Round = new Round(players);
+        Round = new Round(players) { Output = Output };
         var result = Round.Simulate();
-        result.InspectErr(GD.Print);
+        result.InspectErr(err => Output.WriteLine(err, "error"));
         result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " by rummying" : "")}, scoring {x.Win.Score}"))
             .Inspect(msg => {
-                GD.Print(msg);
+                Output?.WriteLine(msg, "game");
                 FailureMessage.DisplayMessage(msg);
             });
         
         result.AndThen(x => Ok(x.History)).Inspect(history => {
-            GD.Print("\n --------------------- \n");
-            history.ForEach(turn => GD.Print(turn));
+            Output?.WriteLine("\n --------------------- \n", "game");
+            history.ForEach(turn => Output?.WriteLine(turn.ToString(), "game"));
         });
     }
 
     private async void BeginNewRound() {
-        if (Engine.IsEditorHint()) { return; }
+        if (Engine.IsEditorHint()) return;
 
-        Round = new Round(players);
+        Round = new Round(players) { Output = Output };
         Deck.CardPile = Round.Deck; DiscardPile.CardPile = Round.DiscardPile;
         Round.NotifyTurnReset += RebuildMelds;
         Round.NotifyMelded += (player, cards) => RebuildMelds();
@@ -170,7 +172,7 @@ public partial class GameManager : Node
 
         Round.NotifyGameEnded += (winner, score, isRummy) => {
             FailureMessage.Message = $"{Round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
-            GD.Print(FailureMessage.Message);
+            Output?.WriteLine(FailureMessage.Message, "game");
             FailureMessage.UseButton = false; FailureMessage.Show();
             NextTurnButton.Visible = false;
             SetCanLayOff(false);
@@ -547,8 +549,8 @@ public partial class GameManager : Node
         });
     }
 
-    private void OnPlayerSay(object obj, string message) => GD.Print($"{(obj as Player)?.Name}: {message}");
-    private void OnPlayerThink(object obj, string message) => GD.Print($"{(obj as Player)?.Name}(Think): {message}");
+    private void OnPlayerSay(object obj, string message) => Output?.WriteLine(message, obj as Player, "say");
+    private void OnPlayerThink(object obj, string message) => Output?.WriteLine(message, obj as Player, "think");
 
     private void RebuildPlayerDisplays(IEnumerable<Player> players) {
         if (!IsNodeReady() || ScoreDisplayRoot is null) { return; }

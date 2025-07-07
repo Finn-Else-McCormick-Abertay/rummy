@@ -54,7 +54,7 @@ public class NearSet(IEnumerable<Card> cards) : NearMeld(cards), IEquatable<Near
 
     public override bool ContainsValidMeld() => Cards.Count >= 3 && !Invalid;
 
-    public override string ToString() => $"Near Set [{string.Join(", ", Cards)}]";
+    public override string ToString() => $"Near Set [{string.Join('\u200B', Cards)}]";
     
     public override bool Equals(object obj) => obj is NearSet && Equals(obj as NearSet);
     public bool Equals(NearSet other) => other.Cards.All(Cards.Contains);
@@ -107,7 +107,7 @@ public class NearRun(IEnumerable<Card> cards) : NearMeld(cards), IEquatable<Near
         return contiguousRuns.Any(run => run.Count() >= 3);
     }
 
-    public override string ToString() => $"Near Run [{string.Join(", ", Cards)}]";
+    public override string ToString() => $"Near Run [{string.Join('\u200B', Cards)}]";
     
     public override bool Equals(object obj) => obj is NearRun && Equals(obj as NearRun);
     public bool Equals(NearRun other) => other.Cards.All(Cards.Contains);

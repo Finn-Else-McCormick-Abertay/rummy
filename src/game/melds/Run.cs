@@ -44,7 +44,7 @@ public class Run : Meld, IEquatable<Run>
         (_cards.Contains(card) ? Cards : new Run(_cards.DeepClone().Concat(new List<Card> { card })).Cards)
         .ToList().FindIndex(x => x == card);
 
-    public override string ToString() => $"Run [{string.Join(", ", Cards)}]";
+    public override string ToString() => $"Run [{string.Join('\u200B', Cards)}]";
 
     public override bool Equals(object obj) => obj is Run ? Equals(obj as Run) : false;
     public bool Equals(Run other) => other.Cards.All(Cards.Contains);
