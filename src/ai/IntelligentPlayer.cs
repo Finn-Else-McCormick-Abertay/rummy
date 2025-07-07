@@ -6,16 +6,19 @@ using System.Threading.Tasks;
 using Godot;
 using Rummy.Game;
 using Rummy.Util;
+using static Rummy.Util.Option;
+using Rummy.Util.Nullable;
+using System.Text;
 
 namespace Rummy.AI;
 
 [Tool, GlobalClass]
-public partial class RandomPlayer : ComputerPlayer
+public partial class IntelligentPlayer : ComputerPlayer
 {
-    public RandomPlayer(int? seed) : base($"{nameof(RandomPlayer)}{(seed is not null ? $"<{seed}>" : "")}") {
+    public IntelligentPlayer(int? seed) : base($"{nameof(IntelligentPlayer)}{(seed is not null ? $"<{seed}>" : "")}") {
         random = seed is not null ? new Random((int)seed) : new Random();
     }
-    public RandomPlayer() : this(null) {}
+    public IntelligentPlayer() : this(null) {}
 
     private readonly Random random;
 

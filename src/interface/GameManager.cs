@@ -39,6 +39,8 @@ public partial class GameManager : Node
         }
     }
 
+    [Export] public bool AutoStart { get; set; } = false;
+
     [ExportGroup("Nodes")]
     [Export] private DrawableCardPileContainer Deck { get; set; }
     [Export] private DrawableCardPileContainer DiscardPile { get; set; }
@@ -83,11 +85,8 @@ public partial class GameManager : Node
     [Signal] public delegate void InitialDealCompleteEventHandler();
 
     public override void _Ready() {
-        if (Engine.IsEditorHint()) {
-            RebuildPlayerDisplays(players);
-            return;
-        }
-        
+        if (Engine.IsEditorHint()) { RebuildPlayerDisplays(players); return; }
+
         Deck.NotifyDrew += OnUserDrewFromDeck;
         DiscardPile.NotifyDrew += OnUserDrewFromDiscardPile;
         DiscardButton.Pressed += OnDiscardButtonPressed;
@@ -98,9 +97,8 @@ public partial class GameManager : Node
         MeldButton.Disabled = true;
         NextTurnButton.Visible = false;
         RebuildMelds();
-
-        BeginNewRound();
-        //SimulateRoundWithoutDisplay();
+        
+        if (AutoStart) BeginNewRound(); else RebuildPlayerDisplays(players);
     }
 
     Node FindPlayerScoreDisplayRoot(Player player) => ScoreDisplayRoot?.GetChildren().ToList()

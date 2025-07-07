@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=3 uid="uid://jvan2pjoxdds"]
+
+[ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_1v4le"]
+[ext_resource type="Script" uid="uid://3t1n8gl6uvfi" path="res://src/interface/config/NewGameMenu.cs" id="2_4sfry"]
+[ext_resource type="PackedScene" uid="uid://b5yg62ng6utc8" path="res://scenes/config/config_player_entry.tscn" id="2_183ut"]
+
+[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_1v4le")
+script = ExtResource("2_4sfry")
+_playerEntryRoot = NodePath("PanelContainer/VBoxContainer")
+_playerEntryScene = ExtResource("2_183ut")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BackgroundPanel"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="ConfigPlayerEntry" parent="PanelContainer/VBoxContainer" instance=ExtResource("2_183ut")]
+layout_mode = 2
+
+[node name="ConfigPlayerEntry2" parent="PanelContainer/VBoxContainer" instance=ExtResource("2_183ut")]
+layout_mode = 2
+
+[node name="ConfigPlayerEntry3" parent="PanelContainer/VBoxContainer" instance=ExtResource("2_183ut")]
+layout_mode = 2

@@ -1,11 +1,13 @@
-[gd_scene load_steps=19 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=25 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
 [ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
+[ext_resource type="Script" uid="uid://lhp3y2yboluj" path="res://src/interface/UserPlayer.cs" id="3_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
+[ext_resource type="Script" uid="uid://cxnp8c4xbgled" path="res://src/ai/IntelligentPlayer.cs" id="5_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
 [ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
@@ -13,11 +15,19 @@
 [ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/score_display.tscn" id="7_nrs5b"]
 [ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
+[ext_resource type="PackedScene" uid="uid://jvan2pjoxdds" path="res://scenes/config/new_game_menu.tscn" id="15_jkv2x"]
+[ext_resource type="Script" uid="uid://qbu3glevqlj8" path="res://src/interface/config/ConfigMenuManager.cs" id="16_muem4"]
+
+[sub_resource type="Resource" id="Resource_jkv2x"]
+script = ExtResource("3_a8y0u")
+Name = "User"
+metadata/_custom_type_script = "uid://lhp3y2yboluj"
 
 [sub_resource type="Resource" id="Resource_41ehq"]
 script = ExtResource("3_1clis")
 TakeMeldChance = 0.0
 TakeLayOffChance = 0.0
+TakeSingleFromDiscardChance = 0.4
 TakeMultipleChance = 0.0
 TakeMultipleChanceLossPerGainedCard = 0.0
 Name = "RandomTryRummy"
@@ -25,7 +35,8 @@ Name = "RandomTryRummy"
 [sub_resource type="Resource" id="Resource_hpd5d"]
 script = ExtResource("3_1clis")
 TakeMeldChance = 0.85
-TakeLayOffChance = 0.6
+TakeLayOffChance = 1.0
+TakeSingleFromDiscardChance = 0.3
 TakeMultipleChance = 0.9
 TakeMultipleChanceLossPerGainedCard = 0.08
 Name = "RandomLess"
@@ -34,9 +45,20 @@ Name = "RandomLess"
 script = ExtResource("3_1clis")
 TakeMeldChance = 1.0
 TakeLayOffChance = 1.0
-TakeMultipleChance = 1.0
+TakeSingleFromDiscardChance = 0.3
+TakeMultipleChance = 0.5
 TakeMultipleChanceLossPerGainedCard = 0.0
-Name = "RandomAlways"
+Name = "Random"
+
+[sub_resource type="Resource" id="Resource_muem4"]
+script = ExtResource("5_jbj1t")
+TakeMeldChance = 1.0
+TakeLayOffChance = 1.0
+TakeSingleFromDiscardChance = 0.3
+TakeMultipleChance = 1.0
+TakeMultipleChanceLossPerGainedCard = 0.1
+Name = "IntelligentPlayer"
+metadata/_custom_type_script = "uid://cxnp8c4xbgled"
 
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
@@ -51,7 +73,8 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")])
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jkv2x"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd"), SubResource("Resource_muem4")])
+AutoStart = true
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")
@@ -64,6 +87,7 @@ FailureMessage = NodePath("../FailureMessage")
 CardDisplayScene = ExtResource("4_7pgj3")
 MeldScene = ExtResource("6_13xch")
 ScoreDisplayScene = ExtResource("7_66nw7")
+_shuffleDuration = 1.2
 
 [node name="ShadowBottom" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.509804)
@@ -186,7 +210,6 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Discard" type="Button" parent="Hand UI/HBoxContainer"]
-visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("7_aj8hm")
@@ -200,7 +223,6 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
 [node name="Meld" type="Button" parent="Hand UI/HBoxContainer"]
-visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("8_kok28")
@@ -263,3 +285,23 @@ offset_right = 178.0
 offset_bottom = 145.0
 grow_vertical = 1
 Message = "Error message"
+
+[node name="ConfigMenuManager" type="Node" parent="." node_paths=PackedStringArray("_gameManager", "_mouseBlocker", "_newGameMenu")]
+script = ExtResource("16_muem4")
+_gameManager = NodePath("../GameManager")
+_mouseBlocker = NodePath("MouseBlocker")
+_newGameMenu = NodePath("NewGameMenu")
+
+[node name="MouseBlocker" type="Control" parent="ConfigMenuManager"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="NewGameMenu" parent="ConfigMenuManager" instance=ExtResource("15_jkv2x")]
+offset_left = 66.0
+offset_top = 64.0
+offset_right = -66.0
+offset_bottom = -64.0
