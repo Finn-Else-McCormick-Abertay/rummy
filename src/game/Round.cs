@@ -223,6 +223,7 @@ public class Round
 		};
 
 		Deck.OnEmptied += () => {
+			Output?.WriteLine("Turning over discard pile.", "game");
 			ImmediateDisplayNotifyDeckRanOut?.Invoke();
 			_currentlyFlippingOverDiscard = true;
 			Deck.Append(DiscardPile);

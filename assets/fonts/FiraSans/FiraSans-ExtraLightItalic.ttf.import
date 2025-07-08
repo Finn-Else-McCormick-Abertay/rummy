@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://6pxh6xsqdi2q"
-path="res://.godot/imported/FiraMono-Regular.otf-d4a76503dc56ebaa22ef88313b0cb572.fontdata"
+uid="uid://msbbqesu8onw"
+path="res://.godot/imported/FiraSans-ExtraLightItalic.ttf-02a19d2664c1b7c16493feae78ca12f6.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/FiraMono-Regular.otf"
-dest_files=["res://.godot/imported/FiraMono-Regular.otf-d4a76503dc56ebaa22ef88313b0cb572.fontdata"]
+source_file="res://assets/fonts/FiraSans/FiraSans-ExtraLightItalic.ttf"
+dest_files=["res://.godot/imported/FiraSans-ExtraLightItalic.ttf-02a19d2664c1b7c16493feae78ca12f6.fontdata"]
 
 [params]
 

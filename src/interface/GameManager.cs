@@ -179,9 +179,9 @@ public partial class GameManager : Node
         };
 
         Round.ImmediateDisplayNotifyDeckRanOut += async () => {
-            if (DiscardPile.GetChildCount() == 0) { return; }
+            if (DiscardPile.GetChildCount() == 0) return;
             var discardPileCards = DiscardPile.GetChildren().Cast<CardDisplay>();
-            List<Vector2> startPositions = new();
+            List<Vector2> startPositions = [];
             discardPileCards.ToList().ForEach(display => startPositions.Add(display.GlobalPosition));
 
             Deck.Hide(); DiscardPile.Hide();

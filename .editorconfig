@@ -6,3 +6,6 @@ csharp_new_line_before_members_in_object_initializers = false
 
 # IDE0130: Namespace does not match folder structure
 dotnet_style_namespace_match_folder = false
+
+# CS8524: The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+dotnet_diagnostic.CS8524.severity = none

@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=22 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
@@ -6,7 +6,6 @@
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
-[ext_resource type="Script" uid="uid://cxnp8c4xbgled" path="res://src/ai/IntelligentPlayer.cs" id="5_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
 [ext_resource type="PackedScene" uid="uid://b2s4dxt1v0o47" path="res://scenes/enemy_player_display.tscn" id="7_66nw7"]
@@ -45,16 +44,6 @@ TakeMultipleChance = 0.5
 TakeMultipleChanceLossPerGainedCard = 0.0
 Name = "Random"
 
-[sub_resource type="Resource" id="Resource_muem4"]
-script = ExtResource("5_jbj1t")
-TakeMeldChance = 1.0
-TakeLayOffChance = 1.0
-TakeSingleFromDiscardChance = 0.3
-TakeMultipleChance = 1.0
-TakeMultipleChanceLossPerGainedCard = 0.1
-Name = "IntelligentPlayer"
-metadata/_custom_type_script = "uid://cxnp8c4xbgled"
-
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
 colors = PackedColorArray(0, 0, 0, 0.368627, 1, 1, 1, 0)
@@ -68,7 +57,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd"), SubResource("Resource_muem4")])
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")])
 AutoStart = true
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")

@@ -1,10 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://bsapp2lqyt43v"]
+[gd_scene load_steps=5 format=3 uid="uid://bsapp2lqyt43v"]
 
 [ext_resource type="Theme" uid="uid://c0fsu70cy5yug" path="res://assets/themes/output_theme.tres" id="1_3hn5a"]
 [ext_resource type="Script" uid="uid://c4k58jp3iltnq" path="res://src/interface/output/Output.cs" id="1_twshi"]
+[ext_resource type="Script" uid="uid://c132380lj84k3" path="res://src/interface/elements/DropdownButton.cs" id="4_x8n5f"]
 [ext_resource type="Texture2D" uid="uid://ds80sejh4bc46" path="res://assets/textures/PlayingCard icons.png" id="6_susgn"]
 
-[node name="Output" type="Control" node_paths=PackedStringArray("_panelRoot", "_openButton", "_closeButton")]
+[node name="Output" type="Control" node_paths=PackedStringArray("_panelRoot", "_openButton", "_closeButton", "_layerToggleRoot")]
 z_index = 500
 layout_mode = 3
 anchors_preset = 15
@@ -20,6 +21,7 @@ CardTextureRegion = Rect2(6, 15, 91, 59)
 _panelRoot = NodePath("HSplitContainer/VBoxContainer")
 _openButton = NodePath("HSplitContainer/Blank Space/OpenButton")
 _closeButton = NodePath("HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/CloseButton")
+_layerToggleRoot = NodePath("HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer")
 
 [node name="HSplitContainer" type="HSplitContainer" parent="."]
 layout_mode = 1
@@ -58,10 +60,7 @@ theme_override_constants/separation = 0
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ScrollContainer" type="ScrollContainer" parent="HSplitContainer/VBoxContainer/PanelContainer"]
-layout_mode = 2
-
-[node name="RichTextLabel" type="RichTextLabel" parent="HSplitContainer/VBoxContainer/PanelContainer/ScrollContainer"]
+[node name="RichTextLabel" type="RichTextLabel" parent="HSplitContainer/VBoxContainer/PanelContainer"]
 layout_mode = 2
 bbcode_enabled = true
 text = "Random(Think): Hand: Ten of Hearts, Ten of Diamonds, Ace of Diamonds, Queen of Clubs, Queen of Spades, Six of Hearts, Six of Clubs, Two of Spades, Eight of Hearts, Ace of Spades, Ace of Hearts
@@ -71,9 +70,8 @@ Random(Think): Potential Layoffs (cannot lay off): Six of Hearts -> Run [Three o
 Random: Melding Set [Ace of Hearts, Ace of Spades, Ace of Diamonds].
 Random: Laying off Six of Hearts to Run [Three of Hearts, Four of Hearts, Five of Hearts].
 Random: Discarding Queen of Clubs."
-fit_content = true
 scroll_following = true
-autowrap_mode = 0
+autowrap_mode = 2
 
 [node name="Control Panel" type="PanelContainer" parent="HSplitContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 25)
@@ -82,7 +80,39 @@ theme_type_variation = &"HeaderPanel"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="HSplitContainer/VBoxContainer/Control Panel"]
 layout_mode = 2
+theme_type_variation = &"ControlPanelHBox"
 
 [node name="CloseButton" type="Button" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer"]
 layout_mode = 2
 text = "Close"
+
+[node name="DropdownButton" type="Container" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"DropdownButton"
+script = ExtResource("4_x8n5f")
+DropdownSide = 1
+DropdownSizeContraints = 2
+DropdownSeparation = 2.0
+Text = "Layers"
+metadata/_custom_type_script = "uid://c132380lj84k3"
+
+[node name="PanelContainer" type="PanelContainer" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"DropdownPanel"
+
+[node name="HBoxContainer" type="VBoxContainer" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer"]
+layout_mode = 2
+
+[node name="ToggleGame" type="CheckButton" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer"]
+layout_mode = 2
+button_pressed = true
+text = "Game"
+
+[node name="TogglePlayer" type="CheckButton" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer"]
+layout_mode = 2
+text = "Player"
+
+[node name="ToggleThought" type="CheckButton" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer"]
+layout_mode = 2
+text = "Thought"

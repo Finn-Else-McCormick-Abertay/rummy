@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://cyxvdegcypuev"
-path="res://.godot/imported/FiraMono-RegularItalic.otf-8ec7d50ac377a08d6519cd666e377300.fontdata"
+path="res://.godot/imported/FiraMono-RegularItalic.otf-e8af5aaefc9cf10daeb8156a132c3f88.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/FiraMono-RegularItalic.otf"
-dest_files=["res://.godot/imported/FiraMono-RegularItalic.otf-8ec7d50ac377a08d6519cd666e377300.fontdata"]
+source_file="res://assets/fonts/FiraMono/FiraMono-RegularItalic.otf"
+dest_files=["res://.godot/imported/FiraMono-RegularItalic.otf-e8af5aaefc9cf10daeb8156a132c3f88.fontdata"]
 
 [params]
 
@@ -16,7 +16,7 @@ Rendering=null
 antialiasing=1
 generate_mipmaps=false
 disable_embedded_bitmaps=true
-multichannel_signed_distance_field=false
+multichannel_signed_distance_field=true
 msdf_pixel_range=8
 msdf_size=48
 allow_system_fallback=true
