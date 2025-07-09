@@ -57,7 +57,6 @@ fill_to = Vector2(0, 0)
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
 Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_41ehq"), SubResource("Resource_hpd5d"), SubResource("Resource_l8dmd")])
-AutoStart = true
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")

@@ -28,7 +28,7 @@ public partial class Output : Control
     [Export] private BaseButton _closeButton;
     [Export] private Node _layerToggleRoot;
 
-    private readonly HashSet<string> _visibleLayers = [], _prevVisibleLayers = [];
+    private readonly HashSet<string> _visibleLayers = ["error"], _prevVisibleLayers = [];
 
     private readonly List<(string Line, Player speaker, string Layer)> _lines = [];
 
@@ -93,6 +93,7 @@ public partial class Output : Control
     private static string StandardizeLayerAliases(string layer) => layer.ToLower() switch {
         "player" => "say",
         "thought" => "think",
+        "err" => "error",
         _ => layer
     };
 
@@ -111,7 +112,8 @@ public partial class Output : Control
 
         var formattedString =
             new StringBuilder().AppendIf(speaker is not null, $"{speaker?.Name} ({layer}): ").Append(line).Replace("\u200B", ", ");
-        GD.Print(formattedString);
+
+        if (layer == "error") GD.PrintErr(formattedString); else GD.Print(formattedString);
     }
 
     private void InternalDisplayLine((string Line, Player Speaker, string Layer) lineObj) {
@@ -124,6 +126,8 @@ public partial class Output : Control
             _label.Pop();
         }
 
+        if (layer == "error") _label.PushColor(Colors.Red);
+
         foreach (var (text, potentialCard) in ParseStringForCardNames(line)) {
             if (potentialCard is Card card) {
                 var font = _label.GetThemeFont("normal_font");
@@ -134,6 +138,9 @@ public partial class Output : Control
             }
             else _label.AddText(text);
         }
+
+        if (layer == "error") _label.Pop();
+
         _label.Newline();
     }
 

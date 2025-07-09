@@ -107,12 +107,15 @@ public partial class GameManager : Node
         .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player) as Node;
     CardPileContainer FindPlayerHandDisplay(Player player) => FindPlayerScoreDisplayRoot(player)?.GetNode<CardPileContainer>("HandDisplay");
 
-    private void SimulateRoundWithoutDisplay() {
+    public void SimulateRoundWithoutDisplay() {
         if (Engine.IsEditorHint() || players.Any(player => player is UserPlayer)) { return; }
 
         Round = new Round(players) { Output = Output };
         var result = Round.Simulate();
-        result.InspectErr(err => Output.WriteLine(err, "error"));
+        result.InspectErr(err => {
+            Output.WriteLine(err, "error");
+            FailureMessage.DisplayMessage(err);
+        });
         result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " by rummying" : "")}, scoring {x.Win.Score}"))
             .Inspect(msg => {
                 Output?.WriteLine(msg, "game");
@@ -125,7 +128,7 @@ public partial class GameManager : Node
         });
     }
 
-    private async void BeginNewRound() {
+    public async void BeginNewRound() {
         if (Engine.IsEditorHint()) return;
 
         Round = new Round(players) { Output = Output };

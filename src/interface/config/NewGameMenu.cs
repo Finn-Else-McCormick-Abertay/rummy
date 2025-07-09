@@ -15,6 +15,8 @@ public partial class NewGameMenu : ConfigMenu
     [Export] private BaseButton _closeButton;
 
     public override void _Ready() {
+        _playButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.BeginNewRound));
+        _simulateButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.SimulateRoundWithoutDisplay, false));
         _closeButton?.Connect(BaseButton.SignalName.Pressed, () => EmitSignal(ConfigMenu.SignalName.CloseRequested));
     }
 
@@ -28,6 +30,15 @@ public partial class NewGameMenu : ConfigMenu
             _playerEntryRoot.AddChild(entry);
             entry.GameManager = GameManager;
         }
+    }
+
+    private void AcceptAction(Action gameAction, bool shouldClose = true) {
+        void OnAccept() {
+            gameAction?.Invoke();
+            EmitSignal(ConfigMenu.SignalName.CloseRequested);
+        }
+        if (GameManager.Round is null) OnAccept();
+        else Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current game.");
     }
 
     private void Confirm(Action onConfirm, string title = null, string message = null, string acceptText = null) {
