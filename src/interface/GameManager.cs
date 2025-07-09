@@ -31,9 +31,9 @@ public partial class GameManager : Node
     [Export] public Godot.Collections.Array<Player> Players {
         get => [..players];
         set {
-            foreach (var player in players) if (player is not null) { player.OnSayingMessage -= OnPlayerSay; player.OnThinkingMessage -= OnPlayerThink; }
+            foreach (var player in players.Where(x => x is not null)) { player.OnSayingMessage -= OnPlayerSay; player.OnThinkingMessage -= OnPlayerThink; }
             players = [..value.Cast<Player>()];
-            foreach (var player in players) if (player is not null) { player.OnSayingMessage += OnPlayerSay; player.OnThinkingMessage += OnPlayerThink; }
+            foreach (var player in players.Where(x => x is not null)) { player.OnSayingMessage += OnPlayerSay; player.OnThinkingMessage += OnPlayerThink; }
             UserPlayer = (UserPlayer)players.Find(x => x is UserPlayer);
             RebuildPlayerDisplays(players);
         }
@@ -108,7 +108,11 @@ public partial class GameManager : Node
     CardPileContainer FindPlayerHandDisplay(Player player) => FindPlayerScoreDisplayRoot(player)?.GetNode<CardPileContainer>("HandDisplay");
 
     public void SimulateRoundWithoutDisplay() {
-        if (Engine.IsEditorHint() || players.Any(player => player is UserPlayer)) { return; }
+        if (Engine.IsEditorHint()) return;
+
+        if (players.Any(player => player is UserPlayer)) {
+            FailureMessage.DisplayMessage("Cannot simulate game containing UserPlayer."); return;
+        }
 
         Round = new Round(players) { Output = Output };
         var result = Round.Simulate();

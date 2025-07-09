@@ -11,8 +11,7 @@ using System.Text;
 
 namespace Rummy.Game;
 
-[Tool]
-[GlobalClass]
+[Tool, GlobalClass]
 public abstract partial class Player : Resource
 {
     protected Player(string name) {
@@ -27,7 +26,7 @@ public abstract partial class Player : Resource
 
     public Round Round { get; set { if (Round is not null) OnRemovedFromRound(Round); field = value; if (Round is not null) OnAddedToRound(Round); } }
 
-    public List<Meld> Melds { get; set; } = [];
+    public readonly List<Meld> Melds = [];
 
     public event Action NotifyNameChanged;
     public event Action NotifyScoreChanged;

@@ -203,10 +203,10 @@ public class Round
 
 	public Round(List<Player> players) {
 		_players = players;
-		foreach (Player player in Players) { player.Hand.Reset(); player.Melds.Clear(); }
+		foreach (Player player in _players) { player.Hand.Reset(); player.Melds.Clear(); }
 		turnData = new(players.First());
 		// This is done as a second step because it triggers logic on the players, where they may inspect other players
-		foreach (Player player in Players) player.Round = this;
+		foreach (Player player in _players) player.Round = this;
 		
 		// Add required callbacks
 		DiscardPile.OnCardAdded += (card) => {
@@ -234,7 +234,7 @@ public class Round
 		};
 	}
 
-	~Round() { foreach (Player player in Players) { player.Round = null; } }
+	~Round() { foreach (Player player in Players.Where(x => x.Round == this)) { player.Round = null; } }
 
 	// Run round start to finish in one go
 	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), string> Simulate(Random random, int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) {
