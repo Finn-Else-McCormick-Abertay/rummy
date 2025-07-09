@@ -2,9 +2,9 @@
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_avt07"]
 [ext_resource type="Script" uid="uid://diqdhivnm0uif" path="res://src/interface/config/ConfigPlayerEntry.cs" id="2_1ruu6"]
-[ext_resource type="Texture2D" uid="uid://ov5o85x7ya05" path="res://assets/textures/ui/bootstrap icons/person.png" id="3_3gdeo"]
-[ext_resource type="Texture2D" uid="uid://byp63k8c3crof" path="res://assets/textures/ui/bootstrap icons/dice-6.png" id="4_hekbt"]
-[ext_resource type="Texture2D" uid="uid://b10uhi00p4x7w" path="res://assets/textures/ui/bootstrap icons/robot.png" id="5_v8ock"]
+[ext_resource type="Texture2D" uid="uid://brc4hua1yised" path="res://assets/textures/ui/bootstrap icons/robot.svg" id="3_hekbt"]
+[ext_resource type="Texture2D" uid="uid://drxgtavjahyrk" path="res://assets/textures/ui/bootstrap icons/dice-6.svg" id="4_v8ock"]
+[ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/person.svg" id="5_ex6li"]
 
 [node name="ConfigPlayerEntry" type="PanelContainer" node_paths=PackedStringArray("_label", "_icon", "_deleteButton")]
 anchors_preset = 15
@@ -15,9 +15,9 @@ grow_vertical = 2
 theme = ExtResource("1_avt07")
 script = ExtResource("2_1ruu6")
 _iconTextures = Dictionary[String, Texture2D]({
-"computer": ExtResource("5_v8ock"),
-"random": ExtResource("4_hekbt"),
-"user": ExtResource("3_3gdeo")
+"computer": ExtResource("3_hekbt"),
+"random": ExtResource("4_v8ock"),
+"user": ExtResource("5_ex6li")
 })
 _label = NodePath("LabelContainer/Name")
 _icon = NodePath("LabelContainer/Icon")
@@ -31,7 +31,7 @@ theme_override_constants/separation = 8
 
 [node name="Icon" type="TextureRect" parent="LabelContainer"]
 layout_mode = 2
-texture = ExtResource("3_3gdeo")
+texture = ExtResource("5_ex6li")
 expand_mode = 2
 stretch_mode = 5
 

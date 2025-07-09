@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=21 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
@@ -13,8 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://kfbio5hmt6oa" path="res://scenes/score_display.tscn" id="7_nrs5b"]
 [ext_resource type="Theme" uid="uid://gqxfnils8sel" path="res://assets/themes/button_theme_next.tres" id="8_atslc"]
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
-[ext_resource type="PackedScene" uid="uid://jvan2pjoxdds" path="res://scenes/config/new_game_menu.tscn" id="15_jkv2x"]
-[ext_resource type="Script" uid="uid://qbu3glevqlj8" path="res://src/interface/config/ConfigMenuManager.cs" id="16_muem4"]
+[ext_resource type="PackedScene" uid="uid://bvuw2usvtrt00" path="res://scenes/config/config_menu_manager.tscn" id="14_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://bsapp2lqyt43v" path="res://scenes/output/output.tscn" id="18_dp3eg"]
 
 [sub_resource type="Resource" id="Resource_41ehq"]
@@ -273,24 +272,7 @@ offset_bottom = 145.0
 grow_vertical = 1
 Message = "Error message"
 
-[node name="ConfigMenuManager" type="Node" parent="." node_paths=PackedStringArray("_gameManager", "_mouseBlocker", "_newGameMenu")]
-script = ExtResource("16_muem4")
+[node name="ConfigMenuManager" parent="." node_paths=PackedStringArray("_gameManager") instance=ExtResource("14_jkv2x")]
 _gameManager = NodePath("../GameManager")
-_mouseBlocker = NodePath("MouseBlocker")
-_newGameMenu = NodePath("NewGameMenu")
-
-[node name="MouseBlocker" type="Control" parent="ConfigMenuManager"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="NewGameMenu" parent="ConfigMenuManager" instance=ExtResource("15_jkv2x")]
-offset_left = 66.0
-offset_top = 64.0
-offset_right = -66.0
-offset_bottom = -64.0
 
 [node name="Output" parent="." instance=ExtResource("18_dp3eg")]

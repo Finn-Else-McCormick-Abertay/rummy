@@ -1,23 +1,54 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
+using Rummy.Util;
 
 namespace Rummy.Interface;
 
 public partial class ConfigMenuManager : Node
 {
     [Export] private GameManager _gameManager;
-
     [Export] private Control _mouseBlocker;
-    [Export] private NewGameMenu _newGameMenu;
 
-    public override void _Ready() {
-        _mouseBlocker.Hide();
-        _newGameMenu.GameManager = _gameManager;
-        _newGameMenu.Hide();
+    public IEnumerable<ConfigMenu> Menus { get; private set; }
+    private void UpdateMenuCache() {
+        Menus = this.FindChildrenOfType<ConfigMenu>();
+        // Clear toggle actions for removed menus
+        _menuToggleActions = _menuToggleActions.Where(x => Menus.Contains(x.Key)).ToDictionary();
+        // Create toggle actions for added menus
+        foreach (var menuMissingToggle in Menus.Where(x => !_menuToggleActions.ContainsKey(x))) _menuToggleActions[menuMissingToggle] = () => ToggleMenu(menuMissingToggle);
 
-        if (!_gameManager.AutoStart) {
-            _mouseBlocker.Show();
-            _newGameMenu.Show();
+        foreach (var menu in Menus) {
+            menu.GameManager = _gameManager;
+            if (menu.SidebarButton.IsValid()) menu.SidebarButton.TryConnect(BaseButton.SignalName.Pressed, _menuToggleActions[menu]);
+            menu.TryConnect(ConfigMenu.SignalName.CloseRequested, CloseMenu);
         }
     }
+    private Dictionary<ConfigMenu, Action> _menuToggleActions = []; 
+
+    public override void _Ready() {
+        UpdateMenuCache(); ChildOrderChanged += UpdateMenuCache;
+        if (!_gameManager.AutoStart) SwitchToMenu<NewGameMenu>(); else CloseMenu();
+    }
+
+    public override void _UnhandledInput(InputEvent @event) {
+        if (@event.IsPressed()) {
+            foreach (var menu in Menus.Where(x => x.IsValid() && x.Shortcut.IsValid())) {
+                if (menu.Shortcut.MatchesEvent(@event)) ToggleMenu(menu);
+            }
+        }
+    }
+
+    private void SwitchToMenu(ConfigMenu menu) {
+        _mouseBlocker.Visible = menu is not null;
+        foreach (var otherMenu in Menus) otherMenu.Visible = otherMenu == menu;
+    }
+    private void ToggleMenu(ConfigMenu menu) => SwitchToMenu(menu is null || menu.Visible ? null : menu);
+
+    public void SwitchToMenu<T>() => SwitchToMenu(Menus.FirstOrDefault(x => x is T));
+    public void ToggleMenu<T>() => ToggleMenu(Menus.FirstOrDefault(x => x is T));
+
+    public void CloseMenu() => SwitchToMenu(null);
 
 }

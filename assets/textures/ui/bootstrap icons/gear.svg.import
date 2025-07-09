@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ov5o85x7ya05"
-path="res://.godot/imported/person.png-78cb08dcae69b8249215fb978b41f37d.ctex"
+uid="uid://b46rodg0e8sr4"
+path="res://.godot/imported/gear.svg-93be883cf4d0d93a20a2e08ee9435e7e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/person.png"
-dest_files=["res://.godot/imported/person.png-78cb08dcae69b8249215fb978b41f37d.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/gear.svg"
+dest_files=["res://.godot/imported/gear.svg-93be883cf4d0d93a20a2e08ee9435e7e.ctex"]
 
 [params]
 
@@ -32,3 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

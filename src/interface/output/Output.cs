@@ -12,7 +12,9 @@ namespace Rummy.Interface;
 public partial class Output : Control
 {
     [Export] public bool OutputToConsole { get; set; } = true;
-    
+
+    [Export] public Shortcut Shortcut { get; set; }
+
     [ExportGroup("Card")]
     [Export] private Texture2D CardAtlas { get; set; }
     [Export] private Rect2 CardTextureRegion { get; set; } = new(0, 0, 256, 356);
@@ -31,8 +33,7 @@ public partial class Output : Control
     private readonly List<(string Line, Player speaker, string Layer)> _lines = [];
 
     public bool Open {
-        get;
-        set {
+        get; set {
             field = value;
             this.OnReady(() => {
                 bool containedFocus = GetViewport().GuiGetFocusOwner() is Control focus && IsAncestorOf(focus);
@@ -73,6 +74,10 @@ public partial class Output : Control
                 cardTexture.Region = new Rect2(((int)rank - 1) * size.X, (int)suit * size.Y, size);
                 _cardTextures[new Card(rank, suit)] = cardTexture;
             }
+    }
+    
+    public override void _UnhandledInput(InputEvent @event) {
+        if (Shortcut.MatchesEvent(@event) && @event.IsPressed()) Open = !Open;
     }
 
     public void WriteLine(string line, Player speaker = null, string layer = null) {
@@ -131,7 +136,7 @@ public partial class Output : Control
         }
         _label.Newline();
     }
-    
+
     [GeneratedRegex("(Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Jack|Queen|King) of (Hearts|Clubs|Diamonds|Spades)")]
     private static partial Regex CardRegex();
 
@@ -185,4 +190,5 @@ public partial class Output : Control
         _label.ScrollToParagraph(Math.Min(focusedParagraphIndex, _label.GetParagraphCount()));
         //scrollBar.Value += additionalScroll;
     }
+
 }

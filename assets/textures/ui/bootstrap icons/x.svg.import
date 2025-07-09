@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byp63k8c3crof"
-path="res://.godot/imported/dice-6.png-2710acf7057f1af35931f45857c11e15.ctex"
+uid="uid://bbyvwnxsfst3f"
+path="res://.godot/imported/x.svg-cf6ea7ac6df3074d22934b0585f695a9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/dice-6.png"
-dest_files=["res://.godot/imported/dice-6.png-2710acf7057f1af35931f45857c11e15.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/x.svg"
+dest_files=["res://.godot/imported/x.svg-cf6ea7ac6df3074d22934b0585f695a9.ctex"]
 
 [params]
 
@@ -32,3 +32,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

@@ -1,4 +1,6 @@
-[gd_resource type="Theme" load_steps=7 format=3 uid="uid://b4piyrd7gcxax"]
+[gd_resource type="Theme" load_steps=21 format=3 uid="uid://b4piyrd7gcxax"]
+
+[ext_resource type="FontFile" uid="uid://xe7ygkm76sx4" path="res://assets/fonts/FiraSans/FiraSans-Regular.ttf" id="1_7y3rl"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oy1yr"]
 content_margin_left = 30.0
@@ -71,6 +73,30 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dpoil"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fj635"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_twulf"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_y34de"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nyad7"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_24lga"]
+content_margin_left = 5.0
+content_margin_right = 5.0
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vecn5"]
 bg_color = Color(0.513726, 0.513726, 0.513726, 0.968627)
 border_width_left = 3
@@ -90,12 +116,49 @@ shadow_color = Color(0, 0, 0, 0.458824)
 shadow_size = 8
 shadow_offset = Vector2(0, 7)
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ck8ba"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_t2cbu"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_62qw8"]
+content_margin_left = 5.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1gelm"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7y3rl"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_64b15"]
+
+[sub_resource type="FontVariation" id="FontVariation_ck8ba"]
+base_font = ExtResource("1_7y3rl")
+baseline_offset = 0.08
+
 [resource]
+default_font = SubResource("FontVariation_ck8ba")
 BackgroundPanel/base_type = &"PanelContainer"
 BackgroundPanel/styles/panel = SubResource("StyleBoxFlat_oy1yr")
+Button/constants/icon_max_width = 15
 Button/styles/focus = SubResource("StyleBoxFlat_vmla7")
 Button/styles/hover = SubResource("StyleBoxFlat_wdvmx")
 Button/styles/normal = SubResource("StyleBoxFlat_k2078")
 Button/styles/pressed = SubResource("StyleBoxFlat_8jeg6")
+IconButton/base_type = &"Button"
+IconButton/constants/icon_max_width = 23
+IconButton/styles/disabled = SubResource("StyleBoxEmpty_dpoil")
+IconButton/styles/focus = SubResource("StyleBoxEmpty_fj635")
+IconButton/styles/hover = SubResource("StyleBoxEmpty_twulf")
+IconButton/styles/hover_pressed = SubResource("StyleBoxEmpty_y34de")
+IconButton/styles/normal = SubResource("StyleBoxEmpty_nyad7")
+IconButton/styles/pressed = SubResource("StyleBoxEmpty_24lga")
+MarginContainer/constants/margin_left = 50
+MarginContainer/constants/margin_right = 50
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_vecn5")
+SidebarButton/base_type = &"Button"
+SidebarButton/constants/icon_max_width = 25
+SidebarButton/styles/disabled = SubResource("StyleBoxEmpty_ck8ba")
+SidebarButton/styles/focus = SubResource("StyleBoxEmpty_t2cbu")
+SidebarButton/styles/hover = SubResource("StyleBoxEmpty_62qw8")
+SidebarButton/styles/hover_pressed = SubResource("StyleBoxEmpty_1gelm")
+SidebarButton/styles/normal = SubResource("StyleBoxEmpty_7y3rl")
+SidebarButton/styles/pressed = SubResource("StyleBoxEmpty_64b15")
 VBoxContainer/constants/separation = 40

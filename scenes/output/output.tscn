@@ -1,9 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://bsapp2lqyt43v"]
+[gd_scene load_steps=7 format=3 uid="uid://bsapp2lqyt43v"]
 
 [ext_resource type="Theme" uid="uid://c0fsu70cy5yug" path="res://assets/themes/output_theme.tres" id="1_3hn5a"]
 [ext_resource type="Script" uid="uid://c4k58jp3iltnq" path="res://src/interface/output/Output.cs" id="1_twshi"]
 [ext_resource type="Script" uid="uid://c132380lj84k3" path="res://src/interface/elements/DropdownButton.cs" id="4_x8n5f"]
 [ext_resource type="Texture2D" uid="uid://ds80sejh4bc46" path="res://assets/textures/PlayingCard icons.png" id="6_susgn"]
+
+[sub_resource type="InputEventAction" id="InputEventAction_x8n5f"]
+action = &"toggle_console"
+
+[sub_resource type="Shortcut" id="Shortcut_125r6"]
+events = [SubResource("InputEventAction_x8n5f")]
 
 [node name="Output" type="Control" node_paths=PackedStringArray("_panelRoot", "_openButton", "_closeButton", "_layerToggleRoot")]
 z_index = 500
@@ -16,6 +22,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("1_3hn5a")
 script = ExtResource("1_twshi")
+Shortcut = SubResource("Shortcut_125r6")
 CardAtlas = ExtResource("6_susgn")
 CardTextureRegion = Rect2(6, 15, 91, 59)
 _panelRoot = NodePath("HSplitContainer/VBoxContainer")
@@ -63,13 +70,6 @@ size_flags_vertical = 3
 [node name="RichTextLabel" type="RichTextLabel" parent="HSplitContainer/VBoxContainer/PanelContainer"]
 layout_mode = 2
 bbcode_enabled = true
-text = "Random(Think): Hand: Ten of Hearts, Ten of Diamonds, Ace of Diamonds, Queen of Clubs, Queen of Spades, Six of Hearts, Six of Clubs, Two of Spades, Eight of Hearts, Ace of Spades, Ace of Hearts
-Random(Think): Potential Melds: Set [Ace of Hearts, Ace of Spades, Ace of Diamonds]
-Random(Think): Near Melds: Near Set [Ten of Hearts, Ten of Diamonds], Near Set [Queen of Clubs, Queen of Spades], Near Set [Six of Clubs, Six of Hearts], Near Run [Ace of Spades, Two of Spades]
-Random(Think): Potential Layoffs (cannot lay off): Six of Hearts -> Run [Three of Hearts, Four of Hearts, Five of Hearts]
-Random: Melding Set [Ace of Hearts, Ace of Spades, Ace of Diamonds].
-Random: Laying off Six of Hearts to Run [Three of Hearts, Four of Hearts, Five of Hearts].
-Random: Discarding Queen of Clubs."
 scroll_following = true
 autowrap_mode = 2
 
