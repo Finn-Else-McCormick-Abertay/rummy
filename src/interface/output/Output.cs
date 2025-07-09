@@ -144,6 +144,16 @@ public partial class Output : Control
         _label.Newline();
     }
 
+    private IEnumerable<int> Find(string query) {
+        List<int> foundLines = [];
+        int visibleParaCounter = -1;
+        foreach (var (line, speaker, layer) in _lines) {
+            if (IsLayerVisible(layer)) visibleParaCounter++;
+            if (line.Find(query) != -1) foundLines.Add(visibleParaCounter);
+        }
+        return foundLines;
+    }
+
     [GeneratedRegex("(Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Jack|Queen|King) of (Hearts|Clubs|Diamonds|Spades)")]
     private static partial Regex CardRegex();
 

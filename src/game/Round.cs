@@ -170,8 +170,6 @@ public class Round
 	public Deck Deck { get; init; } = new();
 	public DiscardPile DiscardPile { get; init; } = new();
 
-	private bool _currentlyFlippingOverDiscard = false;
-
 	public bool HasDrawn { get => turnData.DrawnCardsDeck.Count > 0 || turnData.DrawnCardsDiscardPile.Count > 0; }
 
 	private readonly Dictionary<(Player, int), int> _meldOrder = new();
@@ -210,52 +208,38 @@ public class Round
 		
 		// Add required callbacks
 		DiscardPile.OnCardAdded += (card) => {
-			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.Discards.Add(card); ImmediateDisplayNotifyDiscarded?.Invoke(CurrentPlayer, card);
 		};
 		Deck.OnCardDrawn += (card) => {
-			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.DrawnCardsDeck.Add(card); ImmediateDisplayNotifyDrewFromDeck?.Invoke(CurrentPlayer);
 		};
 		DiscardPile.OnCardDrawn += (card) => {
-			if (_currentlyFlippingOverDiscard || Turn < 0) { return; }
 			turnData.DrawnCardsDiscardPile.Add(card); ImmediateDisplayNotifyDrewFromDiscardPile?.Invoke(CurrentPlayer, card);
-		};
-
-		Deck.OnEmptied += () => {
-			Output?.WriteLine("Turning over discard pile.", "game");
-			ImmediateDisplayNotifyDeckRanOut?.Invoke();
-			_currentlyFlippingOverDiscard = true;
-			Deck.Append(DiscardPile);
-			Deck.Flip();
-			DiscardPile.Clear();
-			Deck.Draw().Inspect(card => { DiscardPile.Discard(card); ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card); });
-			_currentlyFlippingOverDiscard = false;
 		};
 	}
 
 	~Round() { foreach (Player player in Players.Where(x => x.Round == this)) { player.Round = null; } }
 
 	// Run round start to finish in one go
-	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), string> Simulate(Random random, int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) {
-		if (Turn >= 0) return Err("Round has already begun.");
-		if (Players.Any(player => player is UserPlayer)) return Err("Round contains UserPlayer.");
+	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), (string Message, IEnumerable<TurnRecord> TurnHistory)> Simulate(Random random, int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) {
+		if (Turn >= 0) return Err<(string, IEnumerable<TurnRecord>)>(("Round has already begun.", []));
+		if (Players.Any(player => player is UserPlayer)) return Err<(string, IEnumerable<TurnRecord>)>(("Round contains UserPlayer.", []));
 
 		List<TurnRecord> turnHistory = new();
-		void onTurnEndedAction(Player player, Result<TurnRecord, string> result) => result.Inspect(x => turnHistory.Add(x));
+		void onTurnEndedAction(Player player, Result<TurnRecord, string> result) => result.Inspect(turnHistory.Add);
 
 		(Player Winner, int Score, bool WasRummy) winData = (null, -1, false);
-        void onGameEndedAction(Player winner, int score, bool wasRummy) => winData = (winner, score, wasRummy);
+		void onGameEndedAction(Player winner, int score, bool wasRummy) => winData = (winner, score, wasRummy);
 
 		NotifyTurnEnded += onTurnEndedAction;
-        NotifyGameEnded += onGameEndedAction;
+		NotifyGameEnded += onGameEndedAction;
 
 		CreateAndShuffleDeck();
 		DealCardsAndInitialiseRound();
-        while (!Finished && Turn < turnCutoff) {
+		while (!Finished && Turn < turnCutoff) {
 			Result<Unit, string> turnResult; int tryAtThisTurn = 0; string lastErr = null;
 			do {
-            	BeginTurn().Wait();
+				BeginTurn().Wait();
 				turnResult = EndTurn();
 				turnResult.InspectErr(err => { lastErr = err; ResetTurn(); });
 				tryAtThisTurn++;
@@ -263,16 +247,16 @@ public class Round
 			if (tryAtThisTurn >= repeatInvalidTurnCutoff) {
 				NotifyTurnEnded -= onTurnEndedAction;
 				NotifyGameEnded -= onGameEndedAction;
-				return Err($"Overran turn failure limit of {repeatInvalidTurnCutoff} ({CurrentPlayer.Name}, Turn {Turn}). Last err: {lastErr}");
+				return Err(($"Overran turn failure limit of {repeatInvalidTurnCutoff} ({CurrentPlayer.Name}, Turn {Turn}). Last err: {lastErr}", turnHistory.AsEnumerable()));
 			}
-        }
+		}
 
 		NotifyTurnEnded -= onTurnEndedAction;
 		NotifyGameEnded -= onGameEndedAction;
-		if (!Finished) { return Err($"Overran turn limit of {turnCutoff}."); }
+		if (!Finished) return Err(($"Overran turn limit of {turnCutoff}.", turnHistory.AsEnumerable()));
 		return Ok((turnHistory, winData));
 	}
-	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), string> Simulate(int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) => Simulate(Random.Shared, turnCutoff, repeatInvalidTurnCutoff);
+	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), (string Message, IEnumerable<TurnRecord> TurnHistory)> Simulate(int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) => Simulate(Random.Shared, turnCutoff, repeatInvalidTurnCutoff);
 
 	public void CreateAndShuffleDeck(Random random) {
 		Deck.AddPack();
@@ -303,6 +287,15 @@ public class Round
 
 	public Task BeginTurn() {
 		if (Finished || Turn == -1) throw new Exception("Attempted to begin turn when round either uninitialised or finished");
+
+		// Turnover discard pile if deck has run out
+		if (Deck.Empty) {
+			Output?.WriteLine("Turning over discard pile.", "game");
+			ImmediateDisplayNotifyDeckRanOut?.Invoke();
+			Deck.Append(DiscardPile); Deck.Flip(); DiscardPile.Clear();
+			Deck.Draw().Inspect(card => { DiscardPile.Discard(card); ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card); });
+		}
+
         turnData = new TurnData(CurrentPlayer);
 		MidTurn = true;
 		NotifyTurnBegan?.Invoke(CurrentPlayer);
@@ -311,8 +304,7 @@ public class Round
 	}
 
 	public Result<Unit, string> EndTurn() {
-		Output?.WriteLine("-----------", "game");
-		Output?.WriteLine($"Turn {Turn} ({CurrentPlayer.Name}):\n{turnData}", "game");
+		Output?.WriteLine($"-- Turn {Turn} -- ({CurrentPlayer.Name}):\n{turnData}", "game");
 		Output?.WriteLine("-----------", "game");
 
 		var turnRecordResult = turnData.AsTurnRecord();

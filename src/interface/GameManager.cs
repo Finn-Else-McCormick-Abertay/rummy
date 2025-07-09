@@ -117,8 +117,9 @@ public partial class GameManager : Node
         Round = new Round(players) { Output = Output };
         var result = Round.Simulate();
         result.InspectErr(err => {
-            Output.WriteLine(err, "error");
-            FailureMessage.DisplayMessage(err);
+            Output.WriteLine(err.Message, "error");
+            Output.WriteLine(err.TurnHistory.ToJoinedString("\n"), "error");
+            FailureMessage.DisplayMessage(err.Message);
         });
         result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " by rummying" : "")}, scoring {x.Win.Score}"))
             .Inspect(msg => {
