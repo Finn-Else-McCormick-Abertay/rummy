@@ -39,7 +39,7 @@ public abstract partial class ComputerPlayer : Player
         if (pile == Round.Deck && index != 0) { GD.PushWarning("Attempted to draw multiple cards from Deck."); index = 0; }
         var drawnCards = pile.Draw(index + 1);
         drawnCards.ForEach(Hand.Add);
-        
+
         Card? cannotDiscard = pile == Round.DiscardPile ? drawnCards.First() : null;
         Card? mustUse = pile == Round.DiscardPile && drawnCards.Count > 1 ? drawnCards.Last() : null;
 

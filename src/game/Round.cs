@@ -104,24 +104,15 @@ public class Round
         public override string ToString() {
 			StringBuilder builder = new();
 			builder.Append($"({Player.Name}) ");
-			builder.Append($"Drew {DrawnCards.Length} card{(DrawnCards.Length > 1 ? "s" : "")}");
-			if (DrawnCards.Any(x => x.IsSome)) {
-				builder.Append(": [");
-				builder.AppendJoin(", ", DrawnCards.Select(x => x.AndThen(x => Some(x.ToString())).Or("?")));
-				builder.Append("]. ");
-			}
-			else { builder.Append(". "); }
-			if (Melds.Any()) {
-				builder.Append("Melded: [");
-				builder.AppendJoin(", ", Melds);
-				builder.Append("]. ");
-			}
-			if (LaidOffCards.Any()) {
-				builder.Append("Laid off: [");
-				builder.AppendJoin(", ", LaidOffCards);
-				builder.Append("]. ");
-			}
-			builder.Append(DiscardedCard.IsSome ? "Discarded." : "Did not discard.");
+			builder.Append($"Drew {Text.Plural(DrawnCards.Length, one: "card", other: "% cards")} from {(DrawnCards.First().IsNone ? "deck" : "discard pile")}");
+			if (DrawnCards.Any(x => x.IsSome))
+				builder.AppendJoinWrapped(": [", "]", Delimiter.ZeroWidth, DrawnCards.Select(x => x.AndThen(x => Some(x.ToString())).Or("?")));
+			builder.Append(". ");
+			if (Melds.Any())
+				builder.AppendJoinWrapped("Melded: [", "]. ", Delimiter.Comma, Melds);
+			if (LaidOffCards.Any())
+				builder.AppendJoinWrapped("Laid off: [", "]. ", Delimiter.Comma, LaidOffCards);
+			builder.Append(DiscardedCard.IsSome ? $"Discarded {DiscardedCard.Unwrap()}." : "Did not discard.");
 			return builder.ToString();
 		}
 	}

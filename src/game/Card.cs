@@ -19,6 +19,8 @@ public static class RankImpl
 	public static bool IsAdjacentBelow(this Rank self, Rank other) => self.DistanceTo(other) == -1;
 	public static bool IsAdjacentAbove(this Rank self, Rank other) => self.DistanceTo(other) == 1;
 	public static bool IsAdjacent(this Rank self, Rank other) => self.IsAdjacentBelow(other) || self.IsAdjacentAbove(other);
+
+	public static int Score(this Rank self) => self switch { Rank.Jack or Rank.Queen or Rank.King => 10, _ => (int)self };
 }
 
 public readonly record struct Card(Rank Rank, Suit Suit) : IEquatable<Card>, IComparable<Card>
@@ -45,4 +47,6 @@ public readonly record struct Card(Rank Rank, Suit Suit) : IEquatable<Card>, ICo
 	public readonly bool IsAdjacentRank(Card other) => Rank.IsAdjacent(other.Rank);
 	public readonly bool IsAdjacentRankBelow(Card other) => Rank.IsAdjacentBelow(other.Rank);
 	public readonly bool IsAdjacentRankAbove(Card other) => Rank.IsAdjacentAbove(other.Rank);
+
+	public readonly int Score => Rank.Score();
 }
