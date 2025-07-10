@@ -260,8 +260,9 @@ public class Round
 		if (Turn >= 0) return;
 		
 		int handSize = Players.Count switch {
-			< 4 => 10,
-			< 6 => 7,
+			<= 2 => 10,
+			<= 3 => 8,
+			<= 4 => 7,
 			_ => 6
 		};
 

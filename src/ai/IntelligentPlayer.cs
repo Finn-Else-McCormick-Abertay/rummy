@@ -31,11 +31,11 @@ public partial class IntelligentPlayer : ComputerPlayer
         double utility = 0;
 
         var meldUtilities = meldsWith.Select(meld => EvaluateMeldUtility(meld) - LeftOverPenalty(card => !meld.Cards.Contains(card)));
-        utility += meldUtilities.Average();
+        if (meldUtilities.Any()) utility += meldUtilities.Average();
 
         // TK - factor in further layoffs to a run
-        var layoffUtilities = layoffs.Select(meld => EvaluateLayoffUtility(card, meld) - LeftOverPenalty(x => x != card));
-        utility += layoffUtilities.Where(x => x > 0).Average();
+        var posLayoffUtilities = layoffs.Select(meld => EvaluateLayoffUtility(card, meld) - LeftOverPenalty(x => x != card)).Where(x => x > 0);
+        if (posLayoffUtilities.Any()) utility += posLayoffUtilities.Average();
         
         // TK - factor in near melds
 
@@ -44,7 +44,7 @@ public partial class IntelligentPlayer : ComputerPlayer
 
     private double EvaluateLayoffUtility(Card card, Meld meld, IEnumerable<Meld> potentialMelds = null, List<NearMeld> nearMelds = null) {
         double utility = 5;
-        //if (potentialMelds is null || nearMelds is null) (potentialMelds, nearMelds) = FindPotentialMelds();
+        if (potentialMelds is null || nearMelds is null) (potentialMelds, nearMelds) = FindPotentialMelds();
 
         utility -= potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
 

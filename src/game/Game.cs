@@ -26,5 +26,11 @@ public class Game
 
     public Round CurrentRound { get; private set; }
 
-    private readonly List<Round> _roundHistory;
+    private readonly List<Round> _roundHistory = [];
+
+    public void BeginRound() {
+        if (!(CurrentRound is null || CurrentRound.Finished)) return;
+        CurrentRound = new Round(_players);
+        _roundHistory.Add(CurrentRound);
+    }
 }

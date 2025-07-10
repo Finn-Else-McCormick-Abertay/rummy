@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Rummy.Util;
 
@@ -9,20 +10,18 @@ public static class AllPermutations {
         int arrayLength = arr.Count();
         if (arrayLength <= 1) return [arr];
 
-        List<IEnumerable<T>> permutations = [];
+        System.Collections.Concurrent.ConcurrentQueue<IEnumerable<T>> permutations = [];
 
-        foreach (var (index, item) in arr.Index()) {
-            IEnumerable<T> otherItems = arr.Where((x, i) => i != index);
-            var otherPermutations = AllPermutations.Of(otherItems);
+        Parallel.For(0, arr.Count(), arrIndex => {
+            var otherPermutations = AllPermutations.Of(arr.Where((x, i) => i != arrIndex));
 
-            for (int i = 0; i < arrayLength; ++i) {
-                foreach (var permutation in otherPermutations) {
+            Parallel.For(0, arrayLength, i =>
+                Parallel.ForEach(otherPermutations, permutation => {
                     var workingPermutation = permutation.Select(x => x).ToList();
-                    workingPermutation.Insert(i, item);
-                    permutations.Add(workingPermutation);
-                }
-            }
-        }
+                    workingPermutation.Insert(i, arr.ElementAt(arrIndex));
+                    permutations.Enqueue(workingPermutation);
+                }));
+        });
 
         // Distinct permutations
         return permutations.Where((x, i) => !permutations.Skip(i + 1).Any(y => Enumerable.SequenceEqual(x, y)));

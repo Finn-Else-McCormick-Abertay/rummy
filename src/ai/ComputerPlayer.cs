@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using Godot;
 using Rummy.Game;
 using Rummy.Util;
@@ -15,6 +16,8 @@ public abstract partial class ComputerPlayer : Player
 {
     public ComputerPlayer(string name) : base(name) { }
     public ComputerPlayer() : this(nameof(ComputerPlayer)) { }
+
+    [Export] public int MaxDiscardPileLookDistance = 10;
 
     protected new HandInternal Hand => _hand;
 
@@ -77,24 +80,34 @@ public abstract partial class ComputerPlayer : Player
 
     // Find usable cards in the discard pile
     protected IEnumerable<(Card Card, int Index, (IEnumerable<Meld> Melds, IEnumerable<Meld> Layoffs, PotentialMoves.RummyConfiguration RummyConfig, IEnumerable<Card> CardsTaken) Info)> FindUsableDiscardPileCards() {
-        List<(Card Card, int Index, (IEnumerable<Meld> Melds, IEnumerable<Meld> Layoffs, PotentialMoves.RummyConfiguration RummyConfig, IEnumerable<Card> CardsTaken) Info)> usableDrawDownCards = [];
-        foreach (var (index, card) in Round.DiscardPile.Cards.Index()) {
+        System.Collections.Concurrent.ConcurrentQueue<
+            (Card Card, int Index, (IEnumerable<Meld> Melds, IEnumerable<Meld> Layoffs, PotentialMoves.RummyConfiguration RummyConfig, IEnumerable<Card> CardsTaken) Info)
+        > usableDrawDownCards = [];
+
+        // Limit how far we look by MaxDiscardPileLookDistance (because otherwise the number of possibilities spools out exponentially and freezes the program)
+        Parallel.ForEach(Round.DiscardPile.Cards.Take(Math.Min(MaxDiscardPileLookDistance, Round.DiscardPile.Cards.Count())).Index(), pair => {
+            var (index, card) = pair;
             var cardsTaken = Round.DiscardPile.Cards.Take(index + 1);
-            var potentialMeldsWith = PotentialMoves.FindMelds(Hand.Cards.Concat(cardsTaken)).Melds.Where(meld => meld.Cards.Contains(card));
-            var potentialLayoffs = Melds.Any() || PotentialMoves.FindMelds(Hand.Cards.Concat(cardsTaken.SkipLast())).Melds.Any() ? FindPotentialLayOffs(card) : [];
+
+            var (potentialMelds, nearMelds) = PotentialMoves.FindMelds(Hand.Cards.Concat(cardsTaken));
+
+            var potentialMeldsWith = potentialMelds.Where(meld => meld.Cards.Contains(card));
+            var potentialLayoffs = Melds.Any() || potentialMeldsWith.Where(meld => !meld.Cards.Contains(card)).Any() ? FindPotentialLayOffs(card) : [];
 
             var rummyConfig = PotentialMoves.FindRummyConfiguration(Hand.Cards.Concat(cardsTaken), this, Round);
 
             // TK - May need to add logic for cards which fit with a partial meld, but don't complete it
             if (potentialMeldsWith.Any() || potentialLayoffs.Any() || rummyConfig is not null)
-                usableDrawDownCards.Add((card, index, (potentialMeldsWith, potentialLayoffs, rummyConfig, cardsTaken)));
-        }
+                usableDrawDownCards.Enqueue((card, index, (potentialMeldsWith, potentialLayoffs, rummyConfig, cardsTaken)));
+        });
 
-        if (usableDrawDownCards.Any()) Think("Possible cards to draw down to:\n".ToBuilder().AppendJoin("\n",
-            usableDrawDownCards.Select((card, index, info) => "\t- ".ToBuilder().AppendWrapped(info.CardsTaken.Count() > 1 ? "[]" : "",
+        var usableDrawDownCardsFlattened = usableDrawDownCards.ToList();
+
+        if (usableDrawDownCardsFlattened.Any()) Think("Possible cards to draw down to:\n".ToBuilder().AppendJoin("\n",
+            usableDrawDownCardsFlattened.Select((card, index, info) => "\t- ".ToBuilder().AppendWrapped(info.CardsTaken.Count() > 1 ? "[]" : "",
                 info.CardsTaken.SkipLast().AsStrings().Concat(info.CardsTaken.TakeLast().Select(x => $"({x})")).ToJoinedString(", ")))));
         else Think("No usable cards in discard pile.");
 
-        return usableDrawDownCards;
+        return usableDrawDownCardsFlattened;
     }
 }

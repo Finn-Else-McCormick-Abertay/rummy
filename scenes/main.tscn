@@ -1,11 +1,10 @@
-[gd_scene load_steps=22 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=21 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
 [ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
 [ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
-[ext_resource type="Script" uid="uid://lhp3y2yboluj" path="res://src/interface/UserPlayer.cs" id="3_jbj1t"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
@@ -17,28 +16,35 @@
 [ext_resource type="PackedScene" uid="uid://bvuw2usvtrt00" path="res://scenes/config/config_menu_manager.tscn" id="14_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://bsapp2lqyt43v" path="res://scenes/output/output.tscn" id="18_dp3eg"]
 
-[sub_resource type="Resource" id="Resource_muem4"]
-script = ExtResource("3_jbj1t")
-Name = "User"
-metadata/_custom_type_script = "uid://lhp3y2yboluj"
-
-[sub_resource type="Resource" id="Resource_41ehq"]
+[sub_resource type="Resource" id="Resource_jkv2x"]
 script = ExtResource("3_1clis")
 TakeMeldChance = 0.0
-TakeLayOffChance = 0.0
-TakeSingleFromDiscardChance = 0.4
-TakeMultipleChance = 0.0
-TakeMultipleChanceLossPerGainedCard = 0.0
-Name = "RandomTryRummy"
-
-[sub_resource type="Resource" id="Resource_hpd5d"]
-script = ExtResource("3_1clis")
-TakeMeldChance = 0.85
 TakeLayOffChance = 1.0
 TakeSingleFromDiscardChance = 0.3
-TakeMultipleChance = 0.9
-TakeMultipleChanceLossPerGainedCard = 0.08
-Name = "RandomLess"
+TakeMultipleChance = 0.0
+TakeMultipleChanceLossPerGainedCard = 0.1
+Name = "RandomPlayer"
+metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
+
+[sub_resource type="Resource" id="Resource_jbj1t"]
+script = ExtResource("3_1clis")
+TakeMeldChance = 0.0
+TakeLayOffChance = 1.0
+TakeSingleFromDiscardChance = 0.3
+TakeMultipleChance = 0.0
+TakeMultipleChanceLossPerGainedCard = 0.1
+Name = "RandomPlayer"
+metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
+
+[sub_resource type="Resource" id="Resource_muem4"]
+script = ExtResource("3_1clis")
+TakeMeldChance = 0.0
+TakeLayOffChance = 1.0
+TakeSingleFromDiscardChance = 0.3
+TakeMultipleChance = 0.0
+TakeMultipleChanceLossPerGainedCard = 0.1
+Name = "RandomPlayer"
+metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
 
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
@@ -53,7 +59,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_muem4"), SubResource("Resource_41ehq"), SubResource("Resource_hpd5d")])
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jkv2x"), SubResource("Resource_jbj1t"), SubResource("Resource_muem4")])
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")
@@ -190,6 +196,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Discard" type="Button" parent="Hand UI/HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("7_aj8hm")
@@ -203,6 +210,7 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 0.1
 
 [node name="Meld" type="Button" parent="Hand UI/HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme = ExtResource("8_kok28")

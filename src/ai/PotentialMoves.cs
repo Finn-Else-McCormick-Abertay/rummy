@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Rummy.Game;
 using Rummy.Util;
 using static Rummy.Util.Option;
@@ -64,7 +65,7 @@ public static class PotentialMoves
     public static IEnumerable<RummyConfiguration> FindRummyConfigurations(IEnumerable<Card> hand, Player player, Round round, bool shortCircuit = false) {
         if (player.Melds.Count != 0) return [];
 
-        HashSet<RummyConfiguration> configurations = [];
+        System.Collections.Concurrent.ConcurrentQueue<RummyConfiguration> configurations = [];
         var potentialMelds = FindMelds(hand).Melds;
         var potentialLayoffs = FindLayOffs(hand, round);
 
@@ -73,7 +74,7 @@ public static class PotentialMoves
             meldConfigurations.Add(permutation.Where((x, i) => !permutation.Skip(i + 1).Any(y => x.Cards.Any(card => y.Cards.Contains(card)))));
         meldConfigurations = [.. meldConfigurations.Where((x, i) => !meldConfigurations.Skip(i + 1).Any(y => Enumerable.SequenceEqual(x, y)))];
 
-        foreach (var meldConfiguration in meldConfigurations) {
+        Parallel.ForEach(meldConfigurations, meldConfiguration => {
             var remainingCardsAfterMelds = hand.DeepClone().ToList();
             meldConfiguration.ForEach(meld => meld.Cards.ForEach(card => remainingCardsAfterMelds.Remove(card)));
 
@@ -105,11 +106,10 @@ public static class PotentialMoves
                 }*/
 
                 if (remainingCardsAfterLayoffs.Count() <= 1) {
-                    configurations.Add(new RummyConfiguration(meldConfiguration, layoffConfiguration, remainingCardsAfterLayoffs.SingleOrDefault()));
-                    if (shortCircuit) return configurations;
+                    configurations.Enqueue(new RummyConfiguration(meldConfiguration, layoffConfiguration, remainingCardsAfterLayoffs.SingleOrDefault()));
                 }
             }
-        }
+        });
 
         return configurations;
     }
