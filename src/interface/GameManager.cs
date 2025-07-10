@@ -203,7 +203,7 @@ public partial class GameManager : Node
                 lastAwaiter = CreateCardMoveTween(DeckTurnOverDuration, None, DiscardPile.CardSize, startPos, endPos, CardInPileTheme);
             });
             await lastAwaiter;
-            Deck.Show(); //DiscardPile.Show();
+            Deck.Show(); DiscardPile.Show();
             EmitSignal(SignalName.DeckTurnOverComplete);
         };
         Round.ImmediateDisplayNotifyInitialCardPlaceOnDiscard += async (card) => {

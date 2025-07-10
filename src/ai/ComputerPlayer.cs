@@ -17,7 +17,7 @@ public abstract partial class ComputerPlayer : Player
     public ComputerPlayer(string name) : base(name) { }
     public ComputerPlayer() : this(nameof(ComputerPlayer)) { }
 
-    [Export] public int MaxDiscardPileLookDistance = 10;
+    [Export] public int MaxDiscardPileLookDistance = 8;
 
     protected new HandInternal Hand => _hand;
 

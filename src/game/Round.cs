@@ -17,7 +17,7 @@ namespace Rummy.Game;
 public class Round
 {
 	private class TurnData {
-		public TurnData(Player player) { Player = player; PriorMelds = Player.Melds.Count; }
+		public TurnData(Player player) { Player = player; PriorMelds = Player?.Melds?.Count ?? 0; }
 
 		public readonly Player Player;
 		public readonly int PriorMelds;
@@ -282,9 +282,10 @@ public class Round
 
 		// Turnover discard pile if deck has run out
 		if (Deck.Empty) {
+			turnData = new TurnData(null);
 			Output?.WriteLine("Turning over discard pile.", "game");
 			ImmediateDisplayNotifyDeckRanOut?.Invoke();
-			Deck.Append(DiscardPile); Deck.Flip(); DiscardPile.Clear();
+			Deck.AppendFlipped(DiscardPile); DiscardPile.Clear();
 			Deck.Draw().Inspect(card => { DiscardPile.Discard(card); ImmediateDisplayNotifyInitialCardPlaceOnDiscard?.Invoke(card); });
 		}
 
@@ -301,7 +302,7 @@ public class Round
 
 		var turnRecordResult = turnData.AsTurnRecord();
 		NotifyTurnEnded?.Invoke(CurrentPlayer, turnRecordResult);
-		if (turnRecordResult.IsErr) { return Err(turnRecordResult.Error); }
+		if (turnRecordResult.IsErr) return Err(turnRecordResult.Error);
 
 		// Turn action events (we're after the validity check so we can assume this is a valid turn)
 		if (turnData.DrawnCardsDeck.Count > 0) {

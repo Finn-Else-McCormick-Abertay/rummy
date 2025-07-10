@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
 [ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
-[ext_resource type="Script" uid="uid://dpwdr4ct0aagm" path="res://src/ai/RandomPlayer.cs" id="3_1clis"]
+[ext_resource type="Script" uid="uid://cxnp8c4xbgled" path="res://src/ai/IntelligentPlayer.cs" id="3_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
@@ -16,35 +16,38 @@
 [ext_resource type="PackedScene" uid="uid://bvuw2usvtrt00" path="res://scenes/config/config_menu_manager.tscn" id="14_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://bsapp2lqyt43v" path="res://scenes/output/output.tscn" id="18_dp3eg"]
 
-[sub_resource type="Resource" id="Resource_jkv2x"]
-script = ExtResource("3_1clis")
-TakeMeldChance = 0.0
-TakeLayOffChance = 1.0
-TakeSingleFromDiscardChance = 0.3
-TakeMultipleChance = 0.0
-TakeMultipleChanceLossPerGainedCard = 0.1
-Name = "RandomPlayer"
-metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
-
 [sub_resource type="Resource" id="Resource_jbj1t"]
-script = ExtResource("3_1clis")
-TakeMeldChance = 0.0
-TakeLayOffChance = 1.0
-TakeSingleFromDiscardChance = 0.3
-TakeMultipleChance = 0.0
-TakeMultipleChanceLossPerGainedCard = 0.1
-Name = "RandomPlayer"
-metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
+script = ExtResource("3_jkv2x")
+DrawSingleUtilityThreshold = 5
+DrawMultipleUtilityThreshold = 15
+LayoffUtilityThreshold = 1
+FirstMeldUtilityThreshold = 15
+FurtherMeldUtilityThreshold = 0
+MaxDiscardPileLookDistance = 8
+Name = "IntelligentPlayer"
+metadata/_custom_type_script = "uid://cxnp8c4xbgled"
 
 [sub_resource type="Resource" id="Resource_muem4"]
-script = ExtResource("3_1clis")
-TakeMeldChance = 0.0
-TakeLayOffChance = 1.0
-TakeSingleFromDiscardChance = 0.3
-TakeMultipleChance = 0.0
-TakeMultipleChanceLossPerGainedCard = 0.1
-Name = "RandomPlayer"
-metadata/_custom_type_script = "uid://dpwdr4ct0aagm"
+script = ExtResource("3_jkv2x")
+DrawSingleUtilityThreshold = 5
+DrawMultipleUtilityThreshold = 15
+LayoffUtilityThreshold = 1
+FirstMeldUtilityThreshold = 15
+FurtherMeldUtilityThreshold = 0
+MaxDiscardPileLookDistance = 8
+Name = "IntelligentPlayer"
+metadata/_custom_type_script = "uid://cxnp8c4xbgled"
+
+[sub_resource type="Resource" id="Resource_dp3eg"]
+script = ExtResource("3_jkv2x")
+DrawSingleUtilityThreshold = 5
+DrawMultipleUtilityThreshold = 15
+LayoffUtilityThreshold = 1
+FirstMeldUtilityThreshold = 15
+FurtherMeldUtilityThreshold = 0
+MaxDiscardPileLookDistance = 8
+Name = "IntelligentPlayer"
+metadata/_custom_type_script = "uid://cxnp8c4xbgled"
 
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
@@ -59,7 +62,7 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jkv2x"), SubResource("Resource_jbj1t"), SubResource("Resource_muem4")])
+Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jbj1t"), SubResource("Resource_muem4"), SubResource("Resource_dp3eg")])
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")

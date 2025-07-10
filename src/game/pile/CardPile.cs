@@ -40,9 +40,8 @@ public abstract class CardPile : ICountable
         OnCardAdded?.Invoke(card);
 	}
 
-    public void Append(CardPile pile) {
-		foreach (Card card in pile._cards) AddToBack(card);
-    }
+    public void Append(CardPile pile) { foreach (Card card in pile._cards) AddToBack(card); }
+	public void AppendFlipped(CardPile pile) { foreach (Card card in pile._cards) AddToFront(card); }
     public void Clear() => _cards.Clear();
 }
 
