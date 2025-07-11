@@ -138,6 +138,8 @@ public partial class GameManager : Node
 
         Round = new Round(players) { Output = Output };
         Deck.CardPile = Round.Deck; DiscardPile.CardPile = Round.DiscardPile;
+        FailureMessage.Hide();
+
         Round.NotifyTurnReset += RebuildMelds;
         Round.NotifyMelded += (player, cards) => RebuildMelds();
         Round.NotifyLaidOff += (player, card) => RebuildMelds();

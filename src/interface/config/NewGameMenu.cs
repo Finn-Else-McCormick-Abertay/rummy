@@ -53,7 +53,7 @@ public partial class NewGameMenu : ConfigMenu {
             gameAction?.Invoke();
             EmitSignal(ConfigMenu.SignalName.CloseRequested);
         }
-        if (GameManager.Round is null) OnAccept();
+        if (GameManager.Round is null || GameManager.Round.Finished) OnAccept();
         else Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current game.");
     }
 
