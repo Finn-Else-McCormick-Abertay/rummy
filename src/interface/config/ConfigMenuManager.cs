@@ -29,7 +29,14 @@ public partial class ConfigMenuManager : Node
 
     public override void _Ready() {
         UpdateMenuCache(); ChildOrderChanged += UpdateMenuCache;
-        if (!_gameManager.AutoStart) SwitchToMenu<NewGameMenu>(); else CloseMenu();
+        CloseMenu();
+
+        if (!_gameManager.AutoStart) {
+            // Don't ask
+            SwitchToMenu<NewGameMenu>();
+            var closeTimer = GetTree().CreateTimer(0.05); closeTimer.Timeout += CloseMenu;
+            var reopenTimer = GetTree().CreateTimer(0.1); reopenTimer.Timeout += SwitchToMenu<NewGameMenu>;
+        }
     }
 
     public override void _UnhandledInput(InputEvent @event) {

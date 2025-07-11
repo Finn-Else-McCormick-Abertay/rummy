@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PlayerIconResource" load_steps=5 format=3 uid="uid://crh5xbfs41itm"]
+
+[ext_resource type="Texture2D" uid="uid://brc4hua1yised" path="res://assets/textures/ui/bootstrap icons/robot.svg" id="1_24lfg"]
+[ext_resource type="Script" uid="uid://b5cbkv62n2lp3" path="res://src/interface/elements/PlayerIconResource.cs" id="1_ck3ru"]
+[ext_resource type="Texture2D" uid="uid://drxgtavjahyrk" path="res://assets/textures/ui/bootstrap icons/dice-6.svg" id="2_hk21i"]
+[ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/person.svg" id="3_rfq7i"]
+
+[resource]
+script = ExtResource("1_ck3ru")
+_iconTextures = Dictionary[String, Texture2D]({
+"computer": ExtResource("1_24lfg"),
+"random": ExtResource("2_hk21i"),
+"user": ExtResource("3_rfq7i")
+})
+metadata/_custom_type_script = "uid://b5cbkv62n2lp3"

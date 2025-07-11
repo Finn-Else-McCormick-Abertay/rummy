@@ -27,6 +27,10 @@ window/stretch/aspect="expand"
 
 project/assembly_name="Rummy"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/tnowe_extra_controls/plugin.cfg")
+
 [input]
 
 select={

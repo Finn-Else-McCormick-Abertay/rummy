@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://3t1n8gl6uvfi" path="res://src/interface/config/NewGameMenu.cs" id="2_4sfry"]
 [ext_resource type="PackedScene" uid="uid://b5yg62ng6utc8" path="res://scenes/config/config_player_entry.tscn" id="2_183ut"]
 [ext_resource type="Texture2D" uid="uid://bbyvwnxsfst3f" path="res://assets/textures/ui/bootstrap icons/x.svg" id="4_rwlyh"]
+[ext_resource type="Script" uid="uid://8r4roip85by8" path="res://addons/tnowe_extra_controls/elements/interpolated_container/interpolated_box_container.gd" id="5_01qph"]
 
 [sub_resource type="InputEventAction" id="InputEventAction_4sfry"]
 action = &"toggle_config"
@@ -11,13 +12,7 @@ action = &"toggle_config"
 [sub_resource type="Shortcut" id="Shortcut_rwlyh"]
 events = [SubResource("InputEventAction_4sfry")]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4sfry"]
-content_margin_left = 10.0
-content_margin_top = 8.0
-content_margin_right = 10.0
-content_margin_bottom = 0.0
-
-[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton")]
+[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,11 +21,12 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_1v4le")
 script = ExtResource("2_4sfry")
-_playerEntryRoot = NodePath("PanelContainer/VBoxContainer/MainContent/ScrollContainer/PlayerEntries")
+_playerEntryRoot = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContainer/InterpolatedBoxContainer")
 _playerEntryScene = ExtResource("2_183ut")
 _playButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer/Play")
 _simulateButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer2/Simulate")
 _closeButton = NodePath("PanelContainer/VBoxContainer/Title Line/Close Button")
+_addButton = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer/Add Player")
 Shortcut = SubResource("Shortcut_rwlyh")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
@@ -44,7 +40,7 @@ theme_type_variation = &"BackgroundPanel"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 18
 
 [node name="Title Line" type="Control" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
@@ -82,28 +78,39 @@ icon = ExtResource("4_rwlyh")
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBoxContainer/MainContent"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/MainContent"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxEmpty_4sfry")
-follow_focus = true
+theme_override_constants/separation = 30
 
-[node name="PlayerEntries" type="VBoxContainer" parent="PanelContainer/VBoxContainer/MainContent/ScrollContainer"]
+[node name="InterpolatedBoxContainer" type="Container" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+script = ExtResource("5_01qph")
+vertical = true
+compact_if_overflow = false
+metadata/_custom_type_script = "uid://8r4roip85by8"
 
-[node name="ConfigPlayerEntry" parent="PanelContainer/VBoxContainer/MainContent/ScrollContainer/PlayerEntries" instance=ExtResource("2_183ut")]
+[node name="ConfigPlayerEntry" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer/InterpolatedBoxContainer" instance=ExtResource("2_183ut")]
 layout_mode = 2
 
-[node name="ConfigPlayerEntry2" parent="PanelContainer/VBoxContainer/MainContent/ScrollContainer/PlayerEntries" instance=ExtResource("2_183ut")]
+[node name="ConfigPlayerEntry2" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer/InterpolatedBoxContainer" instance=ExtResource("2_183ut")]
 layout_mode = 2
 
-[node name="ConfigPlayerEntry3" parent="PanelContainer/VBoxContainer/MainContent/ScrollContainer/PlayerEntries" instance=ExtResource("2_183ut")]
+[node name="ConfigPlayerEntry3" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer/InterpolatedBoxContainer" instance=ExtResource("2_183ut")]
 layout_mode = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer"]
+layout_mode = 2
+
+[node name="Add Player" type="Button" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer"]
+layout_mode = 2
+text = "Add Player"
 
 [node name="Button Section" type="HBoxContainer" parent="PanelContainer/VBoxContainer/MainContent"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+theme_override_constants/separation = 0
 alignment = 1
 
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer/VBoxContainer/MainContent/Button Section"]

@@ -1,9 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://b5yg62ng6utc8"]
+[gd_scene load_steps=5 format=3 uid="uid://b5yg62ng6utc8"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_avt07"]
 [ext_resource type="Script" uid="uid://diqdhivnm0uif" path="res://src/interface/config/ConfigPlayerEntry.cs" id="2_1ruu6"]
-[ext_resource type="Texture2D" uid="uid://brc4hua1yised" path="res://assets/textures/ui/bootstrap icons/robot.svg" id="3_hekbt"]
-[ext_resource type="Texture2D" uid="uid://drxgtavjahyrk" path="res://assets/textures/ui/bootstrap icons/dice-6.svg" id="4_v8ock"]
+[ext_resource type="Resource" uid="uid://crh5xbfs41itm" path="res://assets/player_icons.tres" id="3_nupas"]
 [ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/person.svg" id="5_ex6li"]
 
 [node name="ConfigPlayerEntry" type="PanelContainer" node_paths=PackedStringArray("_label", "_icon", "_deleteButton")]
@@ -14,11 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_avt07")
 script = ExtResource("2_1ruu6")
-_iconTextures = Dictionary[String, Texture2D]({
-"computer": ExtResource("3_hekbt"),
-"random": ExtResource("4_v8ock"),
-"user": ExtResource("5_ex6li")
-})
+_iconResource = ExtResource("3_nupas")
 _label = NodePath("LabelContainer/Name")
 _icon = NodePath("LabelContainer/Icon")
 _deleteButton = NodePath("Delete")

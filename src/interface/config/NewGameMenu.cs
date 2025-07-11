@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
+using Rummy.Game;
 using Rummy.Util;
 
 namespace Rummy.Interface;
@@ -13,23 +16,37 @@ public partial class NewGameMenu : ConfigMenu
     [Export] private BaseButton _playButton;
     [Export] private BaseButton _simulateButton;
     [Export] private BaseButton _closeButton;
+    [Export] private BaseButton _addButton;
 
     public override void _Ready() {
         _playButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.BeginNewRound));
         _simulateButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.SimulateRoundWithoutDisplay, false));
         _closeButton?.Connect(BaseButton.SignalName.Pressed, () => EmitSignal(ConfigMenu.SignalName.CloseRequested));
+
+        _playerEntryRoot.Connect("order_changed", OnReordered);
+    }
+
+    private void OnReordered() {
+        var playerEntries = _playerEntryRoot.FindChildrenOfType<ConfigPlayerEntry>().Select(x => KeyValuePair.Create(x.Player, x)).ToDictionary();
+
+        var players = GameManager.Players.OrderBy(x => playerEntries[x].GetIndex());
+        GameManager.Players = [..players];
     }
 
     protected override void Rebuild() {
-        foreach (var child in _playerEntryRoot.GetChildren()) child.QueueFree();
+        foreach (var child in _playerEntryRoot.GetChildren()) {
+            _playerEntryRoot.RemoveChild(child); child.QueueFree();
+        }
         if (GameManager.IsInvalid()) return;
 
-        foreach (var player in GameManager.Players) {
-            var entry = _playerEntryScene.Instantiate<ConfigPlayerEntry>();
-            entry.Player = player;
-            _playerEntryRoot.AddChild(entry);
-            entry.GameManager = GameManager;
-        }
+        if (_playerEntryScene.IsValid())
+            foreach (var player in GameManager.Players) {
+                var entry = _playerEntryScene?.Instantiate<ConfigPlayerEntry>();
+                entry.Player = player; entry.GameManager = GameManager;
+                _playerEntryRoot.AddChild(entry);
+            }
+
+        //Callable.From((_playerEntryRoot as Container).QueueSort).CallDeferred();
     }
 
     private void AcceptAction(Action gameAction, bool shouldClose = true) {
