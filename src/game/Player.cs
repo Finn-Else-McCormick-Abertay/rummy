@@ -34,7 +34,7 @@ public abstract partial class Player : Resource
     public int Score { get; set { field = value; NotifyScoreChanged?.Invoke(); } }
 
     private readonly string _defaultName;
-    [Export] public string Name { get; private set { field = value; NotifyNameChanged?.Invoke(); } }
+    [Export] public string Name { get; set { field = value; NotifyNameChanged?.Invoke(); } }
 
     public override bool _PropertyCanRevert(StringName property) => property.ToString() switch {
         "Name" => true,

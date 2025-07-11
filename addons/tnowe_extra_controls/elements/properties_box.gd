@@ -206,7 +206,7 @@ func _add_property_editor(key : StringName, editor : Control, editor_signal : Si
 
 	var box = HBoxContainer.new()
 	var label = Label.new()
-	label.text = key
+	label.text = key.capitalize()
 	label.clip_text = true
 	label.size_flags_vertical = 0
 	label.size_flags_horizontal = SIZE_EXPAND_FILL

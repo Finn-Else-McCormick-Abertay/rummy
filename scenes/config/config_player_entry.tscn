@@ -1,11 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://b5yg62ng6utc8"]
+[gd_scene load_steps=7 format=3 uid="uid://b5yg62ng6utc8"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_avt07"]
 [ext_resource type="Script" uid="uid://diqdhivnm0uif" path="res://src/interface/config/ConfigPlayerEntry.cs" id="2_1ruu6"]
 [ext_resource type="Resource" uid="uid://crh5xbfs41itm" path="res://assets/player_icons.tres" id="3_nupas"]
 [ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/person.svg" id="5_ex6li"]
+[ext_resource type="Script" uid="uid://b4bqh681u6nvp" path="res://addons/tnowe_extra_controls/elements/properties_box.gd" id="5_hekbt"]
 
-[node name="ConfigPlayerEntry" type="PanelContainer" node_paths=PackedStringArray("_label", "_icon", "_deleteButton")]
+[sub_resource type="Theme" id="Theme_hekbt"]
+VBoxContainer/constants/separation = 5
+
+[node name="ConfigPlayerEntry" type="PanelContainer" node_paths=PackedStringArray("_label", "_icon", "_configureButton", "_deleteButton", "_settingsPopup", "_propertiesBox")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -16,7 +20,10 @@ script = ExtResource("2_1ruu6")
 _iconResource = ExtResource("3_nupas")
 _label = NodePath("LabelContainer/Name")
 _icon = NodePath("LabelContainer/Icon")
-_deleteButton = NodePath("Delete")
+_configureButton = NodePath("ButtonsContainer/Configure")
+_deleteButton = NodePath("ButtonsContainer/Delete")
+_settingsPopup = NodePath("SettingsPopup")
+_propertiesBox = NodePath("SettingsPopup/PanelContainer/ScrollContainer/PropertiesBox")
 
 [node name="LabelContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -35,8 +42,53 @@ layout_mode = 2
 size_flags_horizontal = 0
 text = "User"
 
-[node name="Delete" type="Button" parent="."]
+[node name="ButtonsContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="Configure" type="Button" parent="ButtonsContainer"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Configure"
+
+[node name="Delete" type="Button" parent="ButtonsContainer"]
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 text = "Delete"
+
+[node name="SettingsPopup" type="Popup" parent="."]
+transparent_bg = true
+title = "Player Settings"
+initial_position = 1
+size = Vector2i(700, 450)
+visible = true
+transparent = true
+keep_title_visible = true
+theme = ExtResource("1_avt07")
+
+[node name="PanelContainer" type="PanelContainer" parent="SettingsPopup"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 9.0
+offset_right = -8.0
+offset_bottom = -9.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SettingsPopup/PanelContainer"]
+layout_mode = 2
+theme = ExtResource("1_avt07")
+follow_focus = true
+
+[node name="PropertiesBox" type="VBoxContainer" parent="SettingsPopup/PanelContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = SubResource("Theme_hekbt")
+theme_type_variation = &"PropertiesBox"
+script = ExtResource("5_hekbt")
+metadata/_custom_type_script = "uid://b4bqh681u6nvp"

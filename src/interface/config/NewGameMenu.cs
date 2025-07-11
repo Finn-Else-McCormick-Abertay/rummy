@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Rummy.AI;
 using Rummy.Game;
 using Rummy.Util;
 
 namespace Rummy.Interface;
 
-public partial class NewGameMenu : ConfigMenu
-{
+public partial class NewGameMenu : ConfigMenu {
     [Export] private Control _playerEntryRoot;
     [Export] private PackedScene _playerEntryScene;
 
@@ -22,6 +22,7 @@ public partial class NewGameMenu : ConfigMenu
         _playButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.BeginNewRound));
         _simulateButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.SimulateRoundWithoutDisplay, false));
         _closeButton?.Connect(BaseButton.SignalName.Pressed, () => EmitSignal(ConfigMenu.SignalName.CloseRequested));
+        _addButton?.Connect(BaseButton.SignalName.Pressed, AddPlayer);
 
         _playerEntryRoot.Connect("order_changed", OnReordered);
     }
@@ -30,7 +31,7 @@ public partial class NewGameMenu : ConfigMenu
         var playerEntries = _playerEntryRoot.FindChildrenOfType<ConfigPlayerEntry>().Select(x => KeyValuePair.Create(x.Player, x)).ToDictionary();
 
         var players = GameManager.Players.OrderBy(x => playerEntries[x].GetIndex());
-        GameManager.Players = [..players];
+        GameManager.Players = [.. players];
     }
 
     protected override void Rebuild() {
@@ -45,8 +46,6 @@ public partial class NewGameMenu : ConfigMenu
                 entry.Player = player; entry.GameManager = GameManager;
                 _playerEntryRoot.AddChild(entry);
             }
-
-        //Callable.From((_playerEntryRoot as Container).QueueSort).CallDeferred();
     }
 
     private void AcceptAction(Action gameAction, bool shouldClose = true) {
@@ -69,5 +68,11 @@ public partial class NewGameMenu : ConfigMenu
         AddChild(confirmationDialog);
         confirmationDialog.PopupCentered();
         confirmationDialog.Show();
+    }
+
+    private void AddPlayer() {
+        UserPlayer newPlayer = new();
+        GameManager.Players = [.. GameManager.Players.Concat([newPlayer])];
+        Rebuild();
     }
 }
