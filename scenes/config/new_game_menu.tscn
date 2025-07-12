@@ -12,7 +12,7 @@ action = &"toggle_config"
 [sub_resource type="Shortcut" id="Shortcut_rwlyh"]
 events = [SubResource("InputEventAction_4sfry")]
 
-[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton")]
+[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton", "_saveButton", "_loadButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,6 +27,8 @@ _playButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/
 _simulateButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer2/Simulate")
 _closeButton = NodePath("PanelContainer/VBoxContainer/Title Line/Close Button")
 _addButton = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer/Add Player")
+_saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Save")
+_loadButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Load")
 Shortcut = SubResource("Shortcut_rwlyh")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
@@ -44,6 +46,27 @@ theme_override_constants/separation = 18
 
 [node name="Title Line" type="Control" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Title Line"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -1.0
+offset_top = -21.0
+offset_right = 357.0
+offset_bottom = 5.0
+grow_vertical = 2
+theme_override_constants/separation = 5
+
+[node name="Save" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+layout_mode = 2
+text = "Save"
+
+[node name="Load" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+layout_mode = 2
+text = "Load
+"
 
 [node name="Title Label" type="Label" parent="PanelContainer/VBoxContainer/Title Line"]
 layout_mode = 1

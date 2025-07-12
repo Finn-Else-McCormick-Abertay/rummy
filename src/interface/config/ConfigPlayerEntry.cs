@@ -27,7 +27,7 @@ public partial class ConfigPlayerEntry : Control
     [Export] private Popup _settingsPopup;
     [Export] private Control _propertiesBox;
 
-    private readonly ReadOnlyCollection<Type> _playerTypes = new([typeof(UserPlayer), typeof(RandomPlayer), typeof(IntelligentPlayer)]);
+    public static readonly ReadOnlyCollection<Type> PlayerTypes = new([typeof(UserPlayer), typeof(RandomPlayer), typeof(IntelligentPlayer)]);
 
     public override void _Ready() {
         _deleteButton.Pressed += OnDeletePressed;
@@ -56,7 +56,7 @@ public partial class ConfigPlayerEntry : Control
         // Update properties
         _propertiesBox.Call("clear");
 
-        _propertiesBox.Call("add_options", "Type", new Godot.Collections.Array(_playerTypes.Select(x => Variant.From(x.Name))), _playerTypes.IndexOf(Player.GetType()), false);
+        _propertiesBox.Call("add_options", "Type", new Godot.Collections.Array(PlayerTypes.Select(x => Variant.From(x.Name))), PlayerTypes.IndexOf(Player.GetType()), false);
         AddString(Player.PropertyName.Name);
 
         var exportedMembers = Player.GetType().GetMembers(
@@ -83,7 +83,7 @@ public partial class ConfigPlayerEntry : Control
 
     private void OnPropertyValueChanged(StringName prop, Variant newValue) {
         if (prop == "Type") {
-            var newType = _playerTypes.ElementAtOrDefault(newValue.AsInt32());
+            var newType = PlayerTypes.ElementAtOrDefault(newValue.AsInt32());
             if (newType is not null) {
                 var newPlayer = (Player)Activator.CreateInstance(newType);
 
