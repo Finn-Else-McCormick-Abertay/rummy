@@ -63,7 +63,6 @@ transparent_bg = true
 title = "Player Settings"
 initial_position = 1
 size = Vector2i(700, 450)
-visible = true
 transparent = true
 keep_title_visible = true
 theme = ExtResource("1_avt07")

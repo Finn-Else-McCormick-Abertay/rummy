@@ -78,4 +78,7 @@ Button/styles/focus = SubResource("StyleBoxFlat_vmla7")
 Button/styles/hover = SubResource("StyleBoxFlat_wdvmx")
 Button/styles/normal = SubResource("StyleBoxFlat_k2078")
 Button/styles/pressed = SubResource("StyleBoxFlat_8jeg6")
+ButtonMarginContainer/base_type = &"MarginContainer"
+ButtonMarginContainer/constants/margin_left = 20
+ButtonMarginContainer/constants/margin_right = 20
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_vecn5")

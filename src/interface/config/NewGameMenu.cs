@@ -25,6 +25,8 @@ public partial class NewGameMenu : ConfigMenu {
         _addButton?.Connect(BaseButton.SignalName.Pressed, AddPlayer);
 
         _playerEntryRoot.Connect("order_changed", OnReordered);
+
+        UpdatePlayButtons();
     }
 
     private void OnReordered() {
@@ -45,7 +47,22 @@ public partial class NewGameMenu : ConfigMenu {
                 var entry = _playerEntryScene?.Instantiate<ConfigPlayerEntry>();
                 entry.Player = player; entry.GameManager = GameManager;
                 _playerEntryRoot.AddChild(entry);
+                entry.Connect(ConfigPlayerEntry.SignalName.PlayerTypeChanged, UpdatePlayButtons);
             }
+
+        UpdatePlayButtons();
+    }
+
+    private void UpdatePlayButtons() {
+        int userPlayerCount = GameManager.Players.Count(x => x is UserPlayer);
+
+        _playButton.TooltipText = "Begin stepping through round turn by turn.";
+
+        _simulateButton.Disabled = userPlayerCount > 0;
+        _simulateButton.TooltipText = userPlayerCount switch {
+            0 => "Simulate full round without display.",
+            _ => "Cannot run simulation containing UserPlayer"
+        };
     }
 
     private void AcceptAction(Action gameAction, bool shouldClose = true) {
@@ -53,8 +70,7 @@ public partial class NewGameMenu : ConfigMenu {
             gameAction?.Invoke();
             EmitSignal(ConfigMenu.SignalName.CloseRequested);
         }
-        if (GameManager.Round is null || GameManager.Round.Finished) OnAccept();
-        else Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current game.");
+        if (GameManager.InGame) Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current game."); else OnAccept();
     }
 
     private void Confirm(Action onConfirm, string title = null, string message = null, string acceptText = null) {
@@ -71,7 +87,7 @@ public partial class NewGameMenu : ConfigMenu {
     }
 
     private void AddPlayer() {
-        UserPlayer newPlayer = new();
+        UserPlayer newPlayer = new() { Name = nameof(UserPlayer) };
         GameManager.Players = [.. GameManager.Players.Concat([newPlayer])];
         Rebuild();
     }

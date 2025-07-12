@@ -53,6 +53,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="NewGameMenu" parent="Menu Root" node_paths=PackedStringArray("SidebarButton") instance=ExtResource("2_72yf6")]
+visible = false
 layout_mode = 1
 offset_left = 66.0
 offset_top = 64.0

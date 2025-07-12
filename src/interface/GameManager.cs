@@ -6,6 +6,7 @@ using static Rummy.Util.Option;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Threading.Tasks;
 
 namespace Rummy.Interface;
 
@@ -50,7 +51,7 @@ public partial class GameManager : Node
     [Export] private Button DiscardButton { get; set; }
     [Export] private Button MeldButton { get; set; }
     [Export] private Button NextTurnButton { get; set; }
-    [Export] private FailureMessage FailureMessage { get; set; }
+    [Export] private FailureMessage FailureMessage { get; set { field = value; if (FailureMessage.IsValid()) FailureMessage.GameManager = this; } }
     [Export] private Node _output;
     private Output Output => _output as Output; // Getting around a weird technicality with tool classes
 
@@ -107,15 +108,23 @@ public partial class GameManager : Node
         .Find(node => node.GetNode<PlayerScoreDisplay>("PlayerScoreDisplay")?.Player == player) as Node;
     CardPileContainer FindPlayerHandDisplay(Player player) => FindPlayerScoreDisplayRoot(player)?.GetNode<CardPileContainer>("HandDisplay");
 
+    public bool InGame => Round is not null && !Round.Finished && !Round.Failed;
+
     public void SimulateRoundWithoutDisplay() {
         if (Engine.IsEditorHint()) return;
 
+        FailureMessage.Hide();
+
         if (players.Any(player => player is UserPlayer)) {
-            FailureMessage.DisplayMessage("Cannot simulate game containing UserPlayer."); return;
+            FailureMessage.DisplayMessage("Cannot simulate game containing UserPlayer.");
+            return;
         }
 
         Round = new Round(players) { Output = Output };
-        var result = Round.Simulate();
+
+        var task = Round.Simulate();
+        task.Wait();
+        var result = task.Result;
         result.InspectErr(err => {
             Output.WriteLine(err.Message, "error");
             Output.WriteLine(err.TurnHistory.ToJoinedString("\n"), "error");
@@ -126,7 +135,7 @@ public partial class GameManager : Node
                 Output?.WriteLine(msg, "game");
                 FailureMessage.DisplayMessage(msg);
             });
-        
+
         result.AndThen(x => Ok(x.History)).Inspect(history => {
             Output?.WriteLine("\n --------------------- \n", "game");
             history.ForEach(turn => Output?.WriteLine(turn.ToString(), "game"));

@@ -11,6 +11,7 @@ using System;
 using Rummy.Interface;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Rummy.Game;
 
@@ -157,6 +158,8 @@ public class Round
 	
 	public bool Finished { get; private set; } = false;
 	public Player Winner { get; private set; }
+	
+	public bool Failed { get; private set; } = false;
 
 	public Deck Deck { get; init; } = new();
 	public DiscardPile DiscardPile { get; init; } = new();
@@ -212,7 +215,9 @@ public class Round
 	~Round() { foreach (Player player in Players.Where(x => x.Round == this)) { player.Round = null; } }
 
 	// Run round start to finish in one go
-	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), (string Message, IEnumerable<TurnRecord> TurnHistory)> Simulate(Random random, int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) {
+	public async Task<Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), (string Message, IEnumerable<TurnRecord> TurnHistory)>> Simulate(int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100, Random random = null) {
+		random ??= Random.Shared;
+
 		if (Turn >= 0) return Err<(string, IEnumerable<TurnRecord>)>(("Round has already begun.", []));
 		if (Players.Any(player => player is UserPlayer)) return Err<(string, IEnumerable<TurnRecord>)>(("Round contains UserPlayer.", []));
 
@@ -227,10 +232,11 @@ public class Round
 
 		CreateAndShuffleDeck();
 		DealCardsAndInitialiseRound();
+
 		while (!Finished && Turn < turnCutoff) {
 			Result<Unit, string> turnResult; int tryAtThisTurn = 0; string lastErr = null;
 			do {
-				BeginTurn().Wait();
+				await BeginTurn();
 				turnResult = EndTurn();
 				turnResult.InspectErr(err => { lastErr = err; ResetTurn(); });
 				tryAtThisTurn++;
@@ -238,16 +244,19 @@ public class Round
 			if (tryAtThisTurn >= repeatInvalidTurnCutoff) {
 				NotifyTurnEnded -= onTurnEndedAction;
 				NotifyGameEnded -= onGameEndedAction;
+				Failed = true;
 				return Err(($"Overran turn failure limit of {repeatInvalidTurnCutoff} ({CurrentPlayer.Name}, Turn {Turn}). Last err: {lastErr}", turnHistory.AsEnumerable()));
 			}
 		}
 
 		NotifyTurnEnded -= onTurnEndedAction;
 		NotifyGameEnded -= onGameEndedAction;
-		if (!Finished) return Err(($"Overran turn limit of {turnCutoff}.", turnHistory.AsEnumerable()));
+		if (!Finished) {
+			Failed = true;
+			return Err(($"Overran turn limit of {turnCutoff}.", turnHistory.AsEnumerable()));
+		}
 		return Ok((turnHistory, winData));
 	}
-	public Result<(List<TurnRecord> History, (Player Winner, int Score, bool WasRummy) Win), (string Message, IEnumerable<TurnRecord> TurnHistory)> Simulate(int turnCutoff = 5000, int repeatInvalidTurnCutoff = 100) => Simulate(Random.Shared, turnCutoff, repeatInvalidTurnCutoff);
 
 	public void CreateAndShuffleDeck(Random random) {
 		Deck.AddPack();

@@ -3,7 +3,7 @@
 [ext_resource type="Theme" uid="uid://0jvtb31oofbs" path="res://assets/themes/message_ui_theme.tres" id="1_7p03l"]
 [ext_resource type="Script" uid="uid://bfp4hga2yvelu" path="res://src/interface/FailureMessage.cs" id="1_rwuom"]
 
-[node name="FailureMessage" type="PanelContainer" node_paths=PackedStringArray("label", "buttonRoot", "button")]
+[node name="FailureMessage" type="PanelContainer" node_paths=PackedStringArray("label", "buttonRoot", "button", "_newGameButtonsRoot", "_playButtonRoot", "_simulateButtonRoot")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -11,19 +11,28 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_7p03l")
 script = ExtResource("1_rwuom")
-label = NodePath("MarginContainer/HBoxContainer/Label")
-buttonRoot = NodePath("MarginContainer/HBoxContainer/AspectRatioContainer")
-button = NodePath("MarginContainer/HBoxContainer/AspectRatioContainer/Button")
+Message = "First line of message.
+Second line of message."
+label = NodePath("VBoxContainer/MarginContainer/HBoxContainer/Label")
+buttonRoot = NodePath("VBoxContainer/MarginContainer/HBoxContainer/AspectRatioContainer")
+button = NodePath("VBoxContainer/MarginContainer/HBoxContainer/AspectRatioContainer/Button")
+_newGameButtonsRoot = NodePath("VBoxContainer/Button Section")
+_playButtonRoot = NodePath("VBoxContainer/Button Section/MarginContainer")
+_simulateButtonRoot = NodePath("VBoxContainer/Button Section/MarginContainer2")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_right = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="MarginContainer/HBoxContainer"]
+[node name="Label" type="Label" parent="VBoxContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "First line of message.
@@ -31,11 +40,38 @@ Second line of message."
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="AspectRatioContainer" type="AspectRatioContainer" parent="MarginContainer/HBoxContainer"]
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="VBoxContainer/MarginContainer/HBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 ratio = 1.5882
 
-[node name="Button" type="Button" parent="MarginContainer/HBoxContainer/AspectRatioContainer"]
+[node name="Button" type="Button" parent="VBoxContainer/MarginContainer/HBoxContainer/AspectRatioContainer"]
 layout_mode = 2
 text = "Reset Turn"
+
+[node name="Button Section" type="HBoxContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/Button Section"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ButtonMarginContainer"
+
+[node name="Play" type="Button" parent="VBoxContainer/Button Section/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Play"
+
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/Button Section"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ButtonMarginContainer"
+
+[node name="Simulate" type="Button" parent="VBoxContainer/Button Section/MarginContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Simulate"

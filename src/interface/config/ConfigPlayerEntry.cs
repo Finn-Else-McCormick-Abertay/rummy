@@ -3,8 +3,6 @@ using Rummy.AI;
 using Rummy.Game;
 using Rummy.Util;
 using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +12,8 @@ namespace Rummy.Interface;
 
 public partial class ConfigPlayerEntry : Control
 {
+    [Signal] public delegate void PlayerTypeChangedEventHandler();
+
     public GameManager GameManager { get; set; }
     public Player Player { get; set { field = value; this.OnReady(Rebuild); } }
 
@@ -88,7 +88,7 @@ public partial class ConfigPlayerEntry : Control
                 var newPlayer = (Player)Activator.CreateInstance(newType);
 
                 newPlayer.Score = Player.Score;
-                
+
                 // Find player index
                 var players = GameManager.Players;
                 int index = players.FindIndex(Player);
@@ -105,6 +105,8 @@ public partial class ConfigPlayerEntry : Control
                 GameManager.Players = players;
 
                 Player = newPlayer;
+
+                EmitSignal(SignalName.PlayerTypeChanged);
             }
         }
         else {
