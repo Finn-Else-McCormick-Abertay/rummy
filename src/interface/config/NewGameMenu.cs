@@ -34,7 +34,16 @@ public partial class NewGameMenu : ConfigMenu
         _loadButton?.Connect(BaseButton.SignalName.Pressed, OpenLoadDialog);
 
         UpdatePlayButtons();
+        RestoreLoadout();
     }
+
+    public override void _Notification(int what) {
+        if (what == NotificationPredelete) Save("user://restore_loadout.json");
+    }
+
+    public void RestoreLoadout() => Load("user://restore_loadout.json");
+
+    protected override void OnGameManagerChanged() => RestoreLoadout();
 
     private void OnReordered() {
         var playerEntries = _playerEntryRoot.FindChildrenOfType<ConfigPlayerEntry>().Select(x => KeyValuePair.Create(x.Player, x)).ToDictionary();
@@ -146,9 +155,9 @@ public partial class NewGameMenu : ConfigMenu
 
     private void OpenSaveDialog() => TextEnterDialog("Save", TrySave);
     private void OpenLoadDialog() => TextEnterDialog("Load", TryLoad,
-        DirAccess.Open("user://loadouts").GetFiles().Select(x => x.TrimPrefix("user://loadouts/").TrimSuffix(".players")));
+        DirAccess.Open("user://loadouts").GetFiles().Select(x => x.TrimPrefix("user://loadouts/").TrimSuffix(".json")));
 
-    private static string IdentifierToSavePath(string identifier) => $"user://loadouts/{identifier.Trim()}.players";
+    private static string IdentifierToSavePath(string identifier) => $"user://loadouts/{identifier.Trim()}.json";
 
     private void TrySave(string identifier) {
         if (string.IsNullOrWhiteSpace(identifier)) Message(title: "Could not save.", message: "No save name provided.");
