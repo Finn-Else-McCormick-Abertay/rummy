@@ -17,6 +17,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
 
     private List<Meld> _potentialMelds;
     private List<NearMeld> _nearMelds;
+    private Dictionary<Card, List<Meld>> _potentialLayoffs;
 
     private Player GetPrecedingPlayer() {
         if (Round.Players.IndexOf(this) is int selfIndex && selfIndex == -1) return null;
@@ -95,7 +96,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
     [Export] double DrawSingleUtilityThreshold = 5;
     [Export] double DrawMultipleUtilityThreshold = 15;
     [Export] double LayoffUtilityThreshold = 1;
-    [Export] double FirstMeldUtilityThreshold = 15;
+    [Export] double FirstMeldUtilityThreshold = 30;
     [Export] double FurtherMeldUtilityThreshold = 0;
 
     private double GetDrawUtilityThreshold(int count = 1) => count switch { 1 => DrawSingleUtilityThreshold, _ => DrawMultipleUtilityThreshold };
@@ -111,7 +112,8 @@ public partial class IntelligentPlayer : ComputerPlayer {
         var meldUtilities = meldsWith.Select(meld => EvaluateMeldUtility(meld) - LeftOverPenalty(card => !meld.Cards.Contains(card)));
         if (meldUtilities.Any()) {
             double meldAverage = meldUtilities.Average();
-            if (meldAverage > 0) utility += meldUtilities.Average();
+            //Think($"Meld average {meldAverage}");
+            if (meldAverage > 0) utility += meldUtilities.Average() * 5;
         }
 
         // TK - factor in further layoffs to a run
@@ -124,10 +126,11 @@ public partial class IntelligentPlayer : ComputerPlayer {
                 .Select(EvaluateNearMeldUtility);
         if (nearMeldUtilities.Any()) {
             double nearMeldAverage = nearMeldUtilities.Average();
+            //Think($"Near meld average {nearMeldAverage}");
             if (nearMeldAverage > 0) utility += nearMeldAverage;
         }
 
-        return 0;
+        return utility;
     }
 
     private double EvaluateLayoffUtility(Card card, Meld meld) {
@@ -149,11 +152,11 @@ public partial class IntelligentPlayer : ComputerPlayer {
     }
 
     private double EvaluateNearMeldUtility(NearMeld meld) {
-        if (meld.ContainsValidMeld()) return EvaluateMeldUtility(meld.AsMeld());
+        if (meld.ContainsValidMeld() && meld.AsMeld().Valid) return EvaluateMeldUtility(meld.AsMeld());
 
         double utility = 0;
         utility += meld.Cards.Count * 5;
-        utility += meld.PotentialCards().Select(x => 5 * GetCardAccessibility(x)).Sum();
+        utility += meld.PotentialCards().Select(x => 2 * GetCardAccessibility(x)).Sum();
         utility -= meld.Cards.Select(x => x.Score).Sum() * 0.5; // It is good to prioritise not holding on to high scoring cards
 
         return utility;
@@ -162,8 +165,8 @@ public partial class IntelligentPlayer : ComputerPlayer {
     private double EvaluateDiscardUtility(Card card) {
         if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
         double utility = 0;
-        utility -= card.Score;
-        // TK - factor in potential layoffs?
+        utility += card.Score * 0.2;
+        if (_potentialLayoffs.ContainsKey(card)) utility -= _potentialLayoffs[card].Count() * 5;
         utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
         utility -= _nearMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateNearMeldUtility).Sum();
         return utility;
@@ -171,6 +174,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
 
     public override Task TakeTurn() {
         (_potentialMelds, _nearMelds) = FindPotentialMelds();
+        _potentialLayoffs = null;
 
         // Default to drawing from deck
         (IDrawable Pile, int Index) drawSelection = (Round.Deck, 0);
@@ -209,13 +213,13 @@ public partial class IntelligentPlayer : ComputerPlayer {
         }
         // If not rummying
         else {
-            (_potentialMelds, _nearMelds) = FindPotentialMelds(); var potentialLayOffs = FindPotentialLayOffs();
+            (_potentialMelds, _nearMelds) = FindPotentialMelds(); _potentialLayoffs = FindPotentialLayOffs();
             // If can meld
             if (_potentialMelds.Any()) {
-                bool mustMeld = mustUse is not null && (!potentialLayOffs.Any(x => x.Key == mustUse) || Melds.None());
+                bool mustMeld = mustUse is not null && (!_potentialLayoffs.Any(x => x.Key == mustUse) || Melds.None());
 
                 // Valid melds to select from if not rummying (all potential melds, constrained to those containing the bottomost picked up card if you picked up multiple)
-                var validMelds = mustUse is Card mustUseCard && !potentialLayOffs.Any(x => x.Key == mustUse) ?
+                var validMelds = mustUse is Card mustUseCard && !_potentialLayoffs.Any(x => x.Key == mustUse) ?
                     _potentialMelds.Where(x => x.Cards.Contains(mustUseCard)) : _potentialMelds;
 
                 if (validMelds.Any()) {
@@ -233,11 +237,12 @@ public partial class IntelligentPlayer : ComputerPlayer {
 
             // If can lay off
             if (Melds.Any()) {
-                // Update potential melds based on cards left in hand
+                // Update potential melds and layoffs based on cards left in hand
                 (_potentialMelds, _nearMelds) = FindPotentialMelds();
+                _potentialLayoffs = FindPotentialLayOffs();
 
                 double layoffUtilityThreshold = GetLayoffUtilityThreshold();
-                foreach (var (card, melds) in potentialLayOffs) {
+                foreach (var (card, melds) in _potentialLayoffs) {
                     // Find highest utility place card can be laid off
                     var layoffUtilities = melds.Select(meld => new { Meld = meld, Utility = EvaluateLayoffUtility(card, meld) });
                     var highestUtilityLayoff = layoffUtilities.OrderBy(x => x.Utility).Last();
@@ -251,8 +256,9 @@ public partial class IntelligentPlayer : ComputerPlayer {
 
             // Discard a card if able
             if (Hand.Cards.Any()) {
-                // Update potential melds based on cards left in hand
+                // Update potential melds and layoffs based on cards left in hand
                 (_potentialMelds, _nearMelds) = FindPotentialMelds();
+                _potentialLayoffs = FindPotentialLayOffs();
 
                 // The cannot discard rule does not apply to the final card in your hand
                 var validCardsToDiscard = Hand.Cards.Count > 1 ? Hand.Cards.Where(x => x != cannotDiscard) : Hand.Cards;
