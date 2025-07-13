@@ -7,4 +7,5 @@ namespace Rummy.Util;
 static class ToStringExtensions
 {
     public static string ToJoinedString<T>(this IEnumerable<T> self, string? separator = null) => string.Join(separator, self);
+    public static string ToJoinedString<T>(this IEnumerable<T> self, char separator) => string.Join(separator, self);
 }

@@ -23,16 +23,16 @@ public abstract partial class ComputerPlayer : Player
 
     protected (List<Meld> Melds, List<NearMeld> NearMelds) FindPotentialMelds() {
         var (potentialMelds, nearMelds) = PotentialMoves.FindMelds(Hand.Cards);
-        if (potentialMelds.Count > 0) Think("Potential Melds: ".ToBuilder().AppendJoin(", ", potentialMelds));
-        if (nearMelds.Count > 0) Think("Near Melds: ".ToBuilder().AppendJoin(", ", nearMelds));
+        //if (potentialMelds.Count > 0) Think("Potential Melds: ".ToBuilder().AppendJoin(", ", potentialMelds));
+        //if (nearMelds.Count > 0) Think("Near Melds: ".ToBuilder().AppendJoin(", ", nearMelds));
         return (potentialMelds, nearMelds);
     }
     protected Dictionary<Card, List<Meld>> FindPotentialLayOffs() {
         var potentialLayOffs = PotentialMoves.FindLayOffs(Hand.Cards, Round);
-        if (potentialLayOffs.Count > 0)
+        /*if (potentialLayOffs.Count > 0)
             Think("Potential Layoffs".ToBuilder().AppendIf(Melds.None(), " (cannot lay off)").Append(": ")
                 .AppendJoin(", ", potentialLayOffs.Select((card, melds) =>
-                    $"{card} -> ".ToBuilder().AppendIf(melds.Count > 1, '{').AppendJoin(", ", melds).AppendIf(melds.Count > 1, '}'))));
+                    $"{card} -> ".ToBuilder().AppendIf(melds.Count > 1, '{').AppendJoin(", ", melds).AppendIf(melds.Count > 1, '}'))));*/
         return potentialLayOffs;
     }
 
@@ -103,10 +103,10 @@ public abstract partial class ComputerPlayer : Player
 
         var usableDrawDownCardsFlattened = usableDrawDownCards.ToList();
 
-        if (usableDrawDownCardsFlattened.Any()) Think("Possible cards to draw down to:\n".ToBuilder().AppendJoin("\n",
+        /*if (usableDrawDownCardsFlattened.Any()) Think("Possible cards to draw down to:\n".ToBuilder().AppendJoin("\n",
             usableDrawDownCardsFlattened.Select((card, index, info) => "\t- ".ToBuilder().AppendWrapped(info.CardsTaken.Count() > 1 ? "[]" : "",
                 info.CardsTaken.SkipLast().AsStrings().Concat(info.CardsTaken.TakeLast().Select(x => $"({x})")).ToJoinedString(", ")))));
-        else Think("No usable cards in discard pile.");
+        else Think("No usable cards in discard pile.");*/
 
         return usableDrawDownCardsFlattened;
     }

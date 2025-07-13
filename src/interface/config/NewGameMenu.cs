@@ -21,6 +21,7 @@ public partial class NewGameMenu : ConfigMenu
     [Export] private BaseButton _addButton;
     [Export] private BaseButton _saveButton;
     [Export] private BaseButton _loadButton;
+    [Export] private BaseButton _openSaveFolderButton;
 
     public override void _Ready() {
         _playButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.BeginNewRound));
@@ -32,6 +33,8 @@ public partial class NewGameMenu : ConfigMenu
 
         _saveButton?.Connect(BaseButton.SignalName.Pressed, OpenSaveDialog);
         _loadButton?.Connect(BaseButton.SignalName.Pressed, OpenLoadDialog);
+
+        _openSaveFolderButton?.Connect(BaseButton.SignalName.Pressed, () => OS.ShellShowInFileManager(ProjectSettings.GlobalizePath("user://loadouts/")));
 
         UpdatePlayButtons();
         RestoreLoadout();

@@ -1,24 +1,102 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
+using Rummy.Config;
 using Rummy.Game;
 using Rummy.Util;
 
 namespace Rummy.AI;
 
 [Tool, GlobalClass]
-public partial class IntelligentPlayer : ComputerPlayer
-{
-    public IntelligentPlayer() : base(nameof(IntelligentPlayer)) {}
+public partial class IntelligentPlayer : ComputerPlayer {
+    public IntelligentPlayer() : base(nameof(IntelligentPlayer)) { }
 
-    [Export] int DrawSingleUtilityThreshold = 5;
-    [Export] int DrawMultipleUtilityThreshold = 15;
-    [Export] int LayoffUtilityThreshold = 1;
-    [Export] int FirstMeldUtilityThreshold = 15;
-    [Export] int FurtherMeldUtilityThreshold = 0;
+    private List<Meld> _potentialMelds;
+    private List<NearMeld> _nearMelds;
+
+    private Player GetPrecedingPlayer() {
+        if (Round.Players.IndexOf(this) is int selfIndex && selfIndex == -1) return null;
+        int precedingIndex = selfIndex - 1;
+        if (precedingIndex < 0) precedingIndex += Round.Players.Count;
+        return Round.Players[precedingIndex];
+    }
+
+    private readonly Dictionary<Player, List<Card>> _knownPlayerCards = [];
+    private IEnumerable<Card> KnownCardsInOtherPlayersHands => _knownPlayerCards.Where(x => x.Key != this).SelectMany(x => x.Value);
+    private IEnumerable<Card> KnownCardsInPrecedingPlayersHand => _knownPlayerCards.GetValueOrDefault(GetPrecedingPlayer()) ?? [];
+
+    protected override void OnAddedToRound(Round round) {
+        _knownPlayerCards.Clear();
+        foreach (var player in round.Players) _knownPlayerCards[player] = [];
+        round.NotifyDrewFromDiscardPile += OnPlayerDrew; round.NotifyMelded += OnPlayerMelded; round.NotifyLaidOff += OnPlayerLaidOff; round.NotifyDiscarded += OnPlayerDiscarded;
+    }
+    protected override void OnRemovedFromRound(Round round) {
+        round.NotifyDrewFromDiscardPile -= OnPlayerDrew; round.NotifyMelded -= OnPlayerMelded; round.NotifyLaidOff -= OnPlayerLaidOff; round.NotifyDiscarded -= OnPlayerDiscarded;
+        _knownPlayerCards.Clear();
+    }
+
+    private void OnPlayerDrew(Player player, ReadOnlyCollection<Card> cards) => _knownPlayerCards[player].AddRange(cards);
+    private void OnPlayerMelded(Player player, ReadOnlyCollection<Card> cards) => _knownPlayerCards[player].RemoveAll(cards.Contains);
+    private void OnPlayerLaidOff(Player player, Card card) => _knownPlayerCards[player].Remove(card);
+    private void OnPlayerDiscarded(Player player, Card card) => _knownPlayerCards[player].Remove(card);
+
+    [ExportGroup("Card Accessibility")]
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "Accessibility loss when a card is buried in the discard pile. This value is multiplied by its depth.")]
+    double InDiscardPileCardAccessibilityLossPerDepth = 0.25;
+
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "When a card is known to be in the hand of a player more than one index behind you.")]
+    double InNonPrecedingPlayerHandCardAccessibility = 0;
+
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "When a card is known to be in preceding player's hand, and form a valid meld there.")]
+    double FullyConnectedInPrevPlayerHandCardAccessibility = 0;
+
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "When a card is known to be in preceding player's hand, and is connected to other known cards there.")]
+    double PartiallyConnectedInPrevPlayerHandCardAccessibility = 0.2;
+
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "When a card is known to be in preceding player's hand with no connections.")]
+    double UnconnectedInPrevPlayerHandCardAccessibility = 0.7;
+
+    [Export, ExportDescription(type: "PercentageFloat", tooltip: "When the location of a card is wholly unknown.")]
+    double UnknownCardAccessibility = 0.5;
+
+    // From 0 (impossible to get) to 1 (currently in hand)
+    private double GetCardAccessibility(Card card) => 0 switch {
+        _ when Hand.Cards.Contains(card) => 1,
+        // Is already in a meld (wholly inaccessible)
+        _ when Round.Melds.Any(x => x.Cards.Contains(card)) => 0,
+        // Card is in discard pile
+        _ when Round.DiscardPile.Cards.Contains(card) => 1 - Round.DiscardPile.Cards.IndexOf(card) * InDiscardPileCardAccessibilityLossPerDepth,
+        // Card is in preceding player's hand
+        _ when KnownCardsInPrecedingPlayersHand.Contains(card) => 0 switch {
+            // But could be laid off
+            _ when PotentialMoves.FindLayOffs(card, Round).Count > 0 => 0,
+            // But is connected to something else we know is in their hand
+            _ when PotentialMoves.FindMelds(KnownCardsInPrecedingPlayersHand) is var (melds, nearMelds)
+                && melds.Any(x => x.Cards.Contains(card)) is bool inMeld
+                && nearMelds.Any(x => x.Cards.Contains(card)) is bool inNearMeld
+                && (inMeld || inNearMeld) => 0 switch {
+                    _ when inNearMeld => PartiallyConnectedInPrevPlayerHandCardAccessibility,
+                    _ => FullyConnectedInPrevPlayerHandCardAccessibility
+                },
+            // Is relatively likely to be discarded
+            _ => UnconnectedInPrevPlayerHandCardAccessibility
+        },
+        // Is in a different player's hand
+        _ when KnownCardsInOtherPlayersHands.Contains(card) => InNonPrecedingPlayerHandCardAccessibility,
+        // Is either in deck or unknown in someone else's hand
+        _ => UnknownCardAccessibility
+    };
+
+    [ExportGroup("Utility Thresholds")]
+    [Export] double DrawSingleUtilityThreshold = 5;
+    [Export] double DrawMultipleUtilityThreshold = 15;
+    [Export] double LayoffUtilityThreshold = 1;
+    [Export] double FirstMeldUtilityThreshold = 15;
+    [Export] double FurtherMeldUtilityThreshold = 0;
 
     private double GetDrawUtilityThreshold(int count = 1) => count switch { 1 => DrawSingleUtilityThreshold, _ => DrawMultipleUtilityThreshold };
     private double GetLayoffUtilityThreshold() => LayoffUtilityThreshold;
@@ -31,22 +109,32 @@ public partial class IntelligentPlayer : ComputerPlayer
         double utility = 0;
 
         var meldUtilities = meldsWith.Select(meld => EvaluateMeldUtility(meld) - LeftOverPenalty(card => !meld.Cards.Contains(card)));
-        if (meldUtilities.Any()) utility += meldUtilities.Average();
+        if (meldUtilities.Any()) {
+            double meldAverage = meldUtilities.Average();
+            if (meldAverage > 0) utility += meldUtilities.Average();
+        }
 
         // TK - factor in further layoffs to a run
         var posLayoffUtilities = layoffs.Select(meld => EvaluateLayoffUtility(card, meld) - LeftOverPenalty(x => x != card)).Where(x => x > 0);
         if (posLayoffUtilities.Any()) utility += posLayoffUtilities.Average();
-        
-        // TK - factor in near melds
+
+        var nearMeldUtilities =
+            _nearMelds.Where(x => x.PotentialCards().Contains(card))
+                .Select(x => x.With(cardsTaken.Where(y => x.PotentialCards().Contains(y))))
+                .Select(EvaluateNearMeldUtility);
+        if (nearMeldUtilities.Any()) {
+            double nearMeldAverage = nearMeldUtilities.Average();
+            if (nearMeldAverage > 0) utility += nearMeldAverage;
+        }
 
         return 0;
     }
 
-    private double EvaluateLayoffUtility(Card card, Meld meld, IEnumerable<Meld> potentialMelds = null, List<NearMeld> nearMelds = null) {
+    private double EvaluateLayoffUtility(Card card, Meld meld) {
+        if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
         double utility = 5;
-        if (potentialMelds is null || nearMelds is null) (potentialMelds, nearMelds) = FindPotentialMelds();
 
-        utility -= potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
+        utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
 
         return utility;
     }
@@ -55,22 +143,35 @@ public partial class IntelligentPlayer : ComputerPlayer
         double utility = 0;
 
         utility += meld.Count * 5;
-        utility += meld.Cards.Select(x => x.Score).Sum();
+        utility += meld.Cards.Select(x => x.Score).Sum(); // It is good to prioritise getting high scoring cards out of your hand
 
         return utility;
     }
 
-    private double EvaluateDiscardUtility(Card card, IEnumerable<Meld> melds, List<NearMeld> nearMelds) {
+    private double EvaluateNearMeldUtility(NearMeld meld) {
+        if (meld.ContainsValidMeld()) return EvaluateMeldUtility(meld.AsMeld());
+
+        double utility = 0;
+        utility += meld.Cards.Count * 5;
+        utility += meld.PotentialCards().Select(x => 5 * GetCardAccessibility(x)).Sum();
+        utility -= meld.Cards.Select(x => x.Score).Sum() * 0.5; // It is good to prioritise not holding on to high scoring cards
+
+        return utility;
+    }
+
+    private double EvaluateDiscardUtility(Card card) {
+        if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
         double utility = 0;
         utility -= card.Score;
-        utility -= melds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
-
-        // TK - factor in near melds
-        //nearMelds.Where(x => x.);
+        // TK - factor in potential layoffs?
+        utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
+        utility -= _nearMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateNearMeldUtility).Sum();
         return utility;
     }
 
     public override Task TakeTurn() {
+        (_potentialMelds, _nearMelds) = FindPotentialMelds();
+
         // Default to drawing from deck
         (IDrawable Pile, int Index) drawSelection = (Round.Deck, 0);
 
@@ -85,6 +186,8 @@ public partial class IntelligentPlayer : ComputerPlayer
             var singleDraws = drawUtilities.Where(x => x.CardInfo.Info.CardsTaken.Count() == 1);
             var multiDraws = drawUtilities.Where(x => x.CardInfo.Info.CardsTaken.Count() > 1).OrderBy(x => x.Utility);
 
+            Think($"Draw utilities:\n{drawUtilities.OrderBy(x => x.Utility).Select(x => $" - {x.CardInfo.Card}({x.CardInfo.Info.CardsTaken.ToJoinedString(Delimiter.ZeroWidth)}): {x.Utility}").ToJoinedString(Delimiter.LineBreak)}");
+
             // Select highest utility card if its utility exceeds threshold
             if (singleDraws.Any(x => x.Utility >= GetDrawUtilityThreshold()))
                 drawSelection = (Round.DiscardPile, singleDraws.Single().CardInfo.Index);
@@ -95,29 +198,35 @@ public partial class IntelligentPlayer : ComputerPlayer
         // Draw selected card
         var (drawnCards, cannotDiscard, mustUse) = Draw(drawSelection.Pile, drawSelection.Index);
 
+        var drawnCardInfo = usableDrawDownCards.FirstOrDefault(x => x.Card == drawnCards.Last()).Info;
+
         // If rummying
-        if (Melds.Count == 0 && PotentialMoves.FindRummyConfiguration(Hand.Cards, this, Round) is PotentialMoves.RummyConfiguration rummyConfiguration) {
+        if (Melds.Count == 0 && drawnCardInfo.RummyConfig is not null) {
             Say("Rummying!");
-            foreach (var meld in rummyConfiguration.Melds) Meld(meld);
-            foreach (var layoff in rummyConfiguration.Layoffs) LayOff(layoff.Card, layoff.Meld);
-            if (rummyConfiguration.Discard is Card cardToDiscard) Discard(cardToDiscard);
+            foreach (var meld in drawnCardInfo.RummyConfig.Melds) Meld(meld);
+            foreach (var layoff in drawnCardInfo.RummyConfig.Layoffs) LayOff(layoff.Card, layoff.Meld);
+            if (drawnCardInfo.RummyConfig.Discard is Card cardToDiscard) Discard(cardToDiscard);
         }
         // If not rummying
         else {
-            var (potentialMelds, nearMelds) = FindPotentialMelds(); var potentialLayOffs = FindPotentialLayOffs();
+            (_potentialMelds, _nearMelds) = FindPotentialMelds(); var potentialLayOffs = FindPotentialLayOffs();
             // If can meld
-            if (potentialMelds.Any()) {
+            if (_potentialMelds.Any()) {
                 bool mustMeld = mustUse is not null && (!potentialLayOffs.Any(x => x.Key == mustUse) || Melds.None());
-                
+
                 // Valid melds to select from if not rummying (all potential melds, constrained to those containing the bottomost picked up card if you picked up multiple)
                 var validMelds = mustUse is Card mustUseCard && !potentialLayOffs.Any(x => x.Key == mustUse) ?
-                    potentialMelds.Where(x => x.Cards.Contains(mustUseCard)) : potentialMelds;
+                    _potentialMelds.Where(x => x.Cards.Contains(mustUseCard)) : _potentialMelds;
 
                 if (validMelds.Any()) {
+                    double meldUtilityThreshold = GetMeldUtilityThreshold(Melds.Count == 0);
                     // Select highest utility meld
-                    var selectedMeld = validMelds.Select(x => new { Meld = x, Utility = EvaluateMeldUtility(x) }).OrderBy(x => x.Utility).Last();
+                    var meldUtilities = validMelds.Select(x => new { Meld = x, Utility = EvaluateMeldUtility(x) });
+                    var selectedMeld = meldUtilities.OrderBy(x => x.Utility).Last();
 
-                    if (mustMeld || selectedMeld.Utility >= GetMeldUtilityThreshold(Melds.Count == 0))
+                    Think($"Meld utilities (threshold = {meldUtilityThreshold}):\n{meldUtilities.OrderBy(x => x.Utility).Select(x => $" - {x.Meld}: {x.Utility}").ToJoinedString(Delimiter.LineBreak)}");
+
+                    if (mustMeld || selectedMeld.Utility >= meldUtilityThreshold)
                         Meld(selectedMeld.Meld);
                 }
             }
@@ -125,25 +234,33 @@ public partial class IntelligentPlayer : ComputerPlayer
             // If can lay off
             if (Melds.Any()) {
                 // Update potential melds based on cards left in hand
-                (potentialMelds, nearMelds) = FindPotentialMelds();
+                (_potentialMelds, _nearMelds) = FindPotentialMelds();
 
+                double layoffUtilityThreshold = GetLayoffUtilityThreshold();
                 foreach (var (card, melds) in potentialLayOffs) {
                     // Find highest utility place card can be laid off
-                    var highestUtilityLayoff = melds.Select(meld => new { Meld = meld, Utility = EvaluateLayoffUtility(card, meld, potentialMelds, nearMelds) }).OrderBy(x => x.Utility).Last();
+                    var layoffUtilities = melds.Select(meld => new { Meld = meld, Utility = EvaluateLayoffUtility(card, meld) });
+                    var highestUtilityLayoff = layoffUtilities.OrderBy(x => x.Utility).Last();
+
+                    Think($"Layoff utilities for ${card} (threshold = {layoffUtilityThreshold}):\n{layoffUtilities.Select(x => $" - {x.Meld}: {x.Utility}").ToJoinedString(Delimiter.LineBreak)}");
+
                     // Only lay off if its greater than the threshold
-                    if (highestUtilityLayoff.Utility >= GetLayoffUtilityThreshold()) LayOff(card, highestUtilityLayoff.Meld);
+                    if (highestUtilityLayoff.Utility >= layoffUtilityThreshold) LayOff(card, highestUtilityLayoff.Meld);
                 }
             }
 
             // Discard a card if able
             if (Hand.Cards.Any()) {
                 // Update potential melds based on cards left in hand
-                (potentialMelds, nearMelds) = FindPotentialMelds();
+                (_potentialMelds, _nearMelds) = FindPotentialMelds();
 
                 // The cannot discard rule does not apply to the final card in your hand
                 var validCardsToDiscard = Hand.Cards.Count > 1 ? Hand.Cards.Where(x => x != cannotDiscard) : Hand.Cards;
                 // Select highest utility discard
-                var selectedCard = validCardsToDiscard.Select(x => new { Card = x, Utility = EvaluateDiscardUtility(x, potentialMelds, nearMelds) }).OrderBy(x => x.Utility).Last();
+                var discardUtilities = validCardsToDiscard.Select(x => new { Card = x, Utility = EvaluateDiscardUtility(x) });
+                Think($"Discard utilities:\n{discardUtilities.OrderBy(x => x.Utility).Select(x => $" - {x.Card}: {x.Utility}").ToJoinedString(Delimiter.LineBreak)}");
+
+                var selectedCard = discardUtilities.OrderBy(x => x.Utility).Last();
                 Discard(selectedCard.Card);
             }
         }

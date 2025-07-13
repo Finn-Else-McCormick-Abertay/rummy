@@ -19,7 +19,7 @@ public abstract class NearMeld
     }
 
     public abstract NearMeld With(IEnumerable<Card> cards);
-    public NearMeld With(Card card) => With(new List<Card>{ card });
+    public NearMeld With(Card card) => With([card]);
 
     // Not always exhaustive - at least contains any cards required to become valid, and cards adjacent to edges
     public abstract List<Card> PotentialCards();

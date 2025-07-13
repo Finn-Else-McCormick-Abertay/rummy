@@ -12,7 +12,7 @@ action = &"toggle_config"
 [sub_resource type="Shortcut" id="Shortcut_rwlyh"]
 events = [SubResource("InputEventAction_4sfry")]
 
-[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton", "_saveButton", "_loadButton")]
+[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton", "_saveButton", "_loadButton", "_openSaveFolderButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -29,6 +29,7 @@ _closeButton = NodePath("PanelContainer/VBoxContainer/Title Line/Close Button")
 _addButton = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer/Add Player")
 _saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Save")
 _loadButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Load")
+_openSaveFolderButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/OpenFolder")
 Shortcut = SubResource("Shortcut_rwlyh")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
@@ -67,6 +68,10 @@ text = "Save"
 layout_mode = 2
 text = "Load
 "
+
+[node name="OpenFolder" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+layout_mode = 2
+text = "Open Save Folder"
 
 [node name="Title Label" type="Label" parent="PanelContainer/VBoxContainer/Title Line"]
 layout_mode = 1

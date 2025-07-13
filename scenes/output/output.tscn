@@ -111,8 +111,10 @@ text = "Game"
 
 [node name="TogglePlayer" type="CheckButton" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer"]
 layout_mode = 2
+button_pressed = true
 text = "Player"
 
 [node name="ToggleThought" type="CheckButton" parent="HSplitContainer/VBoxContainer/Control Panel/HBoxContainer/DropdownButton/PanelContainer/HBoxContainer"]
 layout_mode = 2
+button_pressed = true
 text = "Thought"

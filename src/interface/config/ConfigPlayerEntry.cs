@@ -1,5 +1,6 @@
 using Godot;
 using Rummy.AI;
+using Rummy.Config;
 using Rummy.Game;
 using Rummy.Util;
 using System;
@@ -48,8 +49,8 @@ public partial class ConfigPlayerEntry : Control
             => _propertiesBox.Call("add_bool", name, val ?? Player.Get(name));
         void AddInt(StringName name, int? val = null, int? min = null, int? max = null)
             => _propertiesBox.Call("add_int", name, val ?? Player.Get(name), min ?? int.MinValue, max ?? int.MaxValue);
-        void AddFloat(StringName name, double? val = null)
-            => _propertiesBox.Call("add_float", name, val ?? Player.Get(name).AsDouble());
+        void AddFloat(StringName name, double? val = null, double step = 0.01, double min = -99999900000.0, double max = 99999900000.0)
+            => _propertiesBox.Call("add_float", name, val ?? Player.Get(name), min, max, step);
         void AddString(StringName name, string val = null)
             => _propertiesBox.Call("add_string", name, val ?? Player.Get(name));
 
@@ -59,20 +60,57 @@ public partial class ConfigPlayerEntry : Control
         _propertiesBox.Call("add_options", "Type", new Godot.Collections.Array(PlayerTypes.Select(x => Variant.From(x.Name))), PlayerTypes.IndexOf(Player.GetType()), false);
         AddString(Player.PropertyName.Name);
 
+        string openExportGroup = null;
+
         var exportedMembers = Player.GetType().GetMembers(
                 BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.GetProperty
             )
             .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field)
             .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(ExportAttribute)));
         foreach (var memberInfo in exportedMembers) {
+            if (memberInfo.GetCustomAttribute<ExportGroupAttribute>() is ExportGroupAttribute exportGroup) {
+                if (openExportGroup is not null) _propertiesBox.Call("end_group");
+                openExportGroup = exportGroup.Name;
+                _propertiesBox.Call("add_group", exportGroup.Name);
+            }
+
+            var descriptionAttribute = memberInfo.GetCustomAttribute<ExportDescriptionAttribute>();
+            string customType = descriptionAttribute?.Type;
+
             var name = memberInfo.Name;
             var type = memberInfo switch { PropertyInfo prop => prop.PropertyType, FieldInfo field => field.FieldType, _ => null };
             if (type == typeof(bool)) AddBool(name);
             else if (type == typeof(int)) AddInt(name);
-            else if (type == typeof(double) || type == typeof(float))
-                if (name.EndsWith("Chance")) AddInt(name, (int)Math.Floor(Player.Get(name).AsDouble() * 100), 0, 100);
-                else AddFloat(name);
+            else if (type == typeof(double) || type == typeof(float)) {
+                if (customType == "Percentage" || name.EndsWith("Chance")) AddInt(name, (int)Math.Floor(Player.Get(name).AsDouble() * 100), 0, 100);
+                else if (customType == "PercentageFloat") AddFloat(name, step: 0.01, min: 0, max: 1);
+                else AddFloat(name, step: 1);
+            }
             else if (type == typeof(string)) AddString(name);
+        }
+
+        if (openExportGroup is not null) _propertiesBox.Call("end_group");
+        
+        var keys = _propertiesBox.Get("_keys").AsGodotDictionary();
+        var editors = _propertiesBox.Get("_editors").AsGodotArray();
+
+        foreach (var memberInfo in exportedMembers) {
+            if (memberInfo.GetCustomAttribute<ExportDescriptionAttribute>() is ExportDescriptionAttribute descriptionAttribute) {
+                if (keys.TryGetValue(Variant.From(new StringName(memberInfo.Name)), out var key)) {
+                    var editor = editors[key.AsInt32()].As<Control>();
+                    if (editor is null) continue;
+
+                    var box = editor.GetParent() as Control;
+                    var label = box.FindChildOfType<Label>();
+
+                    if (descriptionAttribute.Tooltip is not null) {
+                        box.TooltipText = descriptionAttribute.Tooltip;
+                        editor.TooltipText = descriptionAttribute.Tooltip;
+                        if (label.IsValid()) label.TooltipText = descriptionAttribute.Tooltip;
+                    }
+                    if (descriptionAttribute.DisplayName is not null && label.IsValid()) { label.Text = descriptionAttribute.DisplayName; }
+                }
+            }
         }
 
         _settingsPopup.ChildControlsChanged();
