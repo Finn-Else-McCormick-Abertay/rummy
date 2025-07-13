@@ -145,7 +145,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
     private double EvaluateMeldUtility(Meld meld) {
         double utility = 0;
 
-        utility += meld.Count * 5;
+        utility += meld.Count * 3;
         utility += meld.Cards.Select(x => x.Score).Sum(); // It is good to prioritise getting high scoring cards out of your hand
 
         return utility;
