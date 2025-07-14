@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b46rodg0e8sr4"
-path="res://.godot/imported/gear.svg-93be883cf4d0d93a20a2e08ee9435e7e.ctex"
+uid="uid://8wyt5gjadj8r"
+path="res://.godot/imported/x-circle-fill.svg-94e5a23dc08a5a6c3e6e193af26ad5f4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/gear.svg"
-dest_files=["res://.godot/imported/gear.svg-93be883cf4d0d93a20a2e08ee9435e7e.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/close/x-circle-fill.svg"
+dest_files=["res://.godot/imported/x-circle-fill.svg-94e5a23dc08a5a6c3e6e193af26ad5f4.ctex"]
 
 [params]
 

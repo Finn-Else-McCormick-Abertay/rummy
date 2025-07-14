@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://drxgtavjahyrk"
-path="res://.godot/imported/dice-6.svg-df37de6293b83a462255f7ffc0657f46.ctex"
+uid="uid://dco6umqfx3lnu"
+path="res://.godot/imported/save.svg-c43c5bcd506997641c880b09138a6a55.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/dice-6.svg"
-dest_files=["res://.godot/imported/dice-6.svg-df37de6293b83a462255f7ffc0657f46.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/save load/save.svg"
+dest_files=["res://.godot/imported/save.svg-c43c5bcd506997641c880b09138a6a55.ctex"]
 
 [params]
 

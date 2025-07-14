@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://brc4hua1yised"
-path="res://.godot/imported/robot.svg-709ae1d8a29d2427f540eaf1f5f6815f.ctex"
+uid="uid://ofdsd1mvtafu"
+path="res://.godot/imported/floppy.svg-b0a755062fde36706e19a42b86b081b7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/robot.svg"
-dest_files=["res://.godot/imported/robot.svg-709ae1d8a29d2427f540eaf1f5f6815f.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/save load/floppy.svg"
+dest_files=["res://.godot/imported/floppy.svg-b0a755062fde36706e19a42b86b081b7.ctex"]
 
 [params]
 

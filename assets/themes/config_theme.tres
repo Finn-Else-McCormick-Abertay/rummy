@@ -1,6 +1,8 @@
-[gd_resource type="Theme" load_steps=22 format=3 uid="uid://b4piyrd7gcxax"]
+[gd_resource type="Theme" load_steps=28 format=3 uid="uid://b4piyrd7gcxax"]
 
 [ext_resource type="FontFile" uid="uid://xe7ygkm76sx4" path="res://assets/fonts/FiraSans/FiraSans-Regular.ttf" id="1_7y3rl"]
+[ext_resource type="FontFile" uid="uid://b2phyroi2ay3e" path="res://assets/fonts/FiraSans/FiraSans-Bold.ttf" id="1_62qw8"]
+[ext_resource type="FontFile" uid="uid://6pxh6xsqdi2q" path="res://assets/fonts/FiraMono/FiraMono-Regular.otf" id="4_64b15"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oy1yr"]
 content_margin_left = 30.0
@@ -130,6 +132,22 @@ shadow_color = Color(0, 0, 0, 0.458824)
 shadow_size = 8
 shadow_offset = Vector2(0, 7)
 
+[sub_resource type="FontVariation" id="FontVariation_nyad7"]
+base_font = ExtResource("1_62qw8")
+baseline_offset = 0.08
+
+[sub_resource type="FontVariation" id="FontVariation_t2cbu"]
+base_font = ExtResource("1_62qw8")
+baseline_offset = 0.08
+
+[sub_resource type="FontVariation" id="FontVariation_fj635"]
+base_font = ExtResource("1_7y3rl")
+baseline_offset = 0.08
+
+[sub_resource type="FontVariation" id="FontVariation_twulf"]
+base_font = ExtResource("1_7y3rl")
+baseline_offset = 0.08
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ck8ba"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_t2cbu"]
@@ -171,6 +189,11 @@ MarginContainer/constants/margin_right = 50
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_vecn5")
 PropertiesBox/base_type = &"VBoxContainer"
 PropertiesBox/constants/separation = 5
+RichTextLabel/fonts/bold_font = SubResource("FontVariation_nyad7")
+RichTextLabel/fonts/bold_italics_font = SubResource("FontVariation_t2cbu")
+RichTextLabel/fonts/italics_font = SubResource("FontVariation_fj635")
+RichTextLabel/fonts/mono_font = ExtResource("4_64b15")
+RichTextLabel/fonts/normal_font = SubResource("FontVariation_twulf")
 SidebarButton/base_type = &"Button"
 SidebarButton/constants/icon_max_width = 25
 SidebarButton/styles/disabled = SubResource("StyleBoxEmpty_ck8ba")

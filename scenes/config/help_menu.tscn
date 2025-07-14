@@ -1,0 +1,129 @@
+[gd_scene load_steps=19 format=3 uid="uid://cwffgmsvnxpsj"]
+
+[ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_qthk5"]
+[ext_resource type="Script" uid="uid://k1pd2hbo0135" path="res://src/interface/config/HelpMenu.cs" id="1_rfu4o"]
+[ext_resource type="PackedScene" uid="uid://dew56jlamg2of" path="res://scenes/config/title_line.tscn" id="3_yd11q"]
+[ext_resource type="Script" uid="uid://dbap0gqox0ty1" path="res://addons/markdownlabel/markdownlabel.gd" id="4_416vn"]
+[ext_resource type="Script" uid="uid://dcx7crs23nf4" path="res://addons/markdownlabel/header_formats/h1_format.gd" id="5_l6471"]
+[ext_resource type="Script" uid="uid://d0sin64i4v3op" path="res://addons/markdownlabel/header_formats/h2_format.gd" id="6_f57rq"]
+[ext_resource type="Script" uid="uid://dlok0dv1tq2bf" path="res://addons/markdownlabel/header_formats/h3_format.gd" id="7_ebnq3"]
+[ext_resource type="Script" uid="uid://bayuh2vafablg" path="res://addons/markdownlabel/header_formats/h4_format.gd" id="8_ms1e0"]
+[ext_resource type="Script" uid="uid://dfr1w7u3jgni3" path="res://addons/markdownlabel/header_formats/h5_format.gd" id="9_rsxhh"]
+[ext_resource type="Script" uid="uid://bsi6dexoofpe6" path="res://addons/markdownlabel/header_formats/h6_format.gd" id="10_h5ylo"]
+
+[sub_resource type="InputEventAction" id="InputEventAction_rfu4o"]
+action = &"toggle_help"
+
+[sub_resource type="Shortcut" id="Shortcut_qthk5"]
+events = [SubResource("InputEventAction_rfu4o")]
+
+[sub_resource type="Resource" id="Resource_leyjb"]
+resource_local_to_scene = true
+script = ExtResource("5_l6471")
+font_size = 1.3
+is_bold = true
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Resource" id="Resource_7xyd5"]
+resource_local_to_scene = true
+script = ExtResource("6_f57rq")
+font_size = 1.714
+is_bold = false
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Resource" id="Resource_ieqt4"]
+resource_local_to_scene = true
+script = ExtResource("7_ebnq3")
+font_size = 1.428
+is_bold = false
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Resource" id="Resource_an3vu"]
+resource_local_to_scene = true
+script = ExtResource("8_ms1e0")
+font_size = 1.142
+is_bold = false
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Resource" id="Resource_m03gq"]
+resource_local_to_scene = true
+script = ExtResource("9_rsxhh")
+font_size = 1.0
+is_bold = false
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[sub_resource type="Resource" id="Resource_p2131"]
+resource_local_to_scene = true
+script = ExtResource("10_h5ylo")
+font_size = 0.857
+is_bold = false
+is_italic = false
+is_underlined = false
+override_font_color = false
+font_color = Color(1, 1, 1, 1)
+
+[node name="HelpMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_qthk5")
+script = ExtResource("1_rfu4o")
+Shortcut = SubResource("Shortcut_qthk5")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BackgroundPanel"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title Line" parent="PanelContainer/VBoxContainer" instance=ExtResource("3_yd11q")]
+layout_mode = 2
+Title = "Help"
+
+[node name="Rummy Help Text" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+bbcode_enabled = true
+text = "[font_size=20][b]Rummy 300 Rules[/b][/font_size]
+TK
+
+[font_size=20][b]Game Configuration[/b][/font_size]
+TK"
+fit_content = true
+script = ExtResource("4_416vn")
+markdown_text = "# Rummy 300 Rules
+TK
+
+# Game Configuration
+TK"
+h1 = SubResource("Resource_leyjb")
+h2 = SubResource("Resource_7xyd5")
+h3 = SubResource("Resource_ieqt4")
+h4 = SubResource("Resource_an3vu")
+h5 = SubResource("Resource_m03gq")
+h6 = SubResource("Resource_p2131")
+metadata/_custom_type_script = "uid://dbap0gqox0ty1"

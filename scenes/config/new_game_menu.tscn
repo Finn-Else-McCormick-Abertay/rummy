@@ -1,10 +1,17 @@
-[gd_scene load_steps=8 format=3 uid="uid://jvan2pjoxdds"]
+[gd_scene load_steps=15 format=3 uid="uid://jvan2pjoxdds"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_1v4le"]
 [ext_resource type="Script" uid="uid://3t1n8gl6uvfi" path="res://src/interface/config/NewGameMenu.cs" id="2_4sfry"]
 [ext_resource type="PackedScene" uid="uid://b5yg62ng6utc8" path="res://scenes/config/config_player_entry.tscn" id="2_183ut"]
-[ext_resource type="Texture2D" uid="uid://bbyvwnxsfst3f" path="res://assets/textures/ui/bootstrap icons/x.svg" id="4_rwlyh"]
+[ext_resource type="PackedScene" uid="uid://dew56jlamg2of" path="res://scenes/config/title_line.tscn" id="4_01qph"]
 [ext_resource type="Script" uid="uid://8r4roip85by8" path="res://addons/tnowe_extra_controls/elements/interpolated_container/interpolated_box_container.gd" id="5_01qph"]
+[ext_resource type="Texture2D" uid="uid://ofdsd1mvtafu" path="res://assets/textures/ui/bootstrap icons/save load/floppy.svg" id="5_eoalf"]
+[ext_resource type="Texture2D" uid="uid://cb3yth8ovfh8c" path="res://assets/textures/ui/bootstrap icons/save load/floppy-fill.svg" id="6_e0mdd"]
+[ext_resource type="Texture2D" uid="uid://dco6umqfx3lnu" path="res://assets/textures/ui/bootstrap icons/save load/save.svg" id="7_jnpsa"]
+[ext_resource type="Texture2D" uid="uid://2g2gcyl0x1be" path="res://assets/textures/ui/bootstrap icons/save load/save-fill.svg" id="8_5qhly"]
+[ext_resource type="Texture2D" uid="uid://b6qoyu1eetl4o" path="res://assets/textures/ui/bootstrap icons/folder/folder.svg" id="9_tgsd7"]
+[ext_resource type="Texture2D" uid="uid://c5p05w33k8cpc" path="res://assets/textures/ui/bootstrap icons/folder/folder-fill.svg" id="10_ept02"]
+[ext_resource type="Texture2D" uid="uid://dmt50iqlr71w0" path="res://assets/textures/ui/bootstrap icons/add/person-add.svg" id="12_ept02"]
 
 [sub_resource type="InputEventAction" id="InputEventAction_4sfry"]
 action = &"toggle_config"
@@ -12,7 +19,7 @@ action = &"toggle_config"
 [sub_resource type="Shortcut" id="Shortcut_rwlyh"]
 events = [SubResource("InputEventAction_4sfry")]
 
-[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_closeButton", "_addButton", "_saveButton", "_loadButton", "_openSaveFolderButton")]
+[node name="NewGameMenu" type="Control" node_paths=PackedStringArray("_playerEntryRoot", "_playButton", "_simulateButton", "_addButton", "_saveButton", "_loadButton", "_openSaveFolderButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,11 +32,10 @@ _playerEntryRoot = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContai
 _playerEntryScene = ExtResource("2_183ut")
 _playButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer/Play")
 _simulateButton = NodePath("PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer2/Simulate")
-_closeButton = NodePath("PanelContainer/VBoxContainer/Title Line/Close Button")
 _addButton = NodePath("PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer/Add Player")
-_saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Save")
-_loadButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/Load")
-_openSaveFolderButton = NodePath("PanelContainer/VBoxContainer/Title Line/HBoxContainer/OpenFolder")
+_saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/Save")
+_loadButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/Load")
+_openSaveFolderButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/OpenFolder")
 Shortcut = SubResource("Shortcut_rwlyh")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
@@ -45,10 +51,11 @@ theme_type_variation = &"BackgroundPanel"
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Title Line" type="Control" parent="PanelContainer/VBoxContainer"]
+[node name="Title Line" parent="PanelContainer/VBoxContainer" instance=ExtResource("4_01qph")]
 layout_mode = 2
+Title = "Game Manager"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Title Line"]
+[node name="Save Buttons" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Title Line"]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -60,47 +67,38 @@ offset_bottom = 5.0
 grow_vertical = 2
 theme_override_constants/separation = 5
 
-[node name="Save" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+[node name="Save" type="TextureButton" parent="PanelContainer/VBoxContainer/Title Line/Save Buttons"]
+custom_minimum_size = Vector2(25, 0)
 layout_mode = 2
-text = "Save"
+tooltip_text = "Save"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("5_eoalf")
+texture_pressed = ExtResource("6_e0mdd")
+texture_hover = ExtResource("6_e0mdd")
+ignore_texture_size = true
+stretch_mode = 4
 
-[node name="Load" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+[node name="Load" type="TextureButton" parent="PanelContainer/VBoxContainer/Title Line/Save Buttons"]
+custom_minimum_size = Vector2(25, 0)
 layout_mode = 2
-text = "Load
-"
+tooltip_text = "Load"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("7_jnpsa")
+texture_pressed = ExtResource("8_5qhly")
+texture_hover = ExtResource("8_5qhly")
+ignore_texture_size = true
+stretch_mode = 4
 
-[node name="OpenFolder" type="Button" parent="PanelContainer/VBoxContainer/Title Line/HBoxContainer"]
+[node name="OpenFolder" type="TextureButton" parent="PanelContainer/VBoxContainer/Title Line/Save Buttons"]
+custom_minimum_size = Vector2(25, 0)
 layout_mode = 2
-text = "Open Save Folder"
-
-[node name="Title Label" type="Label" parent="PanelContainer/VBoxContainer/Title Line"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -71.5
-offset_top = -19.3333
-offset_right = 71.5
-grow_horizontal = 2
-grow_vertical = 0
-theme_type_variation = &"Title"
-text = "Game Configuration"
-
-[node name="Close Button" type="Button" parent="PanelContainer/VBoxContainer/Title Line"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -20.0
-offset_top = -19.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_type_variation = &"IconButton"
-icon = ExtResource("4_rwlyh")
+tooltip_text = "Open Save Folder"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("9_tgsd7")
+texture_pressed = ExtResource("10_ept02")
+texture_hover = ExtResource("10_ept02")
+ignore_texture_size = true
+stretch_mode = 4
 
 [node name="MainContent" type="VBoxContainer" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
@@ -133,7 +131,9 @@ layout_mode = 2
 
 [node name="Add Player" type="Button" parent="PanelContainer/VBoxContainer/MainContent/VBoxContainer/CenterContainer"]
 layout_mode = 2
+mouse_default_cursor_shape = 2
 text = "Add Player"
+icon = ExtResource("12_ept02")
 
 [node name="Button Section" type="HBoxContainer" parent="PanelContainer/VBoxContainer/MainContent"]
 custom_minimum_size = Vector2(0, 50)
@@ -148,6 +148,7 @@ size_flags_horizontal = 3
 [node name="Play" type="Button" parent="PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
 text = "Play"
 
 [node name="MarginContainer2" type="MarginContainer" parent="PanelContainer/VBoxContainer/MainContent/Button Section"]
@@ -157,4 +158,5 @@ size_flags_horizontal = 3
 [node name="Simulate" type="Button" parent="PanelContainer/VBoxContainer/MainContent/Button Section/MarginContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_default_cursor_shape = 2
 text = "Simulate"

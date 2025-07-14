@@ -1,10 +1,14 @@
-[gd_scene load_steps=7 format=3 uid="uid://b5yg62ng6utc8"]
+[gd_scene load_steps=11 format=3 uid="uid://b5yg62ng6utc8"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_avt07"]
 [ext_resource type="Script" uid="uid://diqdhivnm0uif" path="res://src/interface/config/ConfigPlayerEntry.cs" id="2_1ruu6"]
 [ext_resource type="Resource" uid="uid://crh5xbfs41itm" path="res://assets/player_icons.tres" id="3_nupas"]
-[ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/person.svg" id="5_ex6li"]
+[ext_resource type="Texture2D" uid="uid://c1sygtf8kdo0d" path="res://assets/textures/ui/bootstrap icons/player/person.svg" id="5_ex6li"]
 [ext_resource type="Script" uid="uid://b4bqh681u6nvp" path="res://addons/tnowe_extra_controls/elements/properties_box.gd" id="5_hekbt"]
+[ext_resource type="Texture2D" uid="uid://bbyvwnxsfst3f" path="res://assets/textures/ui/bootstrap icons/close/x.svg" id="5_v8ock"]
+[ext_resource type="Texture2D" uid="uid://b46rodg0e8sr4" path="res://assets/textures/ui/bootstrap icons/gear/gear.svg" id="5_ybw2p"]
+[ext_resource type="Texture2D" uid="uid://cklk3r57pjjaj" path="res://assets/textures/ui/bootstrap icons/gear/gear-fill.svg" id="6_i4ogp"]
+[ext_resource type="Texture2D" uid="uid://8wyt5gjadj8r" path="res://assets/textures/ui/bootstrap icons/close/x-circle-fill.svg" id="6_lgg0m"]
 
 [sub_resource type="Theme" id="Theme_hekbt"]
 VBoxContainer/constants/separation = 5
@@ -15,6 +19,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_default_cursor_shape = 2
 theme = ExtResource("1_avt07")
 script = ExtResource("2_1ruu6")
 _iconResource = ExtResource("3_nupas")
@@ -33,6 +38,7 @@ theme_override_constants/separation = 8
 
 [node name="Icon" type="TextureRect" parent="LabelContainer"]
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("5_ex6li")
 expand_mode = 2
 stretch_mode = 5
@@ -47,16 +53,30 @@ layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 2
 
-[node name="Configure" type="Button" parent="ButtonsContainer"]
+[node name="Configure" type="TextureButton" parent="ButtonsContainer"]
+custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 size_flags_vertical = 4
-text = "Configure"
+tooltip_text = "Configure"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("5_ybw2p")
+texture_pressed = ExtResource("6_i4ogp")
+texture_hover = ExtResource("6_i4ogp")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="Delete" type="Button" parent="ButtonsContainer"]
+[node name="Delete" type="TextureButton" parent="ButtonsContainer"]
+custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
-text = "Delete"
+tooltip_text = "Delete"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("5_v8ock")
+texture_pressed = ExtResource("6_lgg0m")
+texture_hover = ExtResource("6_lgg0m")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="SettingsPopup" type="Popup" parent="."]
 transparent_bg = true

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c1sygtf8kdo0d"
-path="res://.godot/imported/person.svg-d9007457c007cc8f9039e7192aa3cc9e.ctex"
+uid="uid://cb3yth8ovfh8c"
+path="res://.godot/imported/floppy-fill.svg-716b6631b1953723be543d1a5689b7e1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/ui/bootstrap icons/person.svg"
-dest_files=["res://.godot/imported/person.svg-d9007457c007cc8f9039e7192aa3cc9e.ctex"]
+source_file="res://assets/textures/ui/bootstrap icons/save load/floppy-fill.svg"
+dest_files=["res://.godot/imported/floppy-fill.svg-716b6631b1953723be543d1a5689b7e1.ctex"]
 
 [params]
 

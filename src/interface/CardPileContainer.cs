@@ -64,6 +64,8 @@ public partial class CardPileContainer : Container
                 display.Size = display.Size with { X = CardSize };
                 display.FaceDown = FaceDown;
 
+                display.TooltipText = FaceDown ? $"{CardPile.Count} cards" : $"{display.Card}";
+
                 var positionOverriden = PreChildSorted(display);
                 if (!positionOverriden) {
                     float cardPos = startPos + display.GetIndex() * sizeAlongAxisPerCard;// + (!CardsOverlap ? CardSeparation : 0f);

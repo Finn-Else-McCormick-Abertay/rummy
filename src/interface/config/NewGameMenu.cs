@@ -17,7 +17,6 @@ public partial class NewGameMenu : ConfigMenu
     [ExportGroup("Buttons")]
     [Export] private BaseButton _playButton;
     [Export] private BaseButton _simulateButton;
-    [Export] private BaseButton _closeButton;
     [Export] private BaseButton _addButton;
     [Export] private BaseButton _saveButton;
     [Export] private BaseButton _loadButton;
@@ -26,7 +25,6 @@ public partial class NewGameMenu : ConfigMenu
     public override void _Ready() {
         _playButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.BeginNewRound));
         _simulateButton?.Connect(BaseButton.SignalName.Pressed, () => AcceptAction(GameManager.SimulateRoundWithoutDisplay, false));
-        _closeButton?.Connect(BaseButton.SignalName.Pressed, () => EmitSignal(ConfigMenu.SignalName.CloseRequested));
         _addButton?.Connect(BaseButton.SignalName.Pressed, AddPlayer);
 
         _playerEntryRoot.Connect("order_changed", OnReordered);
@@ -53,6 +51,7 @@ public partial class NewGameMenu : ConfigMenu
 
         var players = GameManager.Players.OrderBy(x => playerEntries[x].GetIndex());
         GameManager.Players = [.. players];
+        UpdatePlayButtons();
     }
 
     protected override void Rebuild() {

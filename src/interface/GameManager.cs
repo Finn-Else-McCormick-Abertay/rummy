@@ -116,21 +116,23 @@ public partial class GameManager : Node
         FailureMessage.Hide();
 
         if (players.Any(player => player is UserPlayer)) {
-            FailureMessage.DisplayMessage("Cannot simulate game containing UserPlayer.");
-            return;
+            FailureMessage.DisplayMessage("Cannot simulate game containing UserPlayer."); return;
         }
 
         Round = new Round(players) { Output = Output };
+        foreach (var player in Players) FindPlayerHandDisplay(player).FaceDown = true;
 
         var task = Round.Simulate();
         task.Wait();
+        Deck.CardPile = Round.Deck; DiscardPile.CardPile = Round.DiscardPile;
+        RebuildMelds(); foreach (var player in Players) FindPlayerHandDisplay(player).FaceDown = false;
         var result = task.Result;
         result.InspectErr(err => {
             Output.WriteLine(err.Message, "error");
             Output.WriteLine(err.TurnHistory.ToJoinedString("\n"), "error");
             FailureMessage.DisplayMessage(err.Message);
         });
-        result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " by rummying" : "")}, scoring {x.Win.Score}"))
+        result.AndThen(x => Ok($"{x.Win.Winner.Name} wins{(x.Win.WasRummy ? " with a rummy" : "")}, scoring {x.Win.Score}"))
             .Inspect(msg => {
                 Output?.WriteLine(msg, "game");
                 FailureMessage.DisplayMessage(msg);
@@ -146,6 +148,7 @@ public partial class GameManager : Node
         if (Engine.IsEditorHint()) return;
 
         Round = new Round(players) { Output = Output };
+        foreach (var player in Players) FindPlayerHandDisplay(player).FaceDown = true;
         Deck.CardPile = Round.Deck; DiscardPile.CardPile = Round.DiscardPile;
         FailureMessage.Hide();
 
@@ -183,13 +186,14 @@ public partial class GameManager : Node
         };
         Round.NotifyTurnReset += () => OnReachTurnBoundary(Round.CurrentPlayer);
 
-        NextTurnButton.Pressed += () => {
+        NextTurnButton.TryConnect(BaseButton.SignalName.Pressed, () => {
             NextTurnButton.Visible = false;
             Round.BeginTurn().Wait();
             Round.EndTurn();
-        };
+        });
 
         Round.NotifyGameEnded += (winner, score, isRummy) => {
+            foreach (var player in Players) FindPlayerHandDisplay(player).FaceDown = false;
             FailureMessage.Message = $"{Round.Winner.Name} wins round{(isRummy ? " with a rummy" : "")}, scoring {score}.";
             Output?.WriteLine(FailureMessage.Message, "game");
             FailureMessage.UseButton = false; FailureMessage.Show();

@@ -23,8 +23,8 @@ public partial class ConfigPlayerEntry : Control
     [ExportGroup("Nodes")]
     [Export] private Label _label;
     [Export] private TextureRect _icon;
-    [Export] private Button _configureButton;
-    [Export] private Button _deleteButton;
+    [Export] private BaseButton _configureButton;
+    [Export] private BaseButton _deleteButton;
     [Export] private Popup _settingsPopup;
     [Export] private Control _propertiesBox;
 
@@ -39,6 +39,7 @@ public partial class ConfigPlayerEntry : Control
     private void RebuildLabel() {
         _label.Text = Player?.Name ?? "Invalid Player";
         _icon.Texture = _iconResource?.IconFor(Player);
+        _icon.TooltipText = Player?.GetType().Name; // Doesn't work for some reason?
     }
 
     private void Rebuild() {

@@ -38,6 +38,11 @@ static class NodeExtensions
     /// <param name="action">Action to be run. Takes parameter of node type, to which the node in question will be passed.</param>
     public static void OnReady<TNode>(this TNode self, Action<TNode> action) where TNode : Node => self.OnReady(Callable.From(() => action?.Invoke(self)));
 
+    public static void IfValid<TNode>(this TNode self, Action<TNode> action) where TNode : Node { if (self.IsValid()) action(self); }
+    public static TResult IfValid<TNode, TResult>(this TNode self, Func<TNode, TResult> func) where TNode : Node => self.IsValid() ? func(self) : default;
+    public static void IfValid<TNode>(this TNode self, Action action) where TNode : Node { if (self.IsValid()) action(); }
+    public static TResult IfValid<TNode, TResult>(this TNode self, Func<TResult> func) where TNode : Node => self.IsValid() ? func() : default;
+
     /// <summary>
     /// <para>Add child which is owned by the current scene (or the parent if used at runtime).</para>
     /// <para>If node already has parent and <paramref name="force"/> is <see langword="true"/>, node will first be removed from parent.</para>

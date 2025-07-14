@@ -166,7 +166,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
         if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
         double utility = 0;
         utility += card.Score * 0.2;
-        if (_potentialLayoffs.ContainsKey(card)) utility -= _potentialLayoffs[card].Count() * 5;
+        if (_potentialLayoffs.TryGetValue(card, out var layoffs)) utility -= layoffs.Count * 40;
         utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
         utility -= _nearMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateNearMeldUtility).Sum();
         return utility;
