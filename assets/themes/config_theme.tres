@@ -1,7 +1,9 @@
-[gd_resource type="Theme" load_steps=28 format=3 uid="uid://b4piyrd7gcxax"]
+[gd_resource type="Theme" load_steps=35 format=3 uid="uid://b4piyrd7gcxax"]
 
 [ext_resource type="FontFile" uid="uid://xe7ygkm76sx4" path="res://assets/fonts/FiraSans/FiraSans-Regular.ttf" id="1_7y3rl"]
 [ext_resource type="FontFile" uid="uid://b2phyroi2ay3e" path="res://assets/fonts/FiraSans/FiraSans-Bold.ttf" id="1_62qw8"]
+[ext_resource type="FontFile" uid="uid://t6s324mrl537" path="res://assets/fonts/FiraSans/FiraSans-BoldItalic.ttf" id="2_1gelm"]
+[ext_resource type="FontFile" uid="uid://cx4q10gv46cdy" path="res://assets/fonts/FiraSans/FiraSans-Italic.ttf" id="2_62qw8"]
 [ext_resource type="FontFile" uid="uid://6pxh6xsqdi2q" path="res://assets/fonts/FiraMono/FiraMono-Regular.otf" id="4_64b15"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oy1yr"]
@@ -136,12 +138,12 @@ shadow_offset = Vector2(0, 7)
 base_font = ExtResource("1_62qw8")
 baseline_offset = 0.08
 
-[sub_resource type="FontVariation" id="FontVariation_t2cbu"]
-base_font = ExtResource("1_62qw8")
+[sub_resource type="FontVariation" id="FontVariation_64b15"]
+base_font = ExtResource("2_1gelm")
 baseline_offset = 0.08
 
-[sub_resource type="FontVariation" id="FontVariation_fj635"]
-base_font = ExtResource("1_7y3rl")
+[sub_resource type="FontVariation" id="FontVariation_1gelm"]
+base_font = ExtResource("2_62qw8")
 baseline_offset = 0.08
 
 [sub_resource type="FontVariation" id="FontVariation_twulf"]
@@ -160,6 +162,16 @@ content_margin_left = 5.0
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7y3rl"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_64b15"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_i3wca"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vs11u"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2m1i6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_5g2pe"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pxjdp"]
 
 [sub_resource type="FontVariation" id="FontVariation_ck8ba"]
 base_font = ExtResource("1_7y3rl")
@@ -190,8 +202,8 @@ PanelContainer/styles/panel = SubResource("StyleBoxFlat_vecn5")
 PropertiesBox/base_type = &"VBoxContainer"
 PropertiesBox/constants/separation = 5
 RichTextLabel/fonts/bold_font = SubResource("FontVariation_nyad7")
-RichTextLabel/fonts/bold_italics_font = SubResource("FontVariation_t2cbu")
-RichTextLabel/fonts/italics_font = SubResource("FontVariation_fj635")
+RichTextLabel/fonts/bold_italics_font = SubResource("FontVariation_64b15")
+RichTextLabel/fonts/italics_font = SubResource("FontVariation_1gelm")
 RichTextLabel/fonts/mono_font = ExtResource("4_64b15")
 RichTextLabel/fonts/normal_font = SubResource("FontVariation_twulf")
 SidebarButton/base_type = &"Button"
@@ -202,4 +214,10 @@ SidebarButton/styles/hover = SubResource("StyleBoxEmpty_62qw8")
 SidebarButton/styles/hover_pressed = SubResource("StyleBoxEmpty_1gelm")
 SidebarButton/styles/normal = SubResource("StyleBoxEmpty_7y3rl")
 SidebarButton/styles/pressed = SubResource("StyleBoxEmpty_64b15")
+TabBar/styles/tab_disabled = SubResource("StyleBoxEmpty_i3wca")
+TabBar/styles/tab_hovered = SubResource("StyleBoxEmpty_vs11u")
+TabBar/styles/tab_selected = SubResource("StyleBoxEmpty_2m1i6")
+TabBar/styles/tab_unselected = SubResource("StyleBoxEmpty_5g2pe")
+TabContainer/constants/side_margin = 0
+TabContainer/styles/panel = SubResource("StyleBoxEmpty_pxjdp")
 VBoxContainer/constants/separation = 30

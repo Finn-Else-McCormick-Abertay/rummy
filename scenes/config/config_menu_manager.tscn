@@ -79,8 +79,8 @@ SidebarButton = NodePath("../../Sidebar/Config")
 
 [node name="HelpMenu" parent="Menu Root" node_paths=PackedStringArray("SidebarButton") instance=ExtResource("5_triw0")]
 layout_mode = 1
-offset_left = 234.0
-offset_top = 126.0
-offset_right = -234.0
-offset_bottom = -126.0
+offset_left = 48.0
+offset_top = 47.0
+offset_right = -48.0
+offset_bottom = -47.0
 SidebarButton = NodePath("../../Sidebar/Help")

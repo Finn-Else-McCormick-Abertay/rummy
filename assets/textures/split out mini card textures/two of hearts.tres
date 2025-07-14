@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://dw63kpwgyq3js"]
+
+[ext_resource type="Texture2D" uid="uid://ds80sejh4bc46" path="res://assets/textures/PlayingCard icons.png" id="1_o0sli"]
+
+[resource]
+atlas = ExtResource("1_o0sli")
+region = Rect2(262, 371, 91, 59)

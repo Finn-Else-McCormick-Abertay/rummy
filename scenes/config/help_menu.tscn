@@ -20,7 +20,7 @@ events = [SubResource("InputEventAction_rfu4o")]
 [sub_resource type="Resource" id="Resource_leyjb"]
 resource_local_to_scene = true
 script = ExtResource("5_l6471")
-font_size = 1.3
+font_size = 1.5
 is_bold = true
 is_italic = false
 is_underlined = false
@@ -30,9 +30,9 @@ font_color = Color(1, 1, 1, 1)
 [sub_resource type="Resource" id="Resource_7xyd5"]
 resource_local_to_scene = true
 script = ExtResource("6_f57rq")
-font_size = 1.714
-is_bold = false
-is_italic = false
+font_size = 1.15
+is_bold = true
+is_italic = true
 is_underlined = false
 override_font_color = false
 font_color = Color(1, 1, 1, 1)
@@ -97,29 +97,94 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_type_variation = &"BackgroundPanel"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+[node name="Control" type="Control" parent="PanelContainer"]
 layout_mode = 2
-theme_override_constants/separation = 18
+mouse_filter = 2
 
-[node name="Title Line" parent="PanelContainer/VBoxContainer" instance=ExtResource("3_yd11q")]
-layout_mode = 2
-Title = "Help"
+[node name="TabContainer" type="TabContainer" parent="PanelContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -23.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+current_tab = 0
 
-[node name="Rummy Help Text" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+[node name="Rummy 300 Rules" type="ScrollContainer" parent="PanelContainer/Control/TabContainer"]
 layout_mode = 2
+size_flags_vertical = 3
+metadata/_tab_index = 0
+
+[node name="Rummy Help Text" type="RichTextLabel" parent="PanelContainer/Control/TabContainer/Rummy 300 Rules"]
+layout_mode = 2
+size_flags_horizontal = 3
 bbcode_enabled = true
-text = "[font_size=20][b]Rummy 300 Rules[/b][/font_size]
-TK
+text = "
+[b]Rummy 300[/b] is a card game played over a number of rounds. The goal is to be the first player to reach 300 points.
 
-[font_size=20][b]Game Configuration[/b][/font_size]
-TK"
+Each round begins with each player being dealt a set number of cards (10 with two players, 8 with three or 7 with four).
+The remaining cards are placed face-down to form the [i]deck[/i], and the top card is turned over to begin the face-up [i]discard pile[/i].
+
+At the beginning of each player's turn, they must draw from either the deck or the discard pile. You may only pick up a single card from the deck, but may pick up any number of cards from the discard pile; if you pick up multiple cards from the discard pile, you must immediately use the bottommost picked up card.
+
+During your turn, you may place down [i]melds[/i], or lay off cards onto existing melds.
+Laying off is adding a connected card to an existing placed-down meld. You may only lay off once you have melded at least once.
+If you are able to lay off, you may lay off any number of times during your turn.
+In this interface, you lay off by dragging the card from your hand to the meld.
+
+[font_size=18][b][i]Melds[/i][/b][/font_size]
+Melds are groups of cards which you can place down, removing them from your hand. The first player to end a turn with no cards left wins the round. 
+There are two types of melds: [b]Runs[/b] and [b]Sets[/b].
+[b]Sets[/b] are groupings of three or more cards of any [i]suit[/i] with the same [i]rank[/i]. Eg: [img height=20]res://assets/textures/split out mini card textures/three of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of spades.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of clubs.tres[/img]
+[b]Runs[/b] are groupings of three or more cards of the same [i]suit[/i] and consecutive [i]rank[/i]. Eg: [img height=20]res://assets/textures/split out mini card textures/two of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/four of hearts.tres[/img]
+Aces are low for the purpose of runs.
+
+You may only meld once per turn unless you are [i]rummying[/i].
+
+[font_size=18][b][i]Rummying[/i][/b][/font_size]
+Rummying is getting rid of all your cards in one go. While rummying, you may meld multiple times in the same turn. You may only rummy if you have not melded previously in the round, and you will have no cards left at the end of the turn (either by using all your cards or discarding your last card). When you win by rummying, the score you get is doubled.
+
+[font_size=18][b][i]Discarding[/i][/b][/font_size]
+The turn ends when you discard a card, which goes to the top of the discard pile. If you picked up from the discard pile, you may not discard the topmost picked up card on the same turn unless it is the last card remaining in your hand.
+
+[font_size=18][b][i]Score[/i][/b][/font_size]
+When a player goes out, the scores of all the cards remaining in all other player's hands are totalled, and this is added to the winner's score. If they won by rummying, this is doubled.
+Numbered cards are worth their number's worth of points, Aces are worth 1 and face cards are worth 10."
 fit_content = true
 script = ExtResource("4_416vn")
-markdown_text = "# Rummy 300 Rules
-TK
+markdown_text = "
+**Rummy 300** is a card game played over a number of rounds. The goal is to be the first player to reach 300 points.
 
-# Game Configuration
-TK"
+Each round begins with each player being dealt a set number of cards (10 with two players, 8 with three or 7 with four).
+The remaining cards are placed face-down to form the *deck*, and the top card is turned over to begin the face-up *discard pile*.
+
+At the beginning of each player's turn, they must draw from either the deck or the discard pile. You may only pick up a single card from the deck, but may pick up any number of cards from the discard pile; if you pick up multiple cards from the discard pile, you must immediately use the bottommost picked up card.
+
+During your turn, you may place down *melds*, or lay off cards onto existing melds.
+Laying off is adding a connected card to an existing placed-down meld. You may only lay off once you have melded at least once.
+If you are able to lay off, you may lay off any number of times during your turn.
+In this interface, you lay off by dragging the card from your hand to the meld.
+
+## Melds
+Melds are groups of cards which you can place down, removing them from your hand. The first player to end a turn with no cards left wins the round. 
+There are two types of melds: **Runs** and **Sets**.
+**Sets** are groupings of three or more cards of any *suit* with the same *rank*. Eg: [img height=20]res://assets/textures/split out mini card textures/three of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of spades.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of clubs.tres[/img]
+**Runs** are groupings of three or more cards of the same *suit* and consecutive *rank*. Eg: [img height=20]res://assets/textures/split out mini card textures/two of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/three of hearts.tres[/img][img height=20]res://assets/textures/split out mini card textures/four of hearts.tres[/img]
+Aces are low for the purpose of runs.
+
+You may only meld once per turn unless you are *rummying*.
+
+## Rummying
+Rummying is getting rid of all your cards in one go. While rummying, you may meld multiple times in the same turn. You may only rummy if you have not melded previously in the round, and you will have no cards left at the end of the turn (either by using all your cards or discarding your last card). When you win by rummying, the score you get is doubled.
+
+## Discarding
+The turn ends when you discard a card, which goes to the top of the discard pile. If you picked up from the discard pile, you may not discard the topmost picked up card on the same turn unless it is the last card remaining in your hand.
+
+## Score
+When a player goes out, the scores of all the cards remaining in all other player's hands are totalled, and this is added to the winner's score. If they won by rummying, this is doubled.
+Numbered cards are worth their number's worth of points, Aces are worth 1 and face cards are worth 10."
 h1 = SubResource("Resource_leyjb")
 h2 = SubResource("Resource_7xyd5")
 h3 = SubResource("Resource_ieqt4")
@@ -127,3 +192,71 @@ h4 = SubResource("Resource_an3vu")
 h5 = SubResource("Resource_m03gq")
 h6 = SubResource("Resource_p2131")
 metadata/_custom_type_script = "uid://dbap0gqox0ty1"
+
+[node name="Game Configuration" type="ScrollContainer" parent="PanelContainer/Control/TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Game Config Help" type="RichTextLabel" parent="PanelContainer/Control/TabContainer/Game Configuration"]
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+text = "
+[font_size=24][b]Player Configuration[/b][/font_size]
+Open the config menu with the gear icon in the top left corner.
+In the config menu, drag players up and down in the list to change their order.
+Press the gear icon to change the player's name and type, as well as any options that player type has.
+Press the 'add player' button at the end of the list to add a new player. Press the 'X' on a player to delete them.
+
+You can manually save and load player configurations with the buttons at the top of the config menu.
+When the application is closed, your configuration will be automatically saved, and loaded the next time the application starts.
+
+[font_size=24][b]Shortcuts[/b][/font_size]
+You can open the config screen with [i]Escape[/i].
+
+You can open the help screen with [i]H[/i].
+
+You can open the console with [i]Ctrl + Tab[/i].
+At the bottom of the console there are toggles for different 'layers' - Game, Player and Thought.
+ - 'Game' is game output re-which turn it is etc.
+ - 'Player' is public player output.
+ - 'Thought' is secret player output, displaying calculated utility values etc."
+fit_content = true
+script = ExtResource("4_416vn")
+markdown_text = "
+# Player Configuration
+Open the config menu with the gear icon in the top left corner.
+In the config menu, drag players up and down in the list to change their order.
+Press the gear icon to change the player's name and type, as well as any options that player type has.
+Press the 'add player' button at the end of the list to add a new player. Press the 'X' on a player to delete them.
+
+You can manually save and load player configurations with the buttons at the top of the config menu.
+When the application is closed, your configuration will be automatically saved, and loaded the next time the application starts.
+
+# Shortcuts
+You can open the config screen with *Escape*.
+
+You can open the help screen with *H*.
+
+You can open the console with *Ctrl + Tab*.
+At the bottom of the console there are toggles for different 'layers' - Game, Player and Thought.
+ - 'Game' is game output re-which turn it is etc.
+ - 'Player' is public player output.
+ - 'Thought' is secret player output, displaying calculated utility values etc."
+h1 = SubResource("Resource_leyjb")
+h2 = SubResource("Resource_7xyd5")
+h3 = SubResource("Resource_ieqt4")
+h4 = SubResource("Resource_an3vu")
+h5 = SubResource("Resource_m03gq")
+h6 = SubResource("Resource_p2131")
+metadata/_custom_type_script = "uid://dbap0gqox0ty1"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 18
+
+[node name="Title Line" parent="PanelContainer/VBoxContainer" instance=ExtResource("3_yd11q")]
+layout_mode = 2
+Title = "Help"

@@ -75,6 +75,8 @@ public partial class RandomPlayer : ComputerPlayer
 
             // If can lay off
             if (Melds.Any()) {
+                // Update potential layoffs based on cards left in hand
+                potentialLayOffs = FindPotentialLayOffs();
                 foreach (var (card, melds) in potentialLayOffs) {
                     // Decide on whether to take layoff (selecting meld randomly from those possible)
                     if (random.Roll(TakeLayOffChance)) LayOff(card, random.From(melds));
