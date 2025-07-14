@@ -22,7 +22,9 @@ public partial class CardPileContainer : Container
     [Export] public int CardSeparation { get; set { field = value; QueueSort(); } } = 10;
     [Export] public bool CardsOverlap { get; set { field = value; QueueSort(); } } = true;
     [Export] public CardSizingReactionEnum CardSizingReaction { get; set { field = value; QueueSort(); } } = CardSizingReactionEnum.None;
-    
+
+    [Export] public bool ShowTooltip { get; set { field = value; QueueSort(); } } = false;
+
     [ExportGroup("Debug")]
     [Export] protected int NumCardsInEditor { get; set { field = value; if (Engine.IsEditorHint()) Rebuild(); } } = 3;
     
@@ -64,7 +66,7 @@ public partial class CardPileContainer : Container
                 display.Size = display.Size with { X = CardSize };
                 display.FaceDown = FaceDown;
 
-                display.TooltipText = FaceDown ? $"{CardPile.Count} cards" : $"{display.Card}";
+                if (ShowTooltip) display.TooltipText = FaceDown ? $"{CardPile.Count} cards" : $"{display.Card}";
 
                 var positionOverriden = PreChildSorted(display);
                 if (!positionOverriden) {

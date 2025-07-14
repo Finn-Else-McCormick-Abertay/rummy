@@ -12,4 +12,5 @@ size_flags_horizontal = 3
 script = ExtResource("1_60wra")
 FaceDown = true
 CardSize = 30.0
+ShowTooltip = true
 NumCardsInEditor = 7
