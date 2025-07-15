@@ -1,0 +1,90 @@
+[gd_scene load_steps=10 format=3 uid="uid://bvuxhqltm8lyf"]
+
+[ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_fb7n5"]
+[ext_resource type="Script" uid="uid://bsox58ghb42bf" path="res://src/interface/config/ScoreboardMenu.cs" id="1_rmwhu"]
+[ext_resource type="PackedScene" uid="uid://dew56jlamg2of" path="res://scenes/config/title_line.tscn" id="3_upnrg"]
+[ext_resource type="Texture2D" uid="uid://ofdsd1mvtafu" path="res://assets/textures/ui/bootstrap icons/save load/floppy.svg" id="4_b2jga"]
+[ext_resource type="Texture2D" uid="uid://cb3yth8ovfh8c" path="res://assets/textures/ui/bootstrap icons/save load/floppy-fill.svg" id="5_gh20p"]
+[ext_resource type="Texture2D" uid="uid://b6qoyu1eetl4o" path="res://assets/textures/ui/bootstrap icons/folder/folder.svg" id="6_4ldh6"]
+[ext_resource type="Texture2D" uid="uid://c5p05w33k8cpc" path="res://assets/textures/ui/bootstrap icons/folder/folder-fill.svg" id="7_bdx26"]
+
+[sub_resource type="InputEventAction" id="InputEventAction_fb7n5"]
+action = &"toggle_scoreboard"
+
+[sub_resource type="Shortcut" id="Shortcut_upnrg"]
+events = [SubResource("InputEventAction_fb7n5")]
+
+[node name="ScoreboardMenu" type="Control" node_paths=PackedStringArray("_saveButton", "_openSaveFolderButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_fb7n5")
+script = ExtResource("1_rmwhu")
+_saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/Save")
+_openSaveFolderButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/OpenFolder")
+Shortcut = SubResource("Shortcut_upnrg")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"BackgroundPanel"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 18
+
+[node name="Title Line" parent="PanelContainer/VBoxContainer" instance=ExtResource("3_upnrg")]
+layout_mode = 2
+Title = "Scoreboard"
+
+[node name="Save Buttons" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Title Line"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -1.0
+offset_top = -21.0
+offset_right = 357.0
+offset_bottom = 5.0
+grow_vertical = 2
+theme_override_constants/separation = 5
+
+[node name="Save" type="TextureButton" parent="PanelContainer/VBoxContainer/Title Line/Save Buttons"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+tooltip_text = "Save Log"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("4_b2jga")
+texture_pressed = ExtResource("5_gh20p")
+texture_hover = ExtResource("5_gh20p")
+ignore_texture_size = true
+stretch_mode = 4
+
+[node name="OpenFolder" type="TextureButton" parent="PanelContainer/VBoxContainer/Title Line/Save Buttons"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+tooltip_text = "Open Log Folder"
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("6_4ldh6")
+texture_pressed = ExtResource("7_bdx26")
+texture_hover = ExtResource("7_bdx26")
+ignore_texture_size = true
+stretch_mode = 4
+
+[node name="Columns" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/Columns"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/VBoxContainer/Columns/VBoxContainer"]
+layout_mode = 2
+text = "Scoreboard display unfinished"

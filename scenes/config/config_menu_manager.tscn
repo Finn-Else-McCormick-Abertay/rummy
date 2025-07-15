@@ -1,13 +1,16 @@
-[gd_scene load_steps=9 format=3 uid="uid://bvuw2usvtrt00"]
+[gd_scene load_steps=12 format=3 uid="uid://bvuw2usvtrt00"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_72yf6"]
 [ext_resource type="Script" uid="uid://qbu3glevqlj8" path="res://src/interface/config/ConfigMenuManager.cs" id="1_yjol5"]
 [ext_resource type="PackedScene" uid="uid://jvan2pjoxdds" path="res://scenes/config/new_game_menu.tscn" id="2_72yf6"]
 [ext_resource type="Texture2D" uid="uid://cklk3r57pjjaj" path="res://assets/textures/ui/bootstrap icons/gear/gear-fill.svg" id="4_iylcj"]
+[ext_resource type="Texture2D" uid="uid://cm18npxmadupc" path="res://assets/textures/ui/bootstrap icons/scoreboard/bar-chart.svg" id="5_2dk6r"]
 [ext_resource type="Texture2D" uid="uid://b46rodg0e8sr4" path="res://assets/textures/ui/bootstrap icons/gear/gear.svg" id="5_tksvr"]
 [ext_resource type="PackedScene" uid="uid://cwffgmsvnxpsj" path="res://scenes/config/help_menu.tscn" id="5_triw0"]
 [ext_resource type="Texture2D" uid="uid://beqjar2gt3mjb" path="res://assets/textures/ui/bootstrap icons/help/question-circle.svg" id="6_1rwkg"]
+[ext_resource type="Texture2D" uid="uid://croyfe6hf0so2" path="res://assets/textures/ui/bootstrap icons/scoreboard/bar-chart-fill.svg" id="6_nykre"]
 [ext_resource type="Texture2D" uid="uid://cyvchehm8m8di" path="res://assets/textures/ui/bootstrap icons/help/question-circle-fill.svg" id="7_tycq0"]
+[ext_resource type="PackedScene" uid="uid://bvuxhqltm8lyf" path="res://scenes/config/scoreboard_menu.tscn" id="9_1rwkg"]
 
 [node name="ConfigMenuManager" type="Control" node_paths=PackedStringArray("_mouseBlocker")]
 z_index = 150
@@ -51,6 +54,15 @@ texture_hover = ExtResource("4_iylcj")
 ignore_texture_size = true
 stretch_mode = 5
 
+[node name="Scoreboard" type="TextureButton" parent="Sidebar"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 2
+texture_normal = ExtResource("5_2dk6r")
+texture_pressed = ExtResource("6_nykre")
+texture_hover = ExtResource("6_nykre")
+ignore_texture_size = true
+stretch_mode = 4
+
 [node name="Help" type="TextureButton" parent="Sidebar"]
 custom_minimum_size = Vector2(0, 25)
 layout_mode = 2
@@ -84,3 +96,11 @@ offset_top = 47.0
 offset_right = -48.0
 offset_bottom = -47.0
 SidebarButton = NodePath("../../Sidebar/Help")
+
+[node name="ScoreboardMenu" parent="Menu Root" node_paths=PackedStringArray("SidebarButton") instance=ExtResource("9_1rwkg")]
+layout_mode = 1
+offset_left = 48.0
+offset_top = 49.0
+offset_right = -48.0
+offset_bottom = -48.0
+SidebarButton = NodePath("../../Sidebar/Scoreboard")

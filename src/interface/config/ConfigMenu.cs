@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Rummy.Util;
 
@@ -36,5 +39,60 @@ public partial class ConfigMenu : Control
             });
         });
         _configMenuInitialised = true;
+    }
+
+
+    protected void TextEnterDialog(string actionName, Action<string> onSubmit, IEnumerable<string> options = null) {
+        var dialog = new AcceptDialog();
+        dialog.Title = actionName;
+        dialog.OkButtonText = actionName;
+        dialog.AddCancelButton("Cancel");
+
+        // Line edit (can enter anything)
+        if (options is null) {
+            var lineEdit = new LineEdit();
+            dialog.AddChild(lineEdit);
+            dialog.RegisterTextEnter(lineEdit);
+
+            dialog.Confirmed += () => onSubmit(lineEdit.Text);
+        }
+        // Option button (can only enter one of the options)
+        else {
+            var optionButton = new OptionButton();
+            foreach (var (index, option) in options.Index()) optionButton.AddItem(option, index);
+            dialog.AddChild(optionButton);
+
+            dialog.Confirmed += () => onSubmit(options.ElementAtOrDefault(optionButton.Selected));
+        }
+
+        AddChild(dialog);
+        dialog.PopupCentered();
+        dialog.Show();
+    }
+    
+    
+    protected void Confirm(Action onConfirm, string title = null, string message = null, string acceptText = null) {
+        var confirmationDialog = new ConfirmationDialog();
+        confirmationDialog.Confirmed += onConfirm;
+
+        if (title is not null) confirmationDialog.Title = title;
+        if (message is not null) confirmationDialog.DialogText = message;
+        if (acceptText is not null) confirmationDialog.OkButtonText = acceptText;
+
+        AddChild(confirmationDialog);
+        confirmationDialog.PopupCentered();
+        confirmationDialog.Show();
+    }
+
+    protected void Message(string title = null, string message = null, string acceptText = null) {
+        var dialog = new AcceptDialog();
+
+        if (title is not null) dialog.Title = title;
+        if (message is not null) dialog.DialogText = message;
+        if (acceptText is not null) dialog.OkButtonText = acceptText;
+
+        AddChild(dialog);
+        dialog.PopupCentered();
+        dialog.Show();
     }
 }

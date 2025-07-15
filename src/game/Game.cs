@@ -42,7 +42,7 @@ public partial class Game : GodotObject
         int roundIndex = _roundHistory.Count;
 
         _roundHistory.Add(newRound);
-        _roundAdditionalInfo[newRound] = new RoundInfo(index: roundIndex, dealer: _currentDealerIndex);
+        _roundAdditionalInfo[newRound] = new RoundInfo(index: roundIndex, dealer: _players.ElementAtOrDefault(_currentDealerIndex));
         newRound.NotifyRoundEnded += (winner, score, wasRummy) => {
             var roundInfo = _roundAdditionalInfo[newRound];
             roundInfo.WinnerScoreGain = score; roundInfo.EndedInRummy = wasRummy;
@@ -102,19 +102,59 @@ public partial class Game : GodotObject
 
     public void SetPlayers(IEnumerable<Player> players) { ClearPlayers(); foreach (var player in players) AddPlayer(player); }
     public void ClearPlayers() { foreach (var player in _players) { RemovePlayer(player); } }
-    
+
     private void OnPlayerSay(object obj, string message) => Output?.WriteLine(message, obj as Player, "say");
     private void OnPlayerThink(object obj, string message) => Output?.WriteLine(message, obj as Player, "think");
 
     // History tracking
-    private struct RoundInfo(int index, int dealer)
+    private class RoundInfo(int index, Player dealer)
     {
-        public readonly int Index = index; public readonly int Dealer = dealer;
+        public readonly int Index = index; public readonly Player Dealer = dealer;
         public int? WinnerScoreGain { get; set; } = null; public bool? EndedInRummy { get; set; } = null;
-        public Dictionary<Player, int> ScoresAtRoundEnd;
+        public Dictionary<Player, int> ScoresAtRoundEnd { get; set; }
     }
 
     private readonly List<Round> _roundHistory = [];
     private readonly Dictionary<Round, RoundInfo> _roundAdditionalInfo = [];
     private readonly Dictionary<Player, List<(int Round, bool Added, int Index)>> _playerOrderHistory = [];
+
+    public Godot.Collections.Dictionary Serialize() => Serialize(this);
+    public static Godot.Collections.Dictionary Serialize(Game game) {
+        Godot.Collections.Dictionary data = [];
+
+        data["Players"] = GdArray.From(game._players.Select(Player.Serialize));
+
+        data["Rounds"] = GdArray.From(game._roundHistory.Select(round => {
+            var info = game._roundAdditionalInfo[round];
+            Godot.Collections.Dictionary roundData = [];
+
+            roundData["Dealer"] = info.Dealer.Name;
+
+            roundData["Winner"] = round.Winner.Name;
+            roundData["Ended in Rummy"] = info.EndedInRummy ?? false;
+
+            roundData["Turns"] = GdArray.From(round.TurnHistory.Select((turn, index) => {
+                Godot.Collections.Dictionary turnData = [];
+                turnData["Index"] = index;
+                turnData["Player"] = turn.Player.Name;
+
+                var drawnCards = turn.DrawnCards.Select(x => x.IsSome ? x.Unwrap().ToString() : "Deck");
+
+                if (drawnCards.Count() == 1) turnData["Draw"] = drawnCards.Single();
+                else turnData["Draw"] = GdArray.From(drawnCards);
+
+                turnData["Melds"] = GdArray.From(turn.Melds.Select(meld =>  GdArray.From(meld.Cards.Select(x => x.ToString()))));
+                turnData["Layoffs"] = GdArray.From(turn.LaidOffCards.Select(x => x.ToString()));
+
+                turnData["Discard"] = turn.DiscardedCard.IsSome ? turn.DiscardedCard.Unwrap().ToString() : "";
+
+                return turnData;
+            }));
+
+            roundData["Scores"] = GdDict.From(info.ScoresAtRoundEnd?.Select(x => KeyValuePair.Create(x.Key.Name, x.Value)).ToDictionary());
+            return roundData;
+        }));
+
+        return data;
+    }
 }

@@ -117,9 +117,11 @@ public partial class Round : GodotObject
 			return builder.ToString();
 		}
 	}
+	private readonly List<TurnRecord> _turnRecords = [];
+	public ReadOnlyCollection<TurnRecord> TurnHistory => _turnRecords.AsReadOnly();
 
 	// These events are mainly for the frontend, and fire exactly when it happens
-	public event Action<Player>								NotifyTurnBegan;
+	public event Action<Player> NotifyTurnBegan;
 	public event Action<Player, Result<TurnRecord, string>> NotifyTurnEnded;
 	public event Action 									NotifyTurnReset;
 	public event Action<Player, int, bool> 					NotifyRoundEnded;
@@ -310,6 +312,7 @@ public partial class Round : GodotObject
 		Output?.WriteLine("-----------", "game");
 
 		var turnRecordResult = turnData.AsTurnRecord();
+		turnRecordResult.Inspect(_turnRecords.Add);
 		NotifyTurnEnded?.Invoke(CurrentPlayer, turnRecordResult);
 		if (turnRecordResult.IsErr) return Err(turnRecordResult.Error);
 

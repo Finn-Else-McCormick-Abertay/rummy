@@ -215,6 +215,8 @@ When the application is closed, your configuration will be automatically saved, 
 [font_size=24][b]Shortcuts[/b][/font_size]
 You can open the config screen with [i]Escape[/i].
 
+You can open the scoreboard with [i]S[/i].
+
 You can open the help screen with [i]H[/i].
 
 You can open the console with [i]Ctrl + Tab[/i].
@@ -236,6 +238,8 @@ When the application is closed, your configuration will be automatically saved, 
 
 # Shortcuts
 You can open the config screen with *Escape*.
+
+You can open the scoreboard with *S*.
 
 You can open the help screen with *H*.
 

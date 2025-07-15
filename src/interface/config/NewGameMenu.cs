@@ -11,6 +11,9 @@ namespace Rummy.Interface;
 
 public partial class NewGameMenu : ConfigMenu
 {
+    private static readonly string RestoreLoadoutPath = "user://restore_loadout.json";
+    private static readonly string LoadoutFolderPath = "user://loadouts/";
+
     [Export] private Control _playerEntryRoot;
     [Export] private PackedScene _playerEntryScene;
 
@@ -32,17 +35,17 @@ public partial class NewGameMenu : ConfigMenu
         _saveButton?.Connect(BaseButton.SignalName.Pressed, OpenSaveDialog);
         _loadButton?.Connect(BaseButton.SignalName.Pressed, OpenLoadDialog);
 
-        _openSaveFolderButton?.Connect(BaseButton.SignalName.Pressed, () => OS.ShellShowInFileManager(ProjectSettings.GlobalizePath("user://loadouts/")));
+        _openSaveFolderButton?.Connect(BaseButton.SignalName.Pressed, () => OS.ShellShowInFileManager(ProjectSettings.GlobalizePath(LoadoutFolderPath)));
 
         UpdatePlayButtons();
         RestoreLoadout();
     }
 
     public override void _Notification(int what) {
-        if (what == NotificationPredelete) Save("user://restore_loadout.json");
+        if (what == NotificationPredelete) Save(RestoreLoadoutPath);
     }
 
-    public void RestoreLoadout() => Load("user://restore_loadout.json");
+    public void RestoreLoadout() => Load(RestoreLoadoutPath);
 
     protected override void OnGameManagerChanged() => RestoreLoadout();
 
@@ -107,30 +110,6 @@ public partial class NewGameMenu : ConfigMenu
         if (GameManager.Game.InRound) Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current round."); else OnAccept();
     }
 
-    private void Confirm(Action onConfirm, string title = null, string message = null, string acceptText = null) {
-        var confirmationDialog = new ConfirmationDialog();
-        confirmationDialog.Confirmed += onConfirm;
-
-        if (title is not null) confirmationDialog.Title = title;
-        if (message is not null) confirmationDialog.DialogText = message;
-        if (acceptText is not null) confirmationDialog.OkButtonText = acceptText;
-
-        AddChild(confirmationDialog);
-        confirmationDialog.PopupCentered();
-        confirmationDialog.Show();
-    }
-    private void Message(string title = null, string message = null, string acceptText = null) {
-        var dialog = new AcceptDialog();
-
-        if (title is not null) dialog.Title = title;
-        if (message is not null) dialog.DialogText = message;
-        if (acceptText is not null) dialog.OkButtonText = acceptText;
-
-        AddChild(dialog);
-        dialog.PopupCentered();
-        dialog.Show();
-    }
-
     private void AddPlayer() {
         UserPlayer newPlayer = new() { Name = nameof(UserPlayer) };
         GameManager.Game.AddPlayer(newPlayer);
@@ -139,39 +118,11 @@ public partial class NewGameMenu : ConfigMenu
         playerEntries[newPlayer].OnReordered();
     }
 
-    private void TextEnterDialog(string actionName, Action<string> onSubmit, IEnumerable<string> options = null) {
-        var dialog = new AcceptDialog();
-        dialog.Title = actionName;
-        dialog.OkButtonText = actionName;
-        dialog.AddCancelButton("Cancel");
-
-        // Line edit (can enter anything)
-        if (options is null) {
-            var lineEdit = new LineEdit();
-            dialog.AddChild(lineEdit);
-            dialog.RegisterTextEnter(lineEdit);
-
-            dialog.Confirmed += () => onSubmit(lineEdit.Text);
-        }
-        // Option button (can only enter one of the options)
-        else {
-            var optionButton = new OptionButton();
-            foreach (var (index, option) in options.Index()) optionButton.AddItem(option, index);
-            dialog.AddChild(optionButton);
-            
-            dialog.Confirmed += () => onSubmit(options.ElementAtOrDefault(optionButton.Selected));
-        }
-
-        AddChild(dialog);
-        dialog.PopupCentered();
-        dialog.Show();
-    }
-
     private void OpenSaveDialog() => TextEnterDialog("Save", TrySave);
     private void OpenLoadDialog() => TextEnterDialog("Load", TryLoad,
-        DirAccess.Open("user://loadouts").GetFiles().Select(x => x.TrimPrefix("user://loadouts/").TrimSuffix(".json")));
+        DirAccess.Open(LoadoutFolderPath).GetFiles().Select(x => x.TrimPrefix(LoadoutFolderPath).TrimSuffix(".json")));
 
-    private static string IdentifierToSavePath(string identifier) => $"user://loadouts/{identifier.Trim()}.json";
+    private static string IdentifierToSavePath(string identifier) => $"{LoadoutFolderPath}{identifier.Trim()}.json";
 
     private void TrySave(string identifier) {
         if (string.IsNullOrWhiteSpace(identifier)) Message(title: "Could not save.", message: "No save name provided.");
@@ -189,27 +140,14 @@ public partial class NewGameMenu : ConfigMenu
         if (GameManager is null) return;
 
         var userDir = DirAccess.Open("user://");
-        if (!userDir.DirExists("loadouts")) userDir.MakeDir("loadouts");
+        string loadoutFolderName = LoadoutFolderPath.TrimPrefix("user://").TrimSuffix("/");
+        if (!userDir.DirExists(loadoutFolderName)) userDir.MakeDir(loadoutFolderName);
 
         var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Write);
         if (file is null || !file.IsOpen()) return;
 
-        Godot.Collections.Array playerDataArray = [];
-
-        foreach (var player in GameManager.Game.Players) {
-            Godot.Collections.Dictionary playerData = [];
-
-            playerData["Type"] = player.GetType().Name;
-
-            var exportedMembers =
-                player.GetType().GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.GetProperty)
-                    .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field)
-                    .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(ExportAttribute)));
-
-            foreach (var memberInfo in exportedMembers) playerData[memberInfo.Name] = player.Get(memberInfo.Name);
-
-            playerDataArray.Add(playerData);
-        }
+        // Serialize players
+        Godot.Collections.Array playerDataArray = [..GameManager.Game.Players.Select(Player.Serialize)];
         
         Godot.Collections.Dictionary fullData = [];
         fullData["Players"] = playerDataArray;
@@ -223,8 +161,6 @@ public partial class NewGameMenu : ConfigMenu
         var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
         if (file is null || !file.IsOpen()) return;
 
-        Godot.Collections.Array<Player> loadedPlayers = [];
-
         var json = new Json();
         var parseResult = json.Parse(file.GetAsText());
         if (parseResult != Error.Ok) {
@@ -236,23 +172,7 @@ public partial class NewGameMenu : ConfigMenu
 
         if (!data.TryGetValue("Players", out Variant players)) return;
 
-        foreach (var player in players.AsGodotArray<Godot.Collections.Dictionary>()) {
-            if (!(player.TryGetValue("Type", out var typeNameVariant) && typeNameVariant.AsString() is string typeName)) continue;
-            var playerType = ConfigPlayerEntry.PlayerTypes.FirstOrDefault(x => x.Name == typeName);
-            var newPlayer = (Player)Activator.CreateInstance(playerType);
-
-            var exportedMembers =
-                playerType.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.GetProperty)
-                    .Where(x => x.MemberType == MemberTypes.Property || x.MemberType == MemberTypes.Field)
-                    .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(ExportAttribute)));
-
-            foreach (var member in exportedMembers) if (player.TryGetValue(member.Name, out var variant)) newPlayer.Set(member.Name, variant);
-            loadedPlayers.Add(newPlayer);
-        }
-
-        if (GameManager.IsValid()) {
-            GameManager.Game.SetPlayers(loadedPlayers);
-            Rebuild();
-        }
+        var loadedPlayers = players.AsGodotArray<Godot.Collections.Dictionary>().Select(Player.Deserialize);
+        if (GameManager.IsValid()) { GameManager.Game.SetPlayers(loadedPlayers); Rebuild(); }
     }
 }
