@@ -31,12 +31,10 @@ public partial class ConfigMenuManager : Node
         UpdateMenuCache(); ChildOrderChanged += UpdateMenuCache;
         CloseMenu();
 
-        if (!_gameManager.AutoStart) {
-            // Don't ask
-            SwitchToMenu<NewGameMenu>();
-            var closeTimer = GetTree().CreateTimer(0.05); closeTimer.Timeout += CloseMenu;
-            var reopenTimer = GetTree().CreateTimer(0.1); reopenTimer.Timeout += SwitchToMenu<NewGameMenu>;
-        }
+        // Don't ask
+        SwitchToMenu<NewGameMenu>();
+        var closeTimer = GetTree().CreateTimer(0.05); closeTimer.Timeout += CloseMenu;
+        var reopenTimer = GetTree().CreateTimer(0.1); reopenTimer.Timeout += SwitchToMenu<NewGameMenu>;
     }
 
     public override void _UnhandledInput(InputEvent @event) {

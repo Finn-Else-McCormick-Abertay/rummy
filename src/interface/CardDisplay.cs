@@ -1,5 +1,5 @@
 using Godot;
-using Rummy.Game;
+using Rummy.Gameplay;
 
 namespace Rummy.Interface;
 

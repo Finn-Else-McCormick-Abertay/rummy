@@ -1,10 +1,8 @@
-[gd_scene load_steps=21 format=3 uid="uid://nk36plrb7ik8"]
+[gd_scene load_steps=16 format=3 uid="uid://nk36plrb7ik8"]
 
 [ext_resource type="PackedScene" uid="uid://cef2570xhab3f" path="res://scenes/player_hand.tscn" id="1_2umm0"]
 [ext_resource type="Script" uid="uid://sfkwhew7yxrt" path="res://src/interface/GameManager.cs" id="1_aylxn"]
-[ext_resource type="Script" uid="uid://dri1stb3r8ot2" path="res://src/game/Player.cs" id="2_a8y0u"]
 [ext_resource type="PackedScene" uid="uid://bc36fdeec5ywx" path="res://scenes/deck.tscn" id="2_rj55i"]
-[ext_resource type="Script" uid="uid://cxnp8c4xbgled" path="res://src/ai/IntelligentPlayer.cs" id="3_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://chtiqc5ff2ojj" path="res://scenes/card_display.tscn" id="4_7pgj3"]
 [ext_resource type="PackedScene" uid="uid://6jr1lsvpf85" path="res://scenes/failure_message.tscn" id="5_masi0"]
 [ext_resource type="PackedScene" uid="uid://di3h81vxsl8dh" path="res://scenes/meld.tscn" id="6_13xch"]
@@ -15,57 +13,6 @@
 [ext_resource type="Theme" uid="uid://dhqainn4oyppi" path="res://assets/themes/button_theme_meld.tres" id="8_kok28"]
 [ext_resource type="PackedScene" uid="uid://bvuw2usvtrt00" path="res://scenes/config/config_menu_manager.tscn" id="14_jkv2x"]
 [ext_resource type="PackedScene" uid="uid://bsapp2lqyt43v" path="res://scenes/output/output.tscn" id="18_dp3eg"]
-
-[sub_resource type="Resource" id="Resource_jbj1t"]
-script = ExtResource("3_jkv2x")
-InDiscardPileCardAccessibilityLossPerDepth = 0.25
-InNonPrecedingPlayerHandCardAccessibility = 0.0
-FullyConnectedInPrevPlayerHandCardAccessibility = 0.0
-PartiallyConnectedInPrevPlayerHandCardAccessibility = 0.2
-UnconnectedInPrevPlayerHandCardAccessibility = 0.7
-UnknownCardAccessibility = 0.5
-DrawSingleUtilityThreshold = 5.0
-DrawMultipleUtilityThreshold = 15.0
-LayoffUtilityThreshold = 1.0
-FirstMeldUtilityThreshold = 15.0
-FurtherMeldUtilityThreshold = 0.0
-MaxDiscardPileLookDistance = 8
-Name = "IntelligentPlayer1"
-metadata/_custom_type_script = "uid://cxnp8c4xbgled"
-
-[sub_resource type="Resource" id="Resource_muem4"]
-script = ExtResource("3_jkv2x")
-InDiscardPileCardAccessibilityLossPerDepth = 0.3
-InNonPrecedingPlayerHandCardAccessibility = 0.0
-FullyConnectedInPrevPlayerHandCardAccessibility = 0.0
-PartiallyConnectedInPrevPlayerHandCardAccessibility = 0.2
-UnconnectedInPrevPlayerHandCardAccessibility = 0.7
-UnknownCardAccessibility = 0.5
-DrawSingleUtilityThreshold = 5.0
-DrawMultipleUtilityThreshold = 15.0
-LayoffUtilityThreshold = 1.0
-FirstMeldUtilityThreshold = 15.0
-FurtherMeldUtilityThreshold = 0.0
-MaxDiscardPileLookDistance = 8
-Name = "IntelligentPlayer2"
-metadata/_custom_type_script = "uid://cxnp8c4xbgled"
-
-[sub_resource type="Resource" id="Resource_dp3eg"]
-script = ExtResource("3_jkv2x")
-InDiscardPileCardAccessibilityLossPerDepth = 0.25
-InNonPrecedingPlayerHandCardAccessibility = 0.0
-FullyConnectedInPrevPlayerHandCardAccessibility = 0.0
-PartiallyConnectedInPrevPlayerHandCardAccessibility = 0.2
-UnconnectedInPrevPlayerHandCardAccessibility = 0.7
-UnknownCardAccessibility = 0.5
-DrawSingleUtilityThreshold = 5.0
-DrawMultipleUtilityThreshold = 15.0
-LayoffUtilityThreshold = 1.0
-FirstMeldUtilityThreshold = 15.0
-FurtherMeldUtilityThreshold = 0.0
-MaxDiscardPileLookDistance = 8
-Name = "IntelligentPlayer3"
-metadata/_custom_type_script = "uid://cxnp8c4xbgled"
 
 [sub_resource type="Gradient" id="Gradient_yu4g7"]
 interpolation_color_space = 2
@@ -80,7 +27,6 @@ fill_to = Vector2(0, 0)
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("Deck", "DiscardPile", "PlayerHand", "ScoreDisplayRoot", "MeldRoot", "DiscardButton", "MeldButton", "NextTurnButton", "FailureMessage", "_output")]
 script = ExtResource("1_aylxn")
-Players = Array[ExtResource("2_a8y0u")]([SubResource("Resource_jbj1t"), SubResource("Resource_muem4"), SubResource("Resource_dp3eg")])
 Deck = NodePath("../Deck")
 DiscardPile = NodePath("../DiscardPile")
 PlayerHand = NodePath("../Hand UI/PlayerHand")

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Godot;
 using Rummy.AI;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 
 namespace Rummy.Interface;
@@ -48,9 +48,14 @@ public partial class NewGameMenu : ConfigMenu
 
     private void OnReordered() {
         var playerEntries = _playerEntryRoot.FindChildrenOfType<ConfigPlayerEntry>().Select(x => KeyValuePair.Create(x.Player, x)).ToDictionary();
-
-        var players = GameManager.Players.OrderBy(x => playerEntries[x].GetIndex());
-        GameManager.Players = [.. players];
+        foreach (var (player, entry) in playerEntries) {
+            int oldIndex = GameManager.Game.Players.IndexOf(player);
+            int newIndex = entry.GetIndex();
+            if (oldIndex != newIndex) {
+                GameManager.Game.ReorderPlayer(player, newIndex);
+                entry.OnReordered();
+            }
+        }
         UpdatePlayButtons();
     }
 
@@ -61,11 +66,12 @@ public partial class NewGameMenu : ConfigMenu
         if (GameManager.IsInvalid()) return;
 
         if (_playerEntryScene.IsValid())
-            foreach (var player in GameManager.Players) {
+            foreach (var player in GameManager.Game.Players) {
                 var entry = _playerEntryScene?.Instantiate<ConfigPlayerEntry>();
                 entry.Player = player; entry.GameManager = GameManager;
                 _playerEntryRoot.AddChild(entry);
                 entry.Connect(ConfigPlayerEntry.SignalName.PlayerTypeChanged, UpdatePlayButtons);
+                entry.Connect(ConfigPlayerEntry.SignalName.PlayerDeleted, UpdatePlayButtons);
             }
 
         UpdatePlayButtons();
@@ -76,17 +82,21 @@ public partial class NewGameMenu : ConfigMenu
         _simulateButton.Disabled = GameManager.IsInvalid();
         if (GameManager.IsInvalid()) return;
 
-        int userPlayerCount = GameManager.Players.Count(x => x is UserPlayer);
+        int userPlayerCount = GameManager.Game.Players.Count(x => x is UserPlayer);
+        bool noPlayers = GameManager.Game.Players.Count == 0;
 
-        if (_playButton.IsValid()) _playButton.TooltipText = "Begin stepping through round turn by turn.";
+        if (_playButton.IsValid()) {
+            _playButton.TooltipText = "Begin stepping through round turn by turn.";
+            _playButton.Disabled = noPlayers;
+        }
 
         if (_simulateButton.IsValid()) {
-            _simulateButton.Disabled = userPlayerCount > 0;
-            _simulateButton.TooltipText = userPlayerCount switch {
-                0 => "Simulate full round without display.",
-                _ => "Cannot run simulation containing UserPlayer"
-            };
-        }
+                _simulateButton.Disabled = userPlayerCount > 0 || noPlayers;
+                _simulateButton.TooltipText = userPlayerCount switch {
+                    0 => "Simulate full round without display.",
+                    _ => "Cannot run simulation containing UserPlayer"
+                };
+            }
     }
 
     private void AcceptAction(Action gameAction, bool shouldClose = true) {
@@ -94,7 +104,7 @@ public partial class NewGameMenu : ConfigMenu
             gameAction?.Invoke();
             EmitSignal(ConfigMenu.SignalName.CloseRequested);
         }
-        if (GameManager.InGame) Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current game."); else OnAccept();
+        if (GameManager.Game.InRound) Confirm(OnAccept, title: "Are you sure?", message: "Will overwrite current round."); else OnAccept();
     }
 
     private void Confirm(Action onConfirm, string title = null, string message = null, string acceptText = null) {
@@ -123,8 +133,10 @@ public partial class NewGameMenu : ConfigMenu
 
     private void AddPlayer() {
         UserPlayer newPlayer = new() { Name = nameof(UserPlayer) };
-        GameManager.Players = [.. GameManager.Players.Concat([newPlayer])];
+        GameManager.Game.AddPlayer(newPlayer);
         Rebuild();
+        var playerEntries = _playerEntryRoot.FindChildrenOfType<ConfigPlayerEntry>().Select(x => KeyValuePair.Create(x.Player, x)).ToDictionary();
+        playerEntries[newPlayer].OnReordered();
     }
 
     private void TextEnterDialog(string actionName, Action<string> onSubmit, IEnumerable<string> options = null) {
@@ -174,6 +186,8 @@ public partial class NewGameMenu : ConfigMenu
     }
 
     private void Save(string filePath) {
+        if (GameManager is null) return;
+
         var userDir = DirAccess.Open("user://");
         if (!userDir.DirExists("loadouts")) userDir.MakeDir("loadouts");
 
@@ -182,7 +196,7 @@ public partial class NewGameMenu : ConfigMenu
 
         Godot.Collections.Array playerDataArray = [];
 
-        foreach (var player in GameManager?.Players ?? []) {
+        foreach (var player in GameManager.Game.Players) {
             Godot.Collections.Dictionary playerData = [];
 
             playerData["Type"] = player.GetType().Name;
@@ -204,6 +218,8 @@ public partial class NewGameMenu : ConfigMenu
     }
 
     private void Load(string filePath) {
+        if (GameManager is null) return;
+
         var file = FileAccess.Open(filePath, FileAccess.ModeFlags.Read);
         if (file is null || !file.IsOpen()) return;
 
@@ -235,7 +251,7 @@ public partial class NewGameMenu : ConfigMenu
         }
 
         if (GameManager.IsValid()) {
-            GameManager.Players = loadedPlayers;
+            GameManager.Game.SetPlayers(loadedPlayers);
             Rebuild();
         }
     }

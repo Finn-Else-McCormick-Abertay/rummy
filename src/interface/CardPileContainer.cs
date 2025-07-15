@@ -1,5 +1,5 @@
 using Godot;
-using Rummy.Game;
+using Rummy.Gameplay;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,7 +31,15 @@ public partial class CardPileContainer : Container
     [ExportGroup("Debug")]
     [Export] protected int NumCardsInEditor { get; set { field = value; if (Engine.IsEditorHint()) Rebuild(); } } = 3;
     
-    public CardPile CardPile { get; set { SetCardPileHooks(false); field = value; Rebuild(); SetCardPileHooks(true); } }
+    public CardPile CardPile {
+        get;
+        set {
+            if (field == value) return;
+            SetCardPileHooks(false);
+            field = value; Rebuild();
+            SetCardPileHooks(true);
+        }
+    }
     private void SetCardPileHooks(bool enable) {
         if (CardPile is null) return;
         if (enable) CardPile.OnChanged += OnCardPileChanged; else CardPile.OnChanged -= OnCardPileChanged;

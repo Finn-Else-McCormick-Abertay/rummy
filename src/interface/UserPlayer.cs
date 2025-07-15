@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 using Rummy.AI;
-using Rummy.Game;
+using Rummy.Gameplay;
 
 namespace Rummy.Interface;
 

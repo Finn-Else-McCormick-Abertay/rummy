@@ -1,7 +1,7 @@
 using Godot;
 using Rummy.AI;
 using Rummy.Config;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 using System;
 using System.Collections.ObjectModel;
@@ -14,6 +14,7 @@ namespace Rummy.Interface;
 public partial class ConfigPlayerEntry : Control
 {
     [Signal] public delegate void PlayerTypeChangedEventHandler();
+    [Signal] public delegate void PlayerDeletedEventHandler();
 
     public GameManager GameManager { get; set; }
     public Player Player { get; set { field = value; this.OnReady(Rebuild); } }
@@ -125,27 +126,18 @@ public partial class ConfigPlayerEntry : Control
             var newType = PlayerTypes.ElementAtOrDefault(newValue.AsInt32());
             if (newType is not null) {
                 var newPlayer = (Player)Activator.CreateInstance(newType);
-
                 newPlayer.Score = Player.Score;
 
-                // Find player index
-                var players = GameManager.Players;
-                int index = players.FindIndex(Player);
-
                 // If non-unique name
-                if (SkipFinalNumberRegex().Match(Player.Name).Value == Player.GetType().Name)
-                    newPlayer.Name = $"{newType.Name}{GameManager.Players.Take(index).Count(x => x.GetType() == newType) + 1}";
+                if (SkipFinalNumberRegex().Match(Player.Name).Value == Player.GetType().Name) newPlayer.Name = newType.Name;
                 else newPlayer.Name = Player.Name;
 
                 // Replace player with new player
-                players.Insert(index, newPlayer);
-                players.Remove(Player);
-
-                GameManager.Players = players;
-
+                GameManager.Game.ReplacePlayer(Player, newPlayer);
                 Player = newPlayer;
 
-                EmitSignal(SignalName.PlayerTypeChanged);
+                OnReordered();
+                EmitSignalPlayerTypeChanged();
             }
         }
         else {
@@ -173,13 +165,18 @@ public partial class ConfigPlayerEntry : Control
     private void OnDeletePressed()
         => Confirm(PerformDelete, title: $"Delete {Player?.Name}?", message: "This action cannot be undone.");
 
+    public void OnReordered() {
+        // If non-unique name
+        if (SkipFinalNumberRegex().Match(Player.Name).Value == Player.GetType().Name)
+            Player.Name = $"{Player.GetType().Name}{GameManager.Game.Players.Take(GameManager.Game.Players.FindIndex(Player)).Count(x => x.GetType() == Player.GetType()) + 1}";
+        RebuildLabel();
+    }
+
     private void PerformDelete() {
         if (GameManager.IsInvalid()) return;
 
-        var players = GameManager.Players;
-        players.Remove(Player);
-        GameManager.Players = players;
-
+        GameManager.Game.RemovePlayer(Player);
+        EmitSignalPlayerDeleted();
         QueueFree();
     }
 }

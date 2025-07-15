@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 using static Rummy.Util.Option;
 

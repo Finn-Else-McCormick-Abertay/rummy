@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Godot;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 using static Rummy.Util.Option;
 

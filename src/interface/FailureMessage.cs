@@ -28,8 +28,8 @@ public partial class FailureMessage : PanelContainer
 
     public void DisplayMessage(string msg, bool useButton = false) {
         Message = msg; UseButton = useButton; Show();
-        _newGameButtonsRoot.Visible = !GameManager.InGame;
-        _simulateButtonRoot.Visible = !GameManager.Players.Any(x => x is UserPlayer);
+        _newGameButtonsRoot.Visible = !GameManager.Game.InRound;
+        _simulateButtonRoot.Visible = !GameManager.Game.Players.Any(x => x is UserPlayer);
     }
 
     public override void _Ready() {

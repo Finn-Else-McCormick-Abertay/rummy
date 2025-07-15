@@ -7,7 +7,7 @@ using Rummy.Util;
 using static Rummy.Util.Option;
 using static Rummy.Util.Result;
 
-namespace Rummy.Game;
+namespace Rummy.Gameplay;
 
 public class Deck : CardPile, IDrawable
 {

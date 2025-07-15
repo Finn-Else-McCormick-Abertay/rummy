@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 using Rummy.Config;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 
 namespace Rummy.AI;
@@ -135,7 +135,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
 
     private double EvaluateLayoffUtility(Card card, Meld meld) {
         if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
-        double utility = 5;
+        double utility = 20;
 
         utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
 
@@ -166,7 +166,7 @@ public partial class IntelligentPlayer : ComputerPlayer {
         if (_potentialMelds is null || _nearMelds is null) (_potentialMelds, _nearMelds) = FindPotentialMelds();
         double utility = 0;
         utility += card.Score * 0.2;
-        if (_potentialLayoffs.TryGetValue(card, out var layoffs)) utility -= layoffs.Count * 40;
+        if (_potentialLayoffs.TryGetValue(card, out var layoffs)) utility -= layoffs.Count * 10;
         utility -= _potentialMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateMeldUtility).Sum();
         utility -= _nearMelds.Where(x => x.Cards.Contains(card)).Select(EvaluateNearMeldUtility).Sum();
         return utility;

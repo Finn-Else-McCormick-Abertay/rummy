@@ -9,7 +9,7 @@ using Godot;
 using System.Threading.Tasks;
 using System.Text;
 
-namespace Rummy.Game;
+namespace Rummy.Gameplay;
 
 [Tool, GlobalClass]
 public abstract partial class Player : Resource

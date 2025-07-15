@@ -1,5 +1,5 @@
 using Godot;
-using Rummy.Game;
+using Rummy.Gameplay;
 using Rummy.Util;
 using System;
 using System.Linq;
@@ -16,34 +16,34 @@ public partial class PlayerScoreDisplay : PanelContainer
     private static readonly StringName HighlightedTypeVariationName = "ScoreDisplayHighlighted";
     private static readonly StringName InvalidTypeVariationName = "ScoreDisplayInvalid";
 
-    public bool Highlighted { get; set { field = value; if (IsNodeReady()) UpdateStyle(); } } = false;
-    public bool Invalid { get; set { field = value; if (IsNodeReady()) UpdateStyle(); } } = false;
+    public bool Highlighted { get; set { field = value; this.OnReady(UpdateStyle); } } = false;
+    public bool Invalid { get; set { field = value; this.OnReady(UpdateStyle); } } = false;
 
     public Player Player {
         get;
         set {
-            if (Player is not null) { Player.NotifyScoreChanged -= UpdateText; Player.NotifyNameChanged -= UpdateText; }
+            if (Player.IsValid()) { Player.NotifyScoreChanged -= UpdateText; Player.NotifyNameChanged -= UpdateText; }
             field = value;
-            if (IsNodeReady() && Player is not null) {
-                UpdateText(); Player.NotifyScoreChanged += UpdateText; Player.NotifyNameChanged += UpdateText;
-            }
+            if (Player.IsValid()) this.OnReady(() => { UpdateText(); Player.NotifyScoreChanged += UpdateText; Player.NotifyNameChanged += UpdateText; });
         }
     }
 
     public Round Round {
         get;
         set {
-            if (Round is not null) { Round.NotifyTurnBegan -= OnTurnBegan; Round.NotifyTurnEnded -= OnTurnEnded; Round.NotifyTurnReset -= OnTurnReset; }
-            field = value;
-            if (IsNodeReady() && Round is not null) {
-                Highlighted = Player == Round.CurrentPlayer;
-                Round.NotifyTurnBegan += OnTurnBegan; Round.NotifyTurnEnded += OnTurnEnded; Round.NotifyTurnReset += OnTurnReset;
+            if (Round.IsValid()) {
+                Round.NotifyTurnBegan -= OnTurnBegan;
+                Round.NotifyTurnEnded -= OnTurnEnded;
+                Round.NotifyTurnReset -= OnTurnReset;
             }
+            field = value;
+            if (Round.IsValid()) this.OnReady(() => {
+                Highlighted = Player == Round.CurrentPlayer;
+                Round.NotifyTurnBegan += OnTurnBegan;
+                Round.NotifyTurnEnded += OnTurnEnded;
+                Round.NotifyTurnReset += OnTurnReset;
+            });
         }
-    }
-
-    public override void _Ready() {
-        Player = Player; Round = Round; Highlighted = Highlighted;
     }
 
     private void UpdateText() {
@@ -54,7 +54,7 @@ public partial class PlayerScoreDisplay : PanelContainer
     }
 
     private void UpdateStyle() {
-        if (Player is null || Round is null) return;
+        if (Player.IsInvalid() || Round.IsInvalid()) return;
 
         ThemeTypeVariation = Invalid ? InvalidTypeVariationName : Highlighted ? HighlightedTypeVariationName : EmptyTypeVariationName;
     }
@@ -65,15 +65,22 @@ public partial class PlayerScoreDisplay : PanelContainer
 
     private void OnTurnEnded(Player player, Result<Round.TurnRecord, string> result) {
         if (Player is not null && player == Player) {
-            if (result.IsErr) { Invalid = true; }
+            if (result.IsErr) Invalid = true;
         }
-        if (result.IsOk && !Round.Finished) {
+        /*if (result.IsOk && !Round.Finished) {
             Highlighted = Player == Round.NextPlayer;
-        }
+        }*/
     }
 
     private void OnTurnReset() {
         Invalid = false;
         Highlighted = Player == Round.CurrentPlayer;
     }
+
+    public override void _Notification(int what) {
+        if (what == NotificationPredelete) {
+            Player = null; Round = null;
+        }
+    }
+
 }

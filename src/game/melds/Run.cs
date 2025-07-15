@@ -8,7 +8,7 @@ using Rummy.AI;
 using Rummy.Util;
 using static Rummy.Util.Result;
 
-namespace Rummy.Game;
+namespace Rummy.Gameplay;
 
 public class Run : Meld, IEquatable<Run>
 {

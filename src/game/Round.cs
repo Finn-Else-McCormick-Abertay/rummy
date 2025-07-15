@@ -13,9 +13,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 
-namespace Rummy.Game;
+namespace Rummy.Gameplay;
 
-public class Round
+public partial class Round : GodotObject
 {
 	private class TurnData {
 		public TurnData(Player player) { Player = player; PriorMelds = Player?.Melds?.Count ?? 0; }
@@ -122,7 +122,7 @@ public class Round
 	public event Action<Player>								NotifyTurnBegan;
 	public event Action<Player, Result<TurnRecord, string>> NotifyTurnEnded;
 	public event Action 									NotifyTurnReset;
-	public event Action<Player, int, bool> 					NotifyGameEnded;
+	public event Action<Player, int, bool> 					NotifyRoundEnded;
 	
 	public event Action 									ImmediateDisplayNotifyDeckRanOut;
 	public event Action										ImmediateDisplayNotifyDeckShuffled;
@@ -228,7 +228,7 @@ public class Round
 		void onGameEndedAction(Player winner, int score, bool wasRummy) => winData = (winner, score, wasRummy);
 
 		NotifyTurnEnded += onTurnEndedAction;
-		NotifyGameEnded += onGameEndedAction;
+		NotifyRoundEnded += onGameEndedAction;
 
 		CreateAndShuffleDeck();
 		DealCardsAndInitialiseRound();
@@ -243,14 +243,14 @@ public class Round
 			} while (turnResult.IsErr && tryAtThisTurn < repeatInvalidTurnCutoff);
 			if (tryAtThisTurn >= repeatInvalidTurnCutoff) {
 				NotifyTurnEnded -= onTurnEndedAction;
-				NotifyGameEnded -= onGameEndedAction;
+				NotifyRoundEnded -= onGameEndedAction;
 				Failed = true;
 				return Err(($"Overran turn failure limit of {repeatInvalidTurnCutoff} ({CurrentPlayer.Name}, Turn {Turn}). Last err: {lastErr}", turnHistory.AsEnumerable()));
 			}
 		}
 
 		NotifyTurnEnded -= onTurnEndedAction;
-		NotifyGameEnded -= onGameEndedAction;
+		NotifyRoundEnded -= onGameEndedAction;
 		if (!Finished) {
 			Failed = true;
 			return Err(($"Overran turn limit of {turnCutoff}.", turnHistory.AsEnumerable()));
@@ -341,7 +341,7 @@ public class Round
 			bool wasRummy = turnData.PriorMelds == 0;
 			if (wasRummy) roundScore *= 2;
 			Winner.Score += roundScore;
-			NotifyGameEnded?.Invoke(Winner, roundScore, wasRummy);
+			NotifyRoundEnded?.Invoke(Winner, roundScore, wasRummy);
 		}
 		Turn++; MidTurn = false;
 		return Ok();

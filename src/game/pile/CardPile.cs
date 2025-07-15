@@ -8,7 +8,7 @@ using Rummy.Util;
 using static Rummy.Util.Option;
 using static Rummy.Util.Result;
 
-namespace Rummy.Game;
+namespace Rummy.Gameplay;
 
 public interface ICountable {
 	public int Count { get; }
