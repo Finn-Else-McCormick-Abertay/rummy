@@ -1,6 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://i64idti40js4"]
+[gd_scene load_steps=4 format=3 uid="uid://i64idti40js4"]
 
 [ext_resource type="Script" uid="uid://rqsgsbmqjabv" path="res://src/interface/CardPileContainer.cs" id="1_60wra"]
+[ext_resource type="FontFile" uid="uid://b2phyroi2ay3e" path="res://assets/fonts/FiraSans/FiraSans-Bold.ttf" id="1_hqcsv"]
+
+[sub_resource type="Theme" id="Theme_go7b8"]
+CountOverlayLabel/base_type = &"Label"
+CountOverlayLabel/colors/font_color = Color(1, 1, 1, 1)
+CountOverlayLabel/colors/font_outline_color = Color(0, 0, 0, 1)
+CountOverlayLabel/constants/outline_size = 5
+CountOverlayLabel/font_sizes/font_size = 16
+CountOverlayLabel/fonts/font = ExtResource("1_hqcsv")
 
 [node name="EnemyHand" type="Container"]
 anchors_preset = 15
@@ -9,8 +18,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
+theme = SubResource("Theme_go7b8")
 script = ExtResource("1_60wra")
 FaceDown = true
 CardSize = 30.0
 ShowTooltip = true
+ShowCountOverlay = true
 NumCardsInEditor = 7

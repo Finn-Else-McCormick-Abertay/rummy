@@ -22,7 +22,7 @@ public static class Text
             _ => many ?? other
         };
         var placeholderIndices = template.FindAllIndices('%').Where(i => i == 0 || template[i - 1] != '\\');
-        foreach (int index in placeholderIndices) template.ReplaceAt(index, value.ToString());
+        foreach (int index in placeholderIndices) template = template.ReplaceAt(index, value.ToString());
         return template;
     }
 

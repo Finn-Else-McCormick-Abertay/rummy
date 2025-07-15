@@ -24,6 +24,9 @@ public partial class CardPileContainer : Container
     [Export] public CardSizingReactionEnum CardSizingReaction { get; set { field = value; QueueSort(); } } = CardSizingReactionEnum.None;
 
     [Export] public bool ShowTooltip { get; set { field = value; QueueSort(); } } = false;
+    [Export] public bool ShowCountOverlay { get; set { field = value; Rebuild(); } } = false;
+
+    private Label _countOverlayLabel;
 
     [ExportGroup("Debug")]
     [Export] protected int NumCardsInEditor { get; set { field = value; if (Engine.IsEditorHint()) Rebuild(); } } = 3;
@@ -48,35 +51,50 @@ public partial class CardPileContainer : Container
     
     public override void _Notification(int what) {
         if (what == NotificationSortChildren) {
-            var origin = Size / 2f;
-            
-            float cardSizeAlongAxis = Direction == DirectionEnum.Horizontal ?
-                CardSize : GetChildCount() > 0 ? (GetChild(0) as Control).Size.Y : 0f;
+            //var cardDisplays = this.FindChildrenWhere<Control>(x => x.GetScript().As<CSharpScript>()?.ResourcePath.TrimSuffix(".cs").EndsWith(nameof(CardDisplay)) ?? false).Select(x => x as CardDisplay);
+            var cardDisplays = this.FindChildrenOfType<CardDisplay>();
 
-            float areaAlongAxis = Direction == DirectionEnum.Horizontal ? Size.X : Size.Y - (!CardsOverlap ? CardSeparation : 0f);
+            float sizeAlongAxisPerCard = MathF.Min(
+                0 switch {
+                    _ when CardsOverlap => CardSeparation,
+                    _ => CardSeparation + Direction switch {
+                        DirectionEnum.Horizontal => CardSize,
+                        DirectionEnum.Vertical => cardDisplays.FirstOrDefault()?.Size.Y ?? 0f
+                    }
+                },
+                CardSizingReaction switch {
+                    CardSizingReactionEnum.None => float.PositiveInfinity,
+                    CardSizingReactionEnum.SlideOver => Direction switch {
+                        DirectionEnum.Horizontal => Size.X,
+                        DirectionEnum.Vertical when CardsOverlap => Size.Y,
+                        DirectionEnum.Vertical when !CardsOverlap => Size.Y - CardSeparation
+                    } / cardDisplays.Count
+                }
+            );
 
-            float sizeAlongAxisPerCard = CardsOverlap ? CardSeparation : CardSeparation + cardSizeAlongAxis;
-            float sizeAlongAxisPerCardMax = areaAlongAxis / GetChildCount();
-            if (CardSizingReaction != CardSizingReactionEnum.None && sizeAlongAxisPerCard > sizeAlongAxisPerCardMax) {
-                sizeAlongAxisPerCard = sizeAlongAxisPerCardMax;
-            }
-            float startPos = -(GetChildCount() * sizeAlongAxisPerCard) / 2f;
-            foreach (CardDisplay display in GetChildren().Cast<CardDisplay>()) {
+            Vector2 origin = Size / 2f;
+            float startPos = -(cardDisplays.Count * sizeAlongAxisPerCard) / 2f;
+            foreach (var (index, display) in cardDisplays.Index()) {
                 display.SetAnchorsPreset(LayoutPreset.Center);
                 display.Size = display.Size with { X = CardSize };
                 display.FaceDown = FaceDown;
-
-                if (ShowTooltip) display.TooltipText = FaceDown ? $"{CardPile.Count} cards" : $"{display.Card}";
+                display.TooltipText = 0 switch { _ when ShowTooltip && FaceDown => $"{CardPile.Count} cards", _ when ShowTooltip && !FaceDown => $"{display.Card}", _ => "" };
 
                 var positionOverriden = PreChildSorted(display);
                 if (!positionOverriden) {
-                    float cardPos = startPos + display.GetIndex() * sizeAlongAxisPerCard;// + (!CardsOverlap ? CardSeparation : 0f);
-                    display.Position =
-                        (Direction == DirectionEnum.Horizontal ? new(cardPos, 0f) : new(0f, cardPos))
-                        + origin - (CardsOverlap ? display.Size / 2f : new());
+                    float cardPos = startPos + index * sizeAlongAxisPerCard;
+                    display.Position = Direction switch {
+                        DirectionEnum.Horizontal => new(cardPos, 0f),
+                        DirectionEnum.Vertical => new(0f, cardPos)
+                    } + origin - 0 switch { _ when CardsOverlap => display.Size / 2f, _ => new() };
                 }
 
                 PostChildSorted(display);
+            }
+
+            if (ShowCountOverlay && _countOverlayLabel.IsValid()) {
+                _countOverlayLabel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+                _countOverlayLabel.Text = Text.Plural(cardDisplays.Count, one: "% card", other: "% cards", none: "");
             }
         }
     }
@@ -143,6 +161,16 @@ public partial class CardPileContainer : Container
 
     protected void Rebuild() {
         if (!IsNodeReady()) return;
+
+        if (_countOverlayLabel.IsValid() && !ShowCountOverlay) { _countOverlayLabel.QueueFree(); _countOverlayLabel = null; }
+        if (_countOverlayLabel.IsInvalid() && ShowCountOverlay) {
+            _countOverlayLabel = new Label() {
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                ThemeTypeVariation = "CountOverlayLabel"
+            };
+            AddChild(_countOverlayLabel, false, InternalMode.Back);
+            _countOverlayLabel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        }
 
         if (Engine.IsEditorHint()) { Clear(); for (int i = 0; i < NumCardsInEditor; ++i) AddCard(new Card(Rank.Ace, Suit.Spades)); }
         else if (CardPile is IReadableCardPile || CardPile is IAccessibleCardPile) {
