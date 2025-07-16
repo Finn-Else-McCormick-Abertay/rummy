@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://bvuxhqltm8lyf"]
+[gd_scene load_steps=12 format=3 uid="uid://bvuxhqltm8lyf"]
 
 [ext_resource type="Theme" uid="uid://b4piyrd7gcxax" path="res://assets/themes/config_theme.tres" id="1_fb7n5"]
 [ext_resource type="Script" uid="uid://bsox58ghb42bf" path="res://src/interface/config/ScoreboardMenu.cs" id="1_rmwhu"]
@@ -7,6 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://cb3yth8ovfh8c" path="res://assets/textures/ui/bootstrap icons/save load/floppy-fill.svg" id="5_gh20p"]
 [ext_resource type="Texture2D" uid="uid://b6qoyu1eetl4o" path="res://assets/textures/ui/bootstrap icons/folder/folder.svg" id="6_4ldh6"]
 [ext_resource type="Texture2D" uid="uid://c5p05w33k8cpc" path="res://assets/textures/ui/bootstrap icons/folder/folder-fill.svg" id="7_bdx26"]
+[ext_resource type="Script" uid="uid://71tnntdbhrur" path="res://addons/table_container/table_container.gd" id="8_gh20p"]
+[ext_resource type="Theme" uid="uid://dtsuh8q0gq0or" path="res://assets/themes/scoreboard.tres" id="9_4ldh6"]
 
 [sub_resource type="InputEventAction" id="InputEventAction_fb7n5"]
 action = &"toggle_scoreboard"
@@ -14,7 +16,7 @@ action = &"toggle_scoreboard"
 [sub_resource type="Shortcut" id="Shortcut_upnrg"]
 events = [SubResource("InputEventAction_fb7n5")]
 
-[node name="ScoreboardMenu" type="Control" node_paths=PackedStringArray("_saveButton", "_openSaveFolderButton")]
+[node name="ScoreboardMenu" type="Control" node_paths=PackedStringArray("_saveButton", "_openSaveFolderButton", "_mainContent")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,6 +27,8 @@ theme = ExtResource("1_fb7n5")
 script = ExtResource("1_rmwhu")
 _saveButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/Save")
 _openSaveFolderButton = NodePath("PanelContainer/VBoxContainer/Title Line/Save Buttons/OpenFolder")
+_mainContent = NodePath("PanelContainer/VBoxContainer/Main Content")
+_tableContainerScript = ExtResource("8_gh20p")
 Shortcut = SubResource("Shortcut_upnrg")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
@@ -79,12 +83,94 @@ texture_hover = ExtResource("7_bdx26")
 ignore_texture_size = true
 stretch_mode = 4
 
-[node name="Columns" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+[node name="Main Content" type="Control" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("9_4ldh6")
+
+[node name="TableContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/Main Content"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+script = ExtResource("8_gh20p")
+separation_horizontal = null
+separation_vertical = null
+metadata/_custom_type_script = "uid://71tnntdbhrur"
+
+[node name="Title Row" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Main Content/TableContainer"]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/Columns"]
+[node name="Round" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Title Row"]
+custom_minimum_size = Vector2(89, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"TableRoundHeaderLabel"
+text = "Round"
+vertical_alignment = 2
+
+[node name="Player1" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Title Row"]
+custom_minimum_size = Vector2(101, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"TableColumnHeaderLabel"
+text = "Player 1"
+vertical_alignment = 2
+
+[node name="Player2" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Title Row"]
+custom_minimum_size = Vector2(103, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"TableColumnHeaderLabel"
+text = "Player 2"
+vertical_alignment = 2
+
+[node name="Player3" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Title Row"]
+custom_minimum_size = Vector2(103, 0)
+layout_mode = 2
+size_flags_vertical = 1
+theme_type_variation = &"TableColumnHeaderLabel"
+text = "Player 3"
+vertical_alignment = 2
+
+[node name="Row 1" type="HBoxContainer" parent="PanelContainer/VBoxContainer/Main Content/TableContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="PanelContainer/VBoxContainer/Columns/VBoxContainer"]
+[node name="Round Number" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Row 1"]
+custom_minimum_size = Vector2(89, 0)
 layout_mode = 2
-text = "Scoreboard display unfinished"
+size_flags_vertical = 1
+theme_type_variation = &"TableRowHeaderLabel"
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="Score1" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Row 1"]
+custom_minimum_size = Vector2(101, 0)
+layout_mode = 2
+size_flags_vertical = 9
+theme_type_variation = &"TableContentLabel"
+text = "-"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="Score2" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Row 1"]
+custom_minimum_size = Vector2(103, 0)
+layout_mode = 2
+size_flags_vertical = 9
+theme_type_variation = &"TableContentLabel"
+text = "-"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="Score3" type="Label" parent="PanelContainer/VBoxContainer/Main Content/TableContainer/Row 1"]
+custom_minimum_size = Vector2(103, 0)
+layout_mode = 2
+size_flags_vertical = 9
+theme_type_variation = &"TableContentLabel"
+text = "51"
+horizontal_alignment = 2
+vertical_alignment = 2

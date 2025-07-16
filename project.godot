@@ -29,7 +29,7 @@ project/assembly_name="Rummy"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/markdownlabel/plugin.cfg", "res://addons/tnowe_extra_controls/plugin.cfg")
+enabled=PackedStringArray("res://addons/markdownlabel/plugin.cfg", "res://addons/table_container/plugin.cfg", "res://addons/tnowe_extra_controls/plugin.cfg")
 
 [input]
 

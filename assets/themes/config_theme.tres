@@ -1,10 +1,12 @@
-[gd_resource type="Theme" load_steps=35 format=3 uid="uid://b4piyrd7gcxax"]
+[gd_resource type="Theme" load_steps=38 format=3 uid="uid://b4piyrd7gcxax"]
 
 [ext_resource type="FontFile" uid="uid://xe7ygkm76sx4" path="res://assets/fonts/FiraSans/FiraSans-Regular.ttf" id="1_7y3rl"]
 [ext_resource type="FontFile" uid="uid://b2phyroi2ay3e" path="res://assets/fonts/FiraSans/FiraSans-Bold.ttf" id="1_62qw8"]
 [ext_resource type="FontFile" uid="uid://t6s324mrl537" path="res://assets/fonts/FiraSans/FiraSans-BoldItalic.ttf" id="2_1gelm"]
 [ext_resource type="FontFile" uid="uid://cx4q10gv46cdy" path="res://assets/fonts/FiraSans/FiraSans-Italic.ttf" id="2_62qw8"]
 [ext_resource type="FontFile" uid="uid://6pxh6xsqdi2q" path="res://assets/fonts/FiraMono/FiraMono-Regular.otf" id="4_64b15"]
+[ext_resource type="FontFile" uid="uid://dt2mvhrjbc4mb" path="res://assets/fonts/FiraSans/FiraSans-Medium.ttf" id="6_64b15"]
+[ext_resource type="FontFile" uid="uid://cpce0t7fe358w" path="res://assets/fonts/FiraSans/FiraSans-Black.ttf" id="7_nyad7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_oy1yr"]
 content_margin_left = 30.0
@@ -173,6 +175,13 @@ content_margin_left = 5.0
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pxjdp"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_v8ftp"]
+content_margin_left = 15.0
+content_margin_top = 5.0
+content_margin_right = 15.0
+content_margin_bottom = 5.0
+bg_color = Color(0.128906, 0.128906, 0.128906, 1)
+
 [sub_resource type="FontVariation" id="FontVariation_ck8ba"]
 base_font = ExtResource("1_7y3rl")
 baseline_offset = 0.08
@@ -220,4 +229,17 @@ TabBar/styles/tab_selected = SubResource("StyleBoxEmpty_2m1i6")
 TabBar/styles/tab_unselected = SubResource("StyleBoxEmpty_5g2pe")
 TabContainer/constants/side_margin = 0
 TabContainer/styles/panel = SubResource("StyleBoxEmpty_pxjdp")
+TableColumnHeaderLabel/base_type = &"Label"
+TableColumnHeaderLabel/font_sizes/font_size = 20
+TableColumnHeaderLabel/fonts/font = ExtResource("6_64b15")
+TableColumnHeaderLabel/styles/normal = SubResource("StyleBoxFlat_v8ftp")
+TableContentLabel/base_type = &"Label"
+TableContentLabel/font_sizes/font_size = 20
+TableContentLabel/fonts/font = ExtResource("4_64b15")
+TableRoundHeaderLabel/base_type = &"Label"
+TableRoundHeaderLabel/font_sizes/font_size = 20
+TableRoundHeaderLabel/fonts/font = ExtResource("6_64b15")
+TableRowHeaderLabel/base_type = &"Label"
+TableRowHeaderLabel/font_sizes/font_size = 20
+TableRowHeaderLabel/fonts/font = ExtResource("7_nyad7")
 VBoxContainer/constants/separation = 30
